@@ -4,8 +4,10 @@ import * as schema from "./schema";
 
 const { Pool } = pg;
 
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) throw new Error("DATABASE_URL must be set.");
+const connectionString = process.env.DATABASE_URL || "postgresql://dummy:dummy@localhost:5432/dummy";
+if (!process.env.DATABASE_URL) {
+  console.warn("DATABASE_URL is not set. Using dummy connection string for build phase.");
+}
 
 let pool: pg.Pool;
 try {
