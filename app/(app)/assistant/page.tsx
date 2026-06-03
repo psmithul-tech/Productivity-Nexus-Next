@@ -1,9 +1,9 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { Send, Plus, Trash2, Bot, User, Sparkles, MessageSquare, Loader2 } from "lucide-react";
+import { Send, Plus, Trash2, Bot, User, Sparkles, MessageSquare, Loader2, Volume2, Square } from "lucide-react";
 import { toast } from "sonner";
 
-type Msg = { role: "user" | "assistant"; content: string; streaming?: boolean };
+type Msg = { role: "user" | "assistant"; content: string; streaming?: boolean; toolCall?: { type: string; data: any } };
 type Conv = { id: number; title: string; createdAt: string };
 
 const SUGGESTIONS = [
@@ -20,8 +20,10 @@ export default function AssistantPage() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
+  const [playingAudioIndex, setPlayingAudioIndex] = useState<number | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => { loadConversations(); }, []);
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
@@ -99,7 +101,30 @@ export default function AssistantPage() {
               fullText += json.content;
               setMessages((p) => { const n = [...p]; n[n.length - 1] = { role: "assistant", content: fullText, streaming: true }; return n; });
             }
-            if (json.done) setMessages((p) => { const n = [...p]; n[n.length - 1] = { role: "assistant", content: fullText }; return n; });
+            if (json.task) {
+              setMessages((p) => [...p, { role: "assistant", content: "", toolCall: { type: "task", data: json.task } }, { role: "assistant", content: "", streaming: true }]);
+            }
+            if (json.tasksBatch) {
+              setMessages((p) => [...p, { role: "assistant", content: "", toolCall: { type: "tasksBatch", data: json.tasksBatch } }, { role: "assistant", content: "", streaming: true }]);
+            }
+            if (json.event) {
+              setMessages((p) => [...p, { role: "assistant", content: "", toolCall: { type: "event", data: json.event } }, { role: "assistant", content: "", streaming: true }]);
+            }
+            if (json.reminder) {
+              setMessages((p) => [...p, { role: "assistant", content: "", toolCall: { type: "reminder", data: json.reminder } }, { role: "assistant", content: "", streaming: true }]);
+            }
+            if (json.done) {
+              setMessages((p) => { 
+                const n = [...p]; 
+                // Clean up any empty streaming messages left over
+                if (n[n.length - 1].content === "" && !n[n.length - 1].toolCall) {
+                  n.pop();
+                } else {
+                  n[n.length - 1] = { ...n[n.length - 1], streaming: false }; 
+                }
+                return n; 
+              });
+            }
           } catch {}
         }
       }
@@ -111,6 +136,49 @@ export default function AssistantPage() {
     } finally {
       setStreaming(false);
       abortRef.current = null;
+    }
+  }
+
+  async function playTTS(text: string, index: number) {
+    if (playingAudioIndex === index) {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      setPlayingAudioIndex(null);
+      return;
+    }
+    
+    // Stop any existing audio
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+
+    try {
+      setPlayingAudioIndex(index);
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      if (!res.ok) throw new Error("Failed to generate TTS");
+      
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      
+      audio.onended = () => {
+        setPlayingAudioIndex(null);
+        audioRef.current = null;
+        URL.revokeObjectURL(url);
+      };
+      
+      audio.play();
+    } catch (err) {
+      toast.error("Failed to play audio");
+      setPlayingAudioIndex(null);
     }
   }
 
@@ -167,17 +235,43 @@ export default function AssistantPage() {
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.map((msg, i) => (
+            {messages.map((msg, i) => {
+              if (msg.toolCall) {
+                return (
+                  <div key={i} className="flex justify-start">
+                    <div className="flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-4 py-2 text-sm text-primary">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary/20 text-[10px]">✓</span>
+                      <span className="font-medium">
+                        {msg.toolCall.type === "task" && `Created task: ${msg.toolCall.data.title}`}
+                        {msg.toolCall.type === "tasksBatch" && `Created ${msg.toolCall.data.tasks.length} tasks`}
+                        {msg.toolCall.type === "event" && `Scheduled event: ${msg.toolCall.data.title}`}
+                        {msg.toolCall.type === "reminder" && `Set reminder for task #${msg.toolCall.data.taskId}`}
+                      </span>
+                    </div>
+                  </div>
+                );
+              }
+              if (!msg.content && !msg.streaming) return null;
+              return (
               <div key={i} className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
                 <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
                   {msg.role === "user" ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
                 </div>
-                <div className={`rounded-2xl px-4 py-2.5 max-w-[80%] text-sm leading-relaxed whitespace-pre-wrap ${msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}>
+                <div className={`rounded-2xl px-4 py-2.5 max-w-[80%] text-sm leading-relaxed whitespace-pre-wrap ${msg.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground border border-border"} relative group/msg`}>
                   {msg.content || (msg.streaming && <span className="opacity-60 animate-pulse flex items-center gap-1"><Loader2 className="h-3 w-3 animate-spin" /> Thinking…</span>)}
                   {msg.streaming && msg.content && <span className="inline-block w-1 h-4 ml-0.5 bg-current animate-pulse align-middle" />}
+                  {msg.role === "assistant" && !msg.streaming && msg.content && (
+                    <button
+                      onClick={() => playTTS(msg.content, i)}
+                      className="absolute -right-10 top-2 p-1.5 rounded-full bg-muted border border-border text-muted-foreground hover:text-primary transition-colors opacity-0 group-hover/msg:opacity-100"
+                      title={playingAudioIndex === i ? "Stop audio" : "Play audio"}
+                    >
+                      {playingAudioIndex === i ? <Square className="h-3.5 w-3.5 fill-current" /> : <Volume2 className="h-3.5 w-3.5" />}
+                    </button>
+                  )}
                 </div>
               </div>
-            ))}
+            )})}
             <div ref={bottomRef} />
           </div>
         )}
@@ -185,6 +279,7 @@ export default function AssistantPage() {
         <div className="p-4 border-t border-border">
           <div className="flex gap-2 max-w-2xl mx-auto">
             <input
+              autoFocus
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input); } }}
@@ -200,7 +295,7 @@ export default function AssistantPage() {
               <Send className="h-4 w-4" />
             </button>
           </div>
-          <p className="text-xs text-muted-foreground text-center mt-2">Powered by Gemini 2.5 Flash</p>
+          <p className="text-xs text-muted-foreground text-center mt-2">Powered by Gemini 3.1 Flash-Lite</p>
         </div>
       </div>
     </div>

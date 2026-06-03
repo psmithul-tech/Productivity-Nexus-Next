@@ -95,6 +95,7 @@ export const settingsTable = pgTable("settings", {
   reminderTone: text("reminder_tone").notNull().default("normal"),
   timezone: text("timezone").notNull().default("UTC"),
   telegramChatId: text("telegram_chat_id"),
+  telegramBotToken: text("telegram_bot_token"),
   discordWebhookUrl: text("discord_webhook_url"),
   hourlyUpdatesEnabled: boolean("hourly_updates_enabled").notNull().default(false),
   workdayStart: text("workday_start").notNull().default("09:00"),

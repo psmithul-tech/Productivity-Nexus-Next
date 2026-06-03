@@ -13,6 +13,14 @@ interface CalendarEvent {
   description?: string;
 }
 
+interface CalendarTask {
+  id: number;
+  title: string;
+  dueDate: string;
+  priority: string;
+  status: string;
+}
+
 interface NewEvent {
   title: string;
   startTime: string;
@@ -228,6 +236,7 @@ export default function CalendarPage() {
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [tasks, setTasks] = useState<CalendarTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(now);
@@ -240,12 +249,20 @@ export default function CalendarPage() {
     try {
       const from = startOfMonth(y, m).toISOString();
       const to = endOfMonth(y, m).toISOString();
-      const res = await fetch(
-        `/api/events?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
-      );
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      setEvents(Array.isArray(data) ? data : data.events ?? []);
+      
+      const [eventsRes, tasksRes] = await Promise.all([
+        fetch(`/api/events?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`),
+        fetch(`/api/tasks?status=active`)
+      ]);
+      
+      if (!eventsRes.ok) throw new Error(`HTTP ${eventsRes.status}`);
+      if (!tasksRes.ok) throw new Error(`HTTP ${tasksRes.status}`);
+      
+      const eventsData = await eventsRes.json();
+      const tasksData = await tasksRes.json();
+      
+      setEvents(Array.isArray(eventsData) ? eventsData : eventsData.events ?? []);
+      setTasks(Array.isArray(tasksData) ? tasksData : tasksData.tasks ?? []);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -291,16 +308,29 @@ export default function CalendarPage() {
     }
   }
 
+  async function handleCompleteTask(id: number) {
+    try {
+      const res = await fetch(`/api/tasks/${id}/complete`, { method: "PATCH" });
+      if (res.ok) {
+        setTasks(prev => prev.filter(t => t.id !== id));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
   // Build calendar grid
   const firstDay = startOfMonth(year, month).getDay(); // 0=Sun
   const totalDays = daysInMonth(year, month);
   const totalCells = Math.ceil((firstDay + totalDays) / 7) * 7;
 
-  function eventsForDay(d: Date) {
-    return events.filter(ev => isSameDay(new Date(ev.startTime), d));
+  function itemsForDay(d: Date) {
+    const dayEvents = events.filter(ev => isSameDay(new Date(ev.startTime), d));
+    const dayTasks = tasks.filter(t => t.dueDate && isSameDay(new Date(t.dueDate), d));
+    return { dayEvents, dayTasks };
   }
 
-  const selectedEvents = eventsForDay(selectedDate);
+  const { dayEvents: selectedEvents, dayTasks: selectedTasks } = itemsForDay(selectedDate);
 
   // Dot colors cycling
   const DOT_COLORS = [
@@ -352,9 +382,17 @@ export default function CalendarPage() {
               >
                 ‹
               </button>
-              <h2 className="text-base font-semibold text-foreground">
-                {MONTHS[month]} {year}
-              </h2>
+              <div className="flex items-center gap-3">
+                <h2 className="text-base font-semibold text-foreground">
+                  {MONTHS[month]} {year}
+                </h2>
+                <button
+                  onClick={() => { setYear(now.getFullYear()); setMonth(now.getMonth()); setSelectedDate(now); }}
+                  className="rounded-lg border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-white/5 hover:text-foreground transition-colors"
+                >
+                  Today
+                </button>
+              </div>
               <button
                 onClick={nextMonth}
                 className="flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-white/5 hover:text-foreground transition-colors"
@@ -385,7 +423,7 @@ export default function CalendarPage() {
                   const cellDate = new Date(year, month, dayNum);
                   const isToday = isCurrentMonth && isSameDay(cellDate, now);
                   const isSelected = isCurrentMonth && isSameDay(cellDate, selectedDate);
-                  const dayEvents = isCurrentMonth ? eventsForDay(cellDate) : [];
+                  const { dayEvents, dayTasks } = isCurrentMonth ? itemsForDay(cellDate) : { dayEvents: [], dayTasks: [] };
 
                   return (
                     <button
@@ -411,17 +449,23 @@ export default function CalendarPage() {
                       >
                         {isCurrentMonth ? dayNum : ""}
                       </span>
-                      {/* Event dots */}
-                      {dayEvents.length > 0 && (
+                      {/* Event dots & Task checks */}
+                      {(dayEvents.length > 0 || dayTasks.length > 0) && (
                         <div className="mt-1 flex flex-wrap justify-center gap-0.5">
-                          {dayEvents.slice(0, 3).map((ev, idx) => (
+                          {dayTasks.slice(0, 2).map((t) => (
                             <span
-                              key={ev.id}
+                              key={`t-${t.id}`}
+                              className="h-1.5 w-1.5 rounded-sm bg-primary"
+                            />
+                          ))}
+                          {dayEvents.slice(0, Math.max(0, 4 - dayTasks.length)).map((ev, idx) => (
+                            <span
+                              key={`e-${ev.id}`}
                               className={`h-1.5 w-1.5 rounded-full ${DOT_COLORS[idx % DOT_COLORS.length]}`}
                             />
                           ))}
-                          {dayEvents.length > 3 && (
-                            <span className="text-[8px] text-muted-foreground">+{dayEvents.length - 3}</span>
+                          {(dayEvents.length + dayTasks.length) > 4 && (
+                            <span className="text-[8px] text-muted-foreground ml-0.5">+{dayEvents.length + dayTasks.length - 4}</span>
                           )}
                         </div>
                       )}
@@ -444,7 +488,7 @@ export default function CalendarPage() {
                   })}
                 </h2>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  {selectedEvents.length} event{selectedEvents.length !== 1 ? "s" : ""}
+                  {selectedEvents.length} event{selectedEvents.length !== 1 ? "s" : ""}, {selectedTasks.length} task{selectedTasks.length !== 1 ? "s" : ""}
                 </p>
               </div>
               <button
@@ -465,10 +509,10 @@ export default function CalendarPage() {
                   </div>
                 ))}
               </div>
-            ) : selectedEvents.length === 0 ? (
+            ) : selectedEvents.length === 0 && selectedTasks.length === 0 ? (
               <div className="flex flex-col items-center gap-2 py-10 text-center text-muted-foreground">
                 <span className="text-3xl">📭</span>
-                <p className="text-sm">No events this day</p>
+                <p className="text-sm">No events or tasks this day</p>
                 <button
                   onClick={() => setShowModal(true)}
                   className="mt-1 rounded-xl border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs text-primary hover:bg-primary/20 transition-colors"
@@ -478,9 +522,30 @@ export default function CalendarPage() {
               </div>
             ) : (
               <ul className="space-y-3">
+                {selectedTasks.map((t) => (
+                  <li
+                    key={`task-${t.id}`}
+                    className="group flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 p-3 transition-all hover:bg-primary/10"
+                  >
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => handleCompleteTask(t.id)}
+                        className="flex h-5 w-5 items-center justify-center rounded-full border border-primary/50 bg-background hover:bg-primary/20 transition-colors"
+                      >
+                        <span className="text-[10px] text-transparent hover:text-primary">✓</span>
+                      </button>
+                      <p className="text-sm font-medium text-foreground leading-snug">
+                        {t.title}
+                      </p>
+                    </div>
+                    {t.priority === 'urgent' && (
+                      <span className="text-[10px] uppercase font-bold text-red-400 bg-red-400/10 px-2 py-0.5 rounded-md">Urgent</span>
+                    )}
+                  </li>
+                ))}
                 {selectedEvents.map((ev, idx) => (
                   <li
-                    key={ev.id}
+                    key={`event-${ev.id}`}
                     className="group relative overflow-hidden rounded-xl border border-border/50 bg-background/30 p-3 transition-all hover:bg-background/50"
                   >
                     {/* Left accent bar */}

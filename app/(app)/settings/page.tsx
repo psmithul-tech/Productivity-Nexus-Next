@@ -13,6 +13,9 @@ interface AppSettings {
   focusMode: boolean;
   hourlyUpdates: boolean;
   timezone: string;
+  discordWebhookUrl: string;
+  telegramBotToken: string;
+  telegramChatId: string;
 }
 
 const DEFAULTS: AppSettings = {
@@ -23,6 +26,9 @@ const DEFAULTS: AppSettings = {
   focusMode: false,
   hourlyUpdates: true,
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  discordWebhookUrl: "",
+  telegramBotToken: "",
+  telegramChatId: "",
 };
 
 // ─── Section ──────────────────────────────────────────────────────────────────
@@ -136,7 +142,10 @@ export default function SettingsPage() {
       }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: AppSettings = await res.json();
-      setSettings({ ...DEFAULTS, ...data });
+      const sanitizedData = Object.fromEntries(
+        Object.entries(data).map(([k, v]) => [k, v === null ? "" : v])
+      ) as Partial<AppSettings>;
+      setSettings({ ...DEFAULTS, ...sanitizedData });
     } catch (e) {
       setError((e as Error).message);
       setSettings(DEFAULTS);
@@ -383,6 +392,49 @@ export default function SettingsPage() {
                   {tz}
                 </button>
               ))}
+            </div>
+          </Section>
+
+          {/* ── Integrations ── */}
+          <Section
+            title="Integrations & Notifications"
+            description="Configure external services to receive scheduled pings"
+          >
+            <div className="space-y-4 max-w-md">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                  Discord Webhook URL
+                </label>
+                <input
+                  type="text"
+                  value={settings.discordWebhookUrl}
+                  onChange={(e) => update("discordWebhookUrl", e.target.value)}
+                  placeholder="https://discord.com/api/webhooks/..."
+                  className="w-full rounded-xl border border-border bg-background/50 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
+                />
+              </div>
+              <div className="pt-2 border-t border-border/50">
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                  Telegram Bot Token
+                </label>
+                <input
+                  type="text"
+                  value={settings.telegramBotToken}
+                  onChange={(e) => update("telegramBotToken", e.target.value)}
+                  placeholder="123456789:ABCdef..."
+                  className="w-full rounded-xl border border-border bg-background/50 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30 mb-3"
+                />
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                  Telegram Chat ID
+                </label>
+                <input
+                  type="text"
+                  value={settings.telegramChatId}
+                  onChange={(e) => update("telegramChatId", e.target.value)}
+                  placeholder="Your chat ID..."
+                  className="w-full rounded-xl border border-border bg-background/50 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
+                />
+              </div>
             </div>
           </Section>
 
