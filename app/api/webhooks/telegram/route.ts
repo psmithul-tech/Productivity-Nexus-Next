@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     }
 
     const userId = userSettings.userId;
-    token = userSettings.telegramBotToken;
+    token = userSettings.telegramBotToken?.trim();
 
     // Fetch active tasks to give Gemini context
     const allTasks = await db.select().from(tasksTable).where(eq(tasksTable.userId, userId));

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { ai } from "@/lib/gemini";
+import { db, settingsTable } from "@/lib/db";
+import { eq } from "drizzle-orm";
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -38,6 +40,20 @@ export async function POST(req: NextRequest) {
     } else if (type === "telegram") {
       if (!token) return NextResponse.json({ error: "Telegram Token missing." }, { status: 400 });
       
+      // Auto-save the token and chat ID so the webhook doesn't fail if they forget to save
+      if (token || chatId) {
+        const updateData: any = {};
+        if (token) updateData.telegramBotToken = token;
+        if (chatId) updateData.telegramChatId = chatId;
+        
+        const [existing] = await db.select().from(settingsTable).where(eq(settingsTable.userId, user.id));
+        if (existing) {
+          await db.update(settingsTable).set(updateData).where(eq(settingsTable.userId, user.id));
+        } else {
+          await db.insert(settingsTable).values({ userId: user.id, ...updateData });
+        }
+      }
+
       // 1. Set Webhook
       if (origin) {
         const webhookUrl = `${origin}/api/webhooks/telegram`;
