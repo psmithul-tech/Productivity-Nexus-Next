@@ -128,6 +128,7 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState<AppSettings>(DEFAULTS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState<"discord" | "telegram" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
 
@@ -189,6 +190,33 @@ export default function SettingsPage() {
       });
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleTest(type: "discord" | "telegram") {
+    setTesting(type);
+    try {
+      const payload: any = { type, origin: window.location.origin };
+      if (type === "discord") payload.url = settings.discordWebhookUrl;
+      if (type === "telegram") {
+        payload.token = settings.telegramBotToken;
+        payload.chatId = settings.telegramChatId;
+      }
+      
+      const res = await fetch("/api/settings/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to test integration");
+      
+      toast.success("Test Successful", { description: data.message });
+    } catch (e: any) {
+      toast.error("Test Failed", { description: e.message });
+    } finally {
+      setTesting(null);
     }
   }
 
@@ -401,10 +429,19 @@ export default function SettingsPage() {
             description="Configure external services to receive scheduled pings"
           >
             <div className="space-y-4 max-w-md">
-              <div>
-                <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                  Discord Webhook URL
-                </label>
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-medium text-muted-foreground">
+                    Discord Webhook URL
+                  </label>
+                  <button 
+                    onClick={() => handleTest("discord")}
+                    disabled={testing === "discord" || !settings.discordWebhookUrl}
+                    className="text-[10px] text-primary hover:underline disabled:opacity-50 disabled:no-underline"
+                  >
+                    {testing === "discord" ? "Testing..." : "Test Connection"}
+                  </button>
+                </div>
                 <input
                   type="text"
                   value={settings.discordWebhookUrl}
@@ -414,9 +451,18 @@ export default function SettingsPage() {
                 />
               </div>
               <div className="pt-2 border-t border-border/50">
-                <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                  Telegram Bot Token
-                </label>
+                <div className="flex items-center justify-between mb-1 mt-2">
+                  <label className="block text-xs font-medium text-muted-foreground">
+                    Telegram Bot Token
+                  </label>
+                  <button 
+                    onClick={() => handleTest("telegram")}
+                    disabled={testing === "telegram" || !settings.telegramBotToken || !settings.telegramChatId}
+                    className="text-[10px] text-primary hover:underline disabled:opacity-50 disabled:no-underline"
+                  >
+                    {testing === "telegram" ? "Registering & Testing..." : "Set Webhook & Test"}
+                  </button>
+                </div>
                 <input
                   type="text"
                   value={settings.telegramBotToken}
