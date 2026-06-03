@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { waitUntil } from "@vercel/functions";
 import { db, settingsTable, tasksTable, eventsTable, remindersTable } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { pushTaskToGoogleCalendar } from "@/lib/google-calendar";
@@ -6,53 +7,31 @@ import { GoogleGenAI } from "@google/genai";
 
 // Helper: send a message to Telegram
 async function sendTelegram(token: string, chatId: string, text: string) {
-  try {
-    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, text }),
-    });
-  } catch (e) {
-    console.error("Failed to send Telegram message:", e);
+  const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: chatId, text }),
+  });
+  if (!res.ok) {
+    console.error("[Telegram] sendMessage failed:", await res.text());
   }
 }
 
-// The real processing logic — runs after we've already returned 200 to Telegram
-async function processMessage(chatId: string, text: string) {
-  // 1. Find the user by their chat ID
-  const [userSettings] = await db
-    .select()
-    .from(settingsTable)
-    .where(eq(settingsTable.telegramChatId, chatId));
-
-  if (!userSettings) {
-    // Not linked yet — send them their chat ID
-    // We can't send here without a token... but if they're messaging the bot,
-    // the token must be set somewhere. Try to find any settings with this token.
-    return; // Will be handled by the unlinked check below
-  }
-
-  const token = userSettings.telegramBotToken?.trim();
-  if (!token) return;
-
-  const userId = userSettings.userId;
-
+// The real processing logic — runs via waitUntil so function stays alive
+async function processMessage(chatId: string, text: string, token: string, userId: string) {
   try {
-    // 2. Fetch all tasks for context
+    console.log(`[Telegram] Processing message from ${chatId}: "${text}"`);
+
+    // Fetch active tasks for context
     const allTasks = await db.select().from(tasksTable).where(eq(tasksTable.userId, userId));
     const activeTasks = allTasks.filter((t) => t.status === "active");
 
     const now = new Date();
     const dateStr = now.toLocaleDateString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
+      weekday: "long", year: "numeric", month: "long", day: "numeric",
     });
     const timeStr = now.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
+      hour: "2-digit", minute: "2-digit", hour12: true,
     });
 
     const taskList =
@@ -67,54 +46,52 @@ async function processMessage(chatId: string, text: string) {
             )
             .join("\n");
 
-    const systemPrompt = `You are Restia, the user's warm, witty and proactive AI Chief of Staff. You communicate via Telegram. Today is ${dateStr} and the time is ${timeStr}.
+    const systemPrompt = `You are Restia, the user's warm, witty and proactive AI Chief of Staff. You communicate via Telegram. Today is ${dateStr} at ${timeStr}.
 
 Current active tasks:
 ${taskList}
 
 INSTRUCTIONS:
-- Always reply conversationally and warmly with emojis. You have a cheerful, caring personality.
-- If the user asks for tasks, list them clearly from the context above.
-- If the user wants to ADD a task, extract it and respond with a JSON block (and only a JSON block after your message) in this exact format:
+- Always reply conversationally and warmly. You have a cheerful, caring personality with emojis.
+- If the user asks for their tasks/list, list them clearly from the task context above.
+- If the user wants to ADD a task, extract it, confirm warmly, and include AFTER your message:
   ACTION_CREATE_TASK:{"title":"...","priority":"medium","bucket":"today","dueDate":"ISO string or null"}
-- If the user wants to ADD MULTIPLE tasks, include multiple ACTION_CREATE_TASK lines.
-- If the user wants to CREATE AN EVENT, respond with:
+- If adding MULTIPLE tasks, include one ACTION_CREATE_TASK line per task.
+- If creating an event, include after your message:
   ACTION_CREATE_EVENT:{"title":"...","startTime":"ISO string","endTime":"ISO string"}
-- Otherwise, just have a friendly conversation! Help them with productivity, motivation, or planning.
-- Keep responses concise and Telegram-friendly (no long markdown, plain text + emojis).`;
+- Keep responses concise (1-4 sentences) and Telegram-friendly (plain text + emojis, no markdown).`;
 
-    // 3. Call Gemini (no function tools — plain text is far more reliable and fast)
+    console.log("[Telegram] Calling Gemini...");
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
     const response = await ai.models.generateContent({
       model: "gemini-3.1-flash-lite",
       contents: [{ role: "user", parts: [{ text }] }],
       config: {
         systemInstruction: systemPrompt,
-        maxOutputTokens: 800,
-        temperature: 0.8,
+        maxOutputTokens: 600,
+        temperature: 0.85,
       },
     });
+    console.log("[Telegram] Gemini responded.");
 
-    let replyText = response.text || "I'm here! How can I help you? 😊";
+    let replyText = response.text ?? "I'm here! How can I help? 😊";
 
-    // 4. Parse any structured actions from the AI response
-    const actionLines = replyText.match(/ACTION_CREATE_TASK:\{[^}]+\}/g) || [];
-    const eventLines = replyText.match(/ACTION_CREATE_EVENT:\{[^}]+\}/g) || [];
+    // Parse ACTION lines from response
+    const taskActions = replyText.match(/ACTION_CREATE_TASK:\{[^\n]+\}/g) ?? [];
+    const eventActions = replyText.match(/ACTION_CREATE_EVENT:\{[^\n]+\}/g) ?? [];
 
-    // Remove action lines from the reply text shown to the user
+    // Strip action lines from visible reply
     replyText = replyText
-      .replace(/ACTION_CREATE_TASK:\{[^}]+\}/g, "")
-      .replace(/ACTION_CREATE_EVENT:\{[^}]+\}/g, "")
+      .replace(/ACTION_CREATE_TASK:\{[^\n]+\}/g, "")
+      .replace(/ACTION_CREATE_EVENT:\{[^\n]+\}/g, "")
       .trim();
 
     const confirmations: string[] = [];
 
-    // Execute task creations
-    for (const line of actionLines) {
+    for (const line of taskActions) {
       try {
-        const jsonStr = line.replace("ACTION_CREATE_TASK:", "");
-        const data = JSON.parse(jsonStr);
-        const dueDate = data.dueDate ? new Date(data.dueDate) : null;
+        const data = JSON.parse(line.replace("ACTION_CREATE_TASK:", ""));
+        const dueDate = data.dueDate && data.dueDate !== "null" ? new Date(data.dueDate) : null;
 
         const [newTask] = await db
           .insert(tasksTable)
@@ -127,32 +104,27 @@ INSTRUCTIONS:
           })
           .returning({ id: tasksTable.id });
 
-        if (dueDate) {
+        if (dueDate && newTask) {
           const reminderDate = new Date(dueDate);
           reminderDate.setHours(9, 0, 0, 0);
           if (reminderDate > new Date()) {
             await db.insert(remindersTable).values({
-              userId,
-              taskId: newTask.id,
-              channel: "telegram",
-              scheduledAt: reminderDate,
+              userId, taskId: newTask.id, channel: "telegram", scheduledAt: reminderDate,
             });
           }
           pushTaskToGoogleCalendar(userId, data.title, dueDate).catch(console.error);
         }
 
         confirmations.push(`✅ Added: ${data.title}`);
+        console.log("[Telegram] Created task:", data.title);
       } catch (e) {
-        console.error("Failed to parse task action:", e);
+        console.error("[Telegram] Failed to parse task action:", e);
       }
     }
 
-    // Execute event creations
-    for (const line of eventLines) {
+    for (const line of eventActions) {
       try {
-        const jsonStr = line.replace("ACTION_CREATE_EVENT:", "");
-        const data = JSON.parse(jsonStr);
-
+        const data = JSON.parse(line.replace("ACTION_CREATE_EVENT:", ""));
         await db.insert(eventsTable).values({
           userId,
           title: data.title,
@@ -160,10 +132,9 @@ INSTRUCTIONS:
           endTime: new Date(data.endTime),
           source: "telegram",
         });
-
         confirmations.push(`📅 Scheduled: ${data.title}`);
       } catch (e) {
-        console.error("Failed to parse event action:", e);
+        console.error("[Telegram] Failed to parse event action:", e);
       }
     }
 
@@ -174,10 +145,11 @@ INSTRUCTIONS:
     if (!replyText) replyText = "Done! 😊";
 
     await sendTelegram(token, chatId, replyText);
+    console.log("[Telegram] Reply sent to", chatId);
   } catch (err: any) {
-    console.error("Telegram process error:", err);
+    console.error("[Telegram] processMessage error:", err.message, err.stack);
     try {
-      await sendTelegram(token, chatId, `Sorry, I hit an error: ${err.message}. Try again! 😅`);
+      await sendTelegram(token, chatId, `Sorry, something went wrong on my end 😓 — ${err.message}`);
     } catch (_) {}
   }
 }
@@ -185,6 +157,7 @@ INSTRUCTIONS:
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    console.log("[Telegram] Webhook received:", JSON.stringify(body).slice(0, 200));
 
     // Must be a text message
     if (!body.message?.text || !body.message?.chat) {
@@ -194,42 +167,41 @@ export async function POST(req: NextRequest) {
     const chatId = String(body.message.chat.id);
     const text = body.message.text as string;
 
-    // Check if this chat is linked
+    // Look up user by chat ID
     const [userSettings] = await db
       .select()
       .from(settingsTable)
       .where(eq(settingsTable.telegramChatId, chatId));
 
     if (!userSettings) {
-      // Find token by any means — since they messaged the bot, the bot token is fixed.
-      // Send them their chat ID so they can link it.
-      // We need a token to reply. Without it, we can't. 
-      // This is a setup issue — tell them to link in settings.
-      console.log(`Unlinked Telegram chat: ${chatId}`);
-      // Try to find any settings row to get the bot token
+      // Not linked — try to find the token from any settings row to reply
       const allSettings = await db.select().from(settingsTable);
       const tokenHolder = allSettings.find((s) => s.telegramBotToken);
-      if (tokenHolder?.telegramBotToken) {
+      const token = tokenHolder?.telegramBotToken?.trim();
+      if (token) {
         await sendTelegram(
-          tokenHolder.telegramBotToken.trim(),
+          token,
           chatId,
-          `👋 Hi! I'm Restia! I don't recognize this chat yet.\n\nYour Telegram Chat ID is:\n\`${chatId}\`\n\nPlease go to your Productivity Nexus Settings page and save this as your Chat ID, then click "Set Webhook & Test" again!`
+          `👋 Hi! I'm Restia, but I don't recognize this chat yet.\n\nYour Telegram Chat ID is:\n${chatId}\n\nGo to Settings in your Productivity Nexus app, paste this ID in the "Telegram Chat ID" field and save!`
         );
       }
       return NextResponse.json({ ok: true });
     }
 
-    // ✅ CRITICAL: Use waitUntil to process in background so Telegram gets 200 immediately
-    // This prevents Telegram from retrying because the request timed out.
-    const runtime = (req as any)[Symbol.for("edge-runtime")];
+    const token = userSettings.telegramBotToken?.trim();
+    const userId = userSettings.userId;
 
-    // Process in background using unblocked async execution
-    processMessage(chatId, text).catch(console.error);
+    if (!token) {
+      console.error("[Telegram] No bot token found for user", userId);
+      return NextResponse.json({ ok: true });
+    }
 
-    // Return 200 immediately to Telegram
+    // ✅ Use waitUntil — keeps the function alive after sending 200 OK to Telegram
+    waitUntil(processMessage(chatId, text, token, userId));
+
     return NextResponse.json({ ok: true });
-  } catch (err) {
-    console.error("Telegram webhook outer error:", err);
+  } catch (err: any) {
+    console.error("[Telegram] Outer webhook error:", err.message);
     return NextResponse.json({ ok: true });
   }
 }
