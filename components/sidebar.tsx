@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 
 const navItems = [
-  { href: "/", icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/tasks", icon: CheckSquare, label: "Tasks" },
   { href: "/calendar", icon: Calendar, label: "Calendar" },
   { href: "/reminders", icon: Bell, label: "Reminders" },
@@ -58,8 +58,8 @@ export function Sidebar() {
             <Zap className="h-4 w-4 text-white" />
           </div>
           <div>
-            <p className="font-bold text-sm leading-none">Productivity</p>
-            <p className="text-[11px] text-muted-foreground">Nexus</p>
+            <p className="font-bold text-sm leading-none">Restia</p>
+            <p className="text-[11px] text-muted-foreground">Chief of Staff</p>
           </div>
         </div>
 

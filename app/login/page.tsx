@@ -39,7 +39,7 @@ export default function LoginPage() {
         setLoading(false);
       } else {
         toast.success("Signed in successfully!");
-        router.push("/");
+        router.push("/dashboard");
         router.refresh();
       }
     } catch (err: any) {
