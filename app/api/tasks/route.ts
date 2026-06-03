@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, tasksTable } from "@/lib/db";
 import { eq, and, lte, sql } from "drizzle-orm";
 import { createClient } from "@/utils/supabase/server";
+import { pushTaskToGoogleCalendar } from "@/lib/google-calendar";
 
 function serializeTask(t: typeof tasksTable.$inferSelect) {
   return { ...t, dueDate: t.dueDate?.toISOString() ?? null, completedAt: t.completedAt?.toISOString() ?? null, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString() };
@@ -33,5 +34,11 @@ export async function POST(req: NextRequest) {
     ...body,
     dueDate: body.dueDate ? new Date(body.dueDate) : undefined,
   }).returning();
+  
+  if (task.dueDate) {
+    // Non-blocking sync to Google Calendar
+    pushTaskToGoogleCalendar(user.id, task.title, task.dueDate).catch(console.error);
+  }
+  
   return NextResponse.json(serializeTask(task), { status: 201 });
 }

@@ -10,8 +10,8 @@ interface AppSettings {
   workdayEnd: string;
   quietHoursStart: string;
   quietHoursEnd: string;
-  focusMode: boolean;
-  hourlyUpdates: boolean;
+  focusModeEnabled: boolean;
+  hourlyUpdatesEnabled: boolean;
   timezone: string;
   discordWebhookUrl: string;
   telegramBotToken: string;
@@ -23,8 +23,8 @@ const DEFAULTS: AppSettings = {
   workdayEnd: "18:00",
   quietHoursStart: "22:00",
   quietHoursEnd: "07:00",
-  focusMode: false,
-  hourlyUpdates: true,
+  focusModeEnabled: false,
+  hourlyUpdatesEnabled: true,
   timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   discordWebhookUrl: "",
   telegramBotToken: "",
@@ -364,14 +364,14 @@ export default function SettingsPage() {
               <Toggle
                 label="Focus Mode"
                 description="Block distracting notifications during focus sessions"
-                checked={settings.focusMode}
-                onChange={(v) => update("focusMode", v)}
+                checked={settings.focusModeEnabled}
+                onChange={(v) => update("focusModeEnabled", v)}
               />
               <Toggle
                 label="Hourly Updates"
                 description="Receive a brief digest of your schedule every hour"
-                checked={settings.hourlyUpdates}
-                onChange={(v) => update("hourlyUpdates", v)}
+                checked={settings.hourlyUpdatesEnabled}
+                onChange={(v) => update("hourlyUpdatesEnabled", v)}
               />
             </div>
           </Section>
@@ -494,8 +494,8 @@ export default function SettingsPage() {
                 { label: "Workday", value: `${settings.workdayStart} – ${settings.workdayEnd}` },
                 { label: "Quiet Hours", value: `${settings.quietHoursStart} – ${settings.quietHoursEnd}` },
                 { label: "Timezone", value: settings.timezone },
-                { label: "Focus Mode", value: settings.focusMode ? "On ✓" : "Off" },
-                { label: "Hourly Updates", value: settings.hourlyUpdates ? "On ✓" : "Off" },
+                { label: "Focus Mode", value: settings.focusModeEnabled ? "On ✓" : "Off" },
+                { label: "Hourly Updates", value: settings.hourlyUpdatesEnabled ? "On ✓" : "Off" },
               ].map(({ label, value }) => (
                 <div key={label}>
                   <p className="text-xs text-muted-foreground">{label}</p>

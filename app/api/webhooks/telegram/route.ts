@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, settingsTable, tasksTable, eventsTable, remindersTable } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { ai, buildSystemPrompt, tools } from "@/lib/gemini";
+import { pushTaskToGoogleCalendar } from "@/lib/google-calendar";
 
 export async function POST(req: NextRequest) {
   try {
@@ -67,6 +68,7 @@ export async function POST(req: NextRequest) {
                 userId, taskId: newTask.id, channel: "telegram", scheduledAt: reminderDate,
               });
             }
+            pushTaskToGoogleCalendar(userId, args.title, dueDate).catch(console.error);
           }
           actionsTaken.push(`Created task: ${args.title}`);
           
@@ -90,6 +92,7 @@ export async function POST(req: NextRequest) {
                   userId, taskId: newTask.id, channel: "telegram", scheduledAt: reminderDate,
                 });
               }
+              pushTaskToGoogleCalendar(userId, t.title, dueDate).catch(console.error);
             }
           }
           actionsTaken.push(`Created ${batchArgs.length} tasks`);

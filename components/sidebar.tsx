@@ -54,9 +54,7 @@ export function Sidebar() {
       <aside className={`fixed top-0 left-0 h-full z-40 w-[240px] flex flex-col border-r border-border bg-card/90 backdrop-blur-xl transition-transform duration-300 ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}>
         {/* Logo */}
         <div className="flex items-center gap-2.5 px-5 py-5 border-b border-border">
-          <div className="h-8 w-8 rounded-lg gradient-primary flex items-center justify-center shrink-0">
-            <Zap className="h-4 w-4 text-white" />
-          </div>
+          <img src="/logo.png" alt="Logo" className="h-8 w-8 shrink-0 object-contain rounded-lg shadow-sm" />
           <div>
             <p className="font-bold text-sm leading-none">Restia</p>
             <p className="text-[11px] text-muted-foreground">Chief of Staff</p>

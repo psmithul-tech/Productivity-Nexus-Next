@@ -272,6 +272,13 @@ export default function CalendarPage() {
 
   useEffect(() => {
     fetchEvents(year, month);
+    
+    // Background polling every 15 seconds
+    const intervalId = setInterval(() => {
+      fetchEvents(year, month);
+    }, 15000);
+    
+    return () => clearInterval(intervalId);
   }, [year, month]);
 
   function prevMonth() {

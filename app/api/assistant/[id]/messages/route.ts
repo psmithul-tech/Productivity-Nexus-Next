@@ -3,6 +3,7 @@ import { db, conversations, messages, tasksTable, eventsTable, remindersTable } 
 import { eq, and } from "drizzle-orm";
 import { createClient } from "@/utils/supabase/server";
 import { ai, buildSystemPrompt, tools } from "@/lib/gemini";
+import { pushTaskToGoogleCalendar } from "@/lib/google-calendar";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
@@ -83,6 +84,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
                   scheduledAt: reminderDate,
                 });
               }
+              pushTaskToGoogleCalendar(user.id, args.title, dueDate).catch(console.error);
             }
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ task: args })}\n\n`));
             
@@ -109,6 +111,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
                     scheduledAt: reminderDate,
                   });
                 }
+                pushTaskToGoogleCalendar(user.id, t.title, dueDate).catch(console.error);
               }
             }
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ tasksBatch: args })}\n\n`));

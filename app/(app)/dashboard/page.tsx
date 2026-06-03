@@ -46,11 +46,17 @@ export default function DashboardPage() {
       dateStr: d.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
     });
 
-    Promise.all([
-      fetch("/api/tasks/summary").then(r => r.json()),
-      fetch("/api/events/today").then(r => r.json()),
-      fetch("/api/tasks/today").then(r => r.json()),
-    ]).then(([s, e, t]) => { setSummary(s); setTodayEvents(e); setTodayTasks(t); setLoading(false); });
+    const fetchData = () => {
+      Promise.all([
+        fetch("/api/tasks/summary").then(r => r.json()),
+        fetch("/api/events/today").then(r => r.json()),
+        fetch("/api/tasks/today").then(r => r.json()),
+      ]).then(([s, e, t]) => { setSummary(s); setTodayEvents(e); setTodayTasks(t); setLoading(false); });
+    };
+
+    fetchData();
+    const intervalId = setInterval(fetchData, 15000);
+    return () => clearInterval(intervalId);
   }, []);
 
   const totalToday = (summary?.byBucket.today ?? 0) + (summary?.completed ?? 0); // Approx total tasks today
