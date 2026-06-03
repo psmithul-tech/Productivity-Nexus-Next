@@ -17,6 +17,12 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await req.json();
+  
+  // Sanitize body to remove restricted fields
+  delete body.id;
+  delete body.userId;
+  delete body.createdAt;
+  
   const [existing] = await db.select().from(settingsTable).where(eq(settingsTable.userId, user.id));
   if (existing) {
     const [updated] = await db.update(settingsTable).set(body).where(eq(settingsTable.userId, user.id)).returning();
