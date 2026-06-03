@@ -1,0 +1,429 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface AppSettings {
+  workdayStart: string;   // "HH:MM"
+  workdayEnd: string;
+  quietHoursStart: string;
+  quietHoursEnd: string;
+  focusMode: boolean;
+  hourlyUpdates: boolean;
+  timezone: string;
+}
+
+const DEFAULTS: AppSettings = {
+  workdayStart: "09:00",
+  workdayEnd: "18:00",
+  quietHoursStart: "22:00",
+  quietHoursEnd: "07:00",
+  focusMode: false,
+  hourlyUpdates: true,
+  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+};
+
+// ─── Section ──────────────────────────────────────────────────────────────────
+
+function Section({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-2xl border border-border bg-card/50 p-5 backdrop-blur-xl sm:p-6">
+      <div className="mb-4 border-b border-border pb-4">
+        <h2 className="text-base font-semibold text-foreground">{title}</h2>
+        {description && (
+          <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+        )}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function TimeField({
+  label,
+  value,
+  onChange,
+  hint,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  hint?: string;
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-xs font-medium text-muted-foreground">
+        {label}
+      </label>
+      <input
+        type="time"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="rounded-xl border border-border bg-background/50 px-4 py-2.5 text-sm text-foreground focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
+      />
+      {hint && <p className="mt-1 text-[10px] text-muted-foreground/60">{hint}</p>}
+    </div>
+  );
+}
+
+function Toggle({
+  label,
+  description,
+  checked,
+  onChange,
+}: {
+  label: string;
+  description?: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-border/50 bg-background/20 px-4 py-3.5 transition-colors hover:bg-background/30">
+      <div>
+        <p className="text-sm font-medium text-foreground">{label}</p>
+        {description && (
+          <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+        )}
+      </div>
+      {/* Toggle switch */}
+      <div
+        className={`relative flex-shrink-0 h-6 w-11 rounded-full border transition-all duration-200 ${
+          checked
+            ? "border-primary/40 bg-primary/30"
+            : "border-border bg-background/50"
+        }`}
+        onClick={() => onChange(!checked)}
+      >
+        <div
+          className={`absolute top-0.5 h-5 w-5 rounded-full border shadow transition-all duration-200 ${
+            checked
+              ? "left-[22px] border-primary bg-primary"
+              : "left-0.5 border-border bg-muted-foreground/40"
+          }`}
+        />
+      </div>
+    </label>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+export default function SettingsPage() {
+  const [settings, setSettings] = useState<AppSettings>(DEFAULTS);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+
+  async function fetchSettings() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/settings");
+      if (res.status === 404) {
+        setSettings(DEFAULTS);
+        return;
+      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data: AppSettings = await res.json();
+      setSettings({ ...DEFAULTS, ...data });
+    } catch (e) {
+      setError((e as Error).message);
+      setSettings(DEFAULTS);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  function update<K extends keyof AppSettings>(key: K, value: AppSettings[K]) {
+    setSettings(prev => ({ ...prev, [key]: value }));
+    setIsDirty(true);
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settings),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(err.error ?? `HTTP ${res.status}`);
+      }
+
+      setIsDirty(false);
+      toast.success("Settings saved successfully", {
+        description: "Your preferences have been updated.",
+        duration: 3000,
+      });
+    } catch (e) {
+      toast.error("Failed to save settings", {
+        description: (e as Error).message,
+        duration: 5000,
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function handleReset() {
+    setSettings(DEFAULTS);
+    setIsDirty(true);
+    toast.info("Settings reset to defaults", { duration: 2000 });
+  }
+
+  return (
+    <div className="min-h-screen bg-background px-4 py-8 sm:px-8">
+      {/* ── Header ── */}
+      <div className="mb-8 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Settings</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Customize your Productivity Nexus experience
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleReset}
+            className="rounded-xl border border-border bg-transparent px-4 py-2 text-sm text-muted-foreground hover:bg-white/5 hover:text-foreground transition-colors"
+          >
+            Reset
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving || !isDirty}
+            className={`relative flex items-center gap-2 rounded-xl border px-5 py-2 text-sm font-medium transition-all ${
+              isDirty
+                ? "border-primary/40 bg-primary/15 text-primary hover:bg-primary/25"
+                : "border-border bg-transparent text-muted-foreground opacity-60 cursor-not-allowed"
+            } disabled:opacity-50`}
+          >
+            {saving ? (
+              <>
+                <span className="h-3.5 w-3.5 animate-spin rounded-full border border-primary border-t-transparent" />
+                Saving…
+              </>
+            ) : (
+              <>
+                {isDirty && (
+                  <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-primary" />
+                )}
+                Save Settings
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* ── Error ── */}
+      {error && (
+        <div className="mb-6 flex items-center justify-between rounded-2xl border border-amber-500/20 bg-amber-500/10 px-5 py-4 text-amber-400">
+          <span className="text-sm">⚠️ Could not load settings — showing defaults. {error}</span>
+          <button
+            onClick={fetchSettings}
+            className="rounded-lg border border-amber-500/20 px-3 py-1 text-xs hover:bg-amber-500/20"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* ── Loading ── */}
+      {loading ? (
+        <div className="space-y-6">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="rounded-2xl border border-border bg-card/50 p-6 animate-pulse">
+              <div className="mb-4 border-b border-border pb-4">
+                <div className="h-4 w-32 rounded bg-white/10" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                {[...Array(2)].map((_, j) => (
+                  <div key={j} className="space-y-1.5">
+                    <div className="h-3 w-20 rounded bg-white/10" />
+                    <div className="h-9 w-32 rounded-xl bg-white/10" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {/* ── Workday Hours ── */}
+          <Section
+            title="Workday Hours"
+            description="Define your working hours for scheduling and focus blocks"
+          >
+            <div className="flex flex-wrap gap-6">
+              <TimeField
+                label="Start Time"
+                value={settings.workdayStart}
+                onChange={(v) => update("workdayStart", v)}
+                hint="When your workday begins"
+              />
+              <TimeField
+                label="End Time"
+                value={settings.workdayEnd}
+                onChange={(v) => update("workdayEnd", v)}
+                hint="When your workday ends"
+              />
+            </div>
+          </Section>
+
+          {/* ── Quiet Hours ── */}
+          <Section
+            title="Quiet Hours"
+            description="Suppress notifications during these hours"
+          >
+            <div className="flex flex-wrap gap-6">
+              <TimeField
+                label="Quiet Hours Start"
+                value={settings.quietHoursStart}
+                onChange={(v) => update("quietHoursStart", v)}
+                hint="Notifications pause at this time"
+              />
+              <TimeField
+                label="Quiet Hours End"
+                value={settings.quietHoursEnd}
+                onChange={(v) => update("quietHoursEnd", v)}
+                hint="Notifications resume at this time"
+              />
+            </div>
+
+            {/* Visual preview */}
+            <div className="mt-4 rounded-xl border border-border/50 bg-background/20 px-4 py-3">
+              <p className="text-xs text-muted-foreground">
+                🔕 Notifications will be silenced from{" "}
+                <span className="font-medium text-foreground">{settings.quietHoursStart}</span> to{" "}
+                <span className="font-medium text-foreground">{settings.quietHoursEnd}</span>
+              </p>
+            </div>
+          </Section>
+
+          {/* ── Preferences ── */}
+          <Section
+            title="Preferences"
+            description="Toggle features and notification behaviors"
+          >
+            <div className="space-y-3">
+              <Toggle
+                label="Focus Mode"
+                description="Block distracting notifications during focus sessions"
+                checked={settings.focusMode}
+                onChange={(v) => update("focusMode", v)}
+              />
+              <Toggle
+                label="Hourly Updates"
+                description="Receive a brief digest of your schedule every hour"
+                checked={settings.hourlyUpdates}
+                onChange={(v) => update("hourlyUpdates", v)}
+              />
+            </div>
+          </Section>
+
+          {/* ── Timezone ── */}
+          <Section
+            title="Timezone"
+            description="Affects how events and tasks are displayed and scheduled"
+          >
+            <div className="max-w-sm">
+              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                Timezone
+              </label>
+              <input
+                type="text"
+                value={settings.timezone}
+                onChange={(e) => update("timezone", e.target.value)}
+                placeholder="e.g. America/New_York"
+                className="w-full rounded-xl border border-border bg-background/50 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
+              />
+              <p className="mt-1.5 text-[10px] text-muted-foreground/60">
+                Detected: {Intl.DateTimeFormat().resolvedOptions().timeZone}
+              </p>
+            </div>
+
+            {/* Common timezones */}
+            <div className="mt-3 flex flex-wrap gap-2">
+              {[
+                "UTC",
+                "America/New_York",
+                "America/Los_Angeles",
+                "Europe/London",
+                "Europe/Berlin",
+                "Asia/Tokyo",
+                "Asia/Kolkata",
+              ].map((tz) => (
+                <button
+                  key={tz}
+                  onClick={() => update("timezone", tz)}
+                  className={`rounded-lg border px-2.5 py-1 text-xs transition-colors ${
+                    settings.timezone === tz
+                      ? "border-primary/30 bg-primary/15 text-primary"
+                      : "border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-white/5"
+                  }`}
+                >
+                  {tz}
+                </button>
+              ))}
+            </div>
+          </Section>
+
+          {/* ── Summary card ── */}
+          <div className="rounded-2xl border border-border/30 bg-card/30 p-5 backdrop-blur">
+            <h3 className="mb-3 text-xs font-medium uppercase tracking-widest text-muted-foreground">
+              Current Configuration
+            </h3>
+            <div className="grid grid-cols-2 gap-x-8 gap-y-2.5 text-sm sm:grid-cols-3">
+              {[
+                { label: "Workday", value: `${settings.workdayStart} – ${settings.workdayEnd}` },
+                { label: "Quiet Hours", value: `${settings.quietHoursStart} – ${settings.quietHoursEnd}` },
+                { label: "Timezone", value: settings.timezone },
+                { label: "Focus Mode", value: settings.focusMode ? "On ✓" : "Off" },
+                { label: "Hourly Updates", value: settings.hourlyUpdates ? "On ✓" : "Off" },
+              ].map(({ label, value }) => (
+                <div key={label}>
+                  <p className="text-xs text-muted-foreground">{label}</p>
+                  <p className="mt-0.5 text-sm font-medium text-foreground">{value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Bottom save bar (sticky) ── */}
+      {isDirty && !loading && (
+        <div className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2">
+          <div className="flex items-center gap-3 rounded-2xl border border-border bg-card/90 px-5 py-3 shadow-2xl backdrop-blur-xl">
+            <span className="text-sm text-muted-foreground">You have unsaved changes</span>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="rounded-xl border border-primary/40 bg-primary/20 px-4 py-1.5 text-sm font-medium text-primary hover:bg-primary/30 transition-colors disabled:opacity-50"
+            >
+              {saving ? "Saving…" : "Save now"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
