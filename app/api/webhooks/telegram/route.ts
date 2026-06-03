@@ -5,6 +5,9 @@ import { ai, buildSystemPrompt, tools } from "@/lib/gemini";
 import { pushTaskToGoogleCalendar } from "@/lib/google-calendar";
 
 export async function POST(req: NextRequest) {
+  let chatId: string | null | undefined;
+  let token: string | null | undefined;
+
   try {
     const body = await req.json();
     
@@ -13,8 +16,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true }); // Ignore non-text messages
     }
     
-    const chatId = body.message.chat.id.toString();
+    chatId = body.message.chat.id.toString();
     const text = body.message.text;
+
+    if (!chatId) {
+      return NextResponse.json({ ok: true });
+    }
 
     // Look up the user by their Telegram Chat ID
     const [userSettings] = await db.select().from(settingsTable).where(eq(settingsTable.telegramChatId, chatId));
@@ -29,7 +36,17 @@ export async function POST(req: NextRequest) {
     }
 
     const userId = userSettings.userId;
-    const systemPrompt = buildSystemPrompt() + "\nCRITICAL RULE: You MUST always output a cheerful, conversational text response to the user, EVEN IF you are calling a function/tool! Never return only a function call without text.";
+    token = userSettings.telegramBotToken;
+
+    // Fetch active tasks to give Gemini context
+    const allTasks = await db.select().from(tasksTable).where(eq(tasksTable.userId, userId));
+    const activeTasks = allTasks.filter(t => t.status === "active");
+    const tasksContext = `
+Here are the user's current active tasks:
+${activeTasks.length === 0 ? "No active tasks." : activeTasks.map(t => `- ${t.title} (Priority: ${t.priority}, Bucket: ${t.bucket}${t.dueDate ? `, Due: ${new Date(t.dueDate).toLocaleDateString()}` : ''})`).join("\n")}
+`;
+
+    const systemPrompt = buildSystemPrompt() + tasksContext + "\nCRITICAL RULE: You MUST always output a cheerful, conversational text response to the user, EVEN IF you are calling a function/tool! Never return only a function call without text. If they ask for their tasks, read them from the context provided above.";
 
     // Call Gemini to parse and respond
     const response = await ai.models.generateContent({
@@ -128,29 +145,34 @@ export async function POST(req: NextRequest) {
       finalText = "I processed that for you.";
     }
 
-    // Reply to Telegram
-    return NextResponse.json({
-      method: "sendMessage",
-      chat_id: chatId,
-      text: finalText
-    });
+    // Reply to Telegram via direct fetch (more reliable than webhook response)
+    if (token) {
+      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: finalText
+        })
+      });
+    }
+
+    return NextResponse.json({ ok: true });
 
   } catch (error: any) {
     console.error("Telegram webhook error:", error);
     
-    // We try to send an error message back to the user if we know their Chat ID
-    try {
-      const body = await req.clone().json().catch(() => ({}));
-      const chatId = body?.message?.chat?.id?.toString();
-      if (chatId) {
-        return NextResponse.json({
-          method: "sendMessage",
+    if (chatId && token) {
+      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           chat_id: chatId,
           text: `Oops! I encountered an error: ${error.message}`
-        });
-      }
-    } catch(e) {}
+        })
+      }).catch(() => {});
+    }
     
-    return NextResponse.json({ ok: true }); // Still return 200 so Telegram doesn't retry infinitely
+    return NextResponse.json({ ok: true });
   }
 }
