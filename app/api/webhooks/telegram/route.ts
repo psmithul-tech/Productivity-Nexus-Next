@@ -20,11 +20,11 @@ export async function POST(req: NextRequest) {
     const [userSettings] = await db.select().from(settingsTable).where(eq(settingsTable.telegramChatId, chatId));
     
     if (!userSettings) {
-      // Return a message telling them to link their account
+      // Return a message telling them their Chat ID so they can link it easily
       return NextResponse.json({
         method: "sendMessage",
         chat_id: chatId,
-        text: "I don't recognize this chat. Please add this Chat ID to your Productivity Nexus settings."
+        text: `I don't recognize this chat! Your Telegram Chat ID is:\n\n\`${chatId}\`\n\nPlease copy this number and save it in your Productivity Nexus Settings page to link your account.`
       });
     }
 
