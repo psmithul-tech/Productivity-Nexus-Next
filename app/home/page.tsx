@@ -49,6 +49,24 @@ export default function HomePage() {
           </div>
         </div>
 
+        {/* Google OAuth Data Transparency Section */}
+        <div className="w-full max-w-4xl mx-auto mb-16 p-8 rounded-2xl bg-white/5 border border-indigo-500/30 text-left">
+          <h2 className="text-2xl font-bold mb-4 flex items-center gap-3">
+            <span className="text-indigo-400">Data Transparency & Privacy</span>
+          </h2>
+          <p className="text-muted-foreground mb-4">
+            Restia prioritizes your privacy. We explicitly request access to your Google Calendar to provide core functionality:
+          </p>
+          <ul className="list-disc pl-6 text-sm text-muted-foreground space-y-2 mb-6">
+            <li>Syncing your upcoming events directly into your Restia dashboard.</li>
+            <li>Allowing the built-in AI Assistant to view your schedule and help you plan your week.</li>
+            <li>Triggering smart reminders based on your calendar events.</li>
+          </ul>
+          <p className="text-sm text-muted-foreground">
+            We only request the minimum permissions required to make these features work. Your calendar data is securely stored, never sold to third parties, and is only used to enhance your personal productivity experience.
+          </p>
+        </div>
+
         <Link href="/login" className="px-8 py-4 rounded-full bg-white text-black font-bold text-lg hover:scale-105 transition-transform">
           Get Started for Free
         </Link>
