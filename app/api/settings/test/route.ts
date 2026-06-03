@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
       let textMsg = "👋 Hello, I'm Restia! Your Discord integration is working perfectly.";
       try {
         const prompt = `You are Restia, an AI Chief of Staff. Write a very brief (1-2 sentences), cheerful, and human-like welcome message to test a Discord integration. Introduce yourself. Use emojis.`;
-        const aiRes = await ai.models.generateContent({ model: "gemini-2.5-flash", contents: prompt });
+        const aiRes = await ai.models.generateContent({ model: "gemini-2.5-flash-lite-preview-06-17", contents: prompt });
         if (aiRes.text) textMsg = aiRes.text;
       } catch (err) {
         console.error("AI Discord Test Error:", err);
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
       let textMsg = "👋 Hello, I'm Restia! Your Telegram integration is working perfectly. You can now reply to me to add tasks or check your schedule!";
       try {
         const prompt = `You are Restia, an AI Chief of Staff. Write a very brief (1-2 sentences), cheerful, and human-like welcome message to test a Telegram integration. Introduce yourself. Tell them they can reply to add tasks. Use emojis.`;
-        const aiRes = await ai.models.generateContent({ model: "gemini-2.5-flash", contents: prompt });
+        const aiRes = await ai.models.generateContent({ model: "gemini-2.5-flash-lite-preview-06-17", contents: prompt });
         if (aiRes.text) textMsg = aiRes.text;
       } catch (err) {
         console.error("AI Telegram Test Error:", err);
