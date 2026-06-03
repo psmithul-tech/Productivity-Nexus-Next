@@ -74,7 +74,7 @@ Format the message nicely with a greeting. If there are tasks ending soon, stron
       let message = `🕒 *Hourly Update:*\n\nYou have ${allEvents.length} events and ${activeTasks.length} tasks scheduled for today.`;
       try {
         const aiRes = await ai.models.generateContent({
-          model: "gemini-2.5-flash-lite-preview-06-17",
+          model: "gemini-3.1-flash-lite",
           contents: prompt,
         });
         if (aiRes.text) message = aiRes.text;

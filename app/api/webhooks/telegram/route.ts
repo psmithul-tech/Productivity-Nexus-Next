@@ -86,7 +86,7 @@ INSTRUCTIONS:
     // 3. Call Gemini (no function tools — plain text is far more reliable and fast)
     const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash-lite-preview-06-17",
+      model: "gemini-3.1-flash-lite",
       contents: [{ role: "user", parts: [{ text }] }],
       config: {
         systemInstruction: systemPrompt,
