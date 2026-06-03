@@ -14,7 +14,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { content } = await req.json();
   if (!content) return new Response(JSON.stringify({ error: "content required" }), { status: 400 });
 
-  const [conv] = await db.select().from(conversations).where(eq(conversations.id, convId));
+  const [conv] = await db.select().from(conversations).where(and(eq(conversations.id, convId), eq(conversations.userId, user.id)));
   if (!conv) return new Response(JSON.stringify({ error: "Not found" }), { status: 404 });
 
   await db.insert(messages).values({ conversationId: convId, role: "user", content });

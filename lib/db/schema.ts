@@ -100,6 +100,8 @@ export const settingsTable = pgTable("settings", {
   workdayStart: text("workday_start").notNull().default("09:00"),
   workdayEnd: text("workday_end").notNull().default("18:00"),
   focusModeEnabled: boolean("focus_mode_enabled").notNull().default(false),
+  googleAccessToken: text("google_access_token"),
+  googleRefreshToken: text("google_refresh_token"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 export type Settings = typeof settingsTable.$inferSelect;

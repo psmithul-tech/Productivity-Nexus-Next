@@ -12,7 +12,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
-  const [event] = await db.select().from(eventsTable).where(eq(eventsTable.id, parseInt(id)));
+  const [event] = await db.select().from(eventsTable).where(and(eq(eventsTable.id, parseInt(id)), eq(eventsTable.userId, user.id)));
   if (!event) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(serializeEvent(event));
 }
@@ -26,7 +26,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const updates: Record<string, unknown> = { ...body };
   if (body.startTime) updates.startTime = new Date(body.startTime);
   if (body.endTime) updates.endTime = new Date(body.endTime);
-  const [event] = await db.update(eventsTable).set(updates).where(eq(eventsTable.id, parseInt(id))).returning();
+  const [event] = await db.update(eventsTable).set(updates).where(and(eq(eventsTable.id, parseInt(id)), eq(eventsTable.userId, user.id))).returning();
   if (!event) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(serializeEvent(event));
 }
@@ -36,6 +36,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
-  await db.delete(eventsTable).where(eq(eventsTable.id, parseInt(id)));
+  await db.delete(eventsTable).where(and(eq(eventsTable.id, parseInt(id)), eq(eventsTable.userId, user.id)));
   return new NextResponse(null, { status: 204 });
 }

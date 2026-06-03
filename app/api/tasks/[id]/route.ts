@@ -12,7 +12,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
-  const [task] = await db.select().from(tasksTable).where(eq(tasksTable.id, parseInt(id)));
+  const [task] = await db.select().from(tasksTable).where(and(eq(tasksTable.id, parseInt(id)), eq(tasksTable.userId, user.id)));
   if (!task) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(serializeTask(task));
 }
@@ -25,7 +25,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const body = await req.json();
   const updates: Record<string, unknown> = { ...body };
   if (body.dueDate) updates.dueDate = new Date(body.dueDate);
-  const [task] = await db.update(tasksTable).set(updates).where(eq(tasksTable.id, parseInt(id))).returning();
+  const [task] = await db.update(tasksTable).set(updates).where(and(eq(tasksTable.id, parseInt(id)), eq(tasksTable.userId, user.id))).returning();
   if (!task) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(serializeTask(task));
 }
@@ -35,6 +35,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
-  await db.delete(tasksTable).where(eq(tasksTable.id, parseInt(id)));
+  await db.delete(tasksTable).where(and(eq(tasksTable.id, parseInt(id)), eq(tasksTable.userId, user.id)));
   return new NextResponse(null, { status: 204 });
 }

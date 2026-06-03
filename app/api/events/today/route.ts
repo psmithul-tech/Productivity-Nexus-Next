@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, eventsTable } from "@/lib/db";
 import { eq, and, gte, lte } from "drizzle-orm";
 import { createClient } from "@/utils/supabase/server";
+import { fetchGoogleEvents } from "@/lib/google-calendar";
 
 function serializeEvent(e: typeof eventsTable.$inferSelect) {
   return { ...e, startTime: e.startTime.toISOString(), endTime: e.endTime.toISOString(), createdAt: e.createdAt.toISOString() };
@@ -17,9 +18,17 @@ export async function GET(req: NextRequest) {
   const endOfDay = new Date(now); endOfDay.setHours(23, 59, 59, 999);
 
   const events = await db.select().from(eventsTable).where(
-    and(gte(eventsTable.startTime, startOfDay), lte(eventsTable.startTime, endOfDay))
+    and(
+      eq(eventsTable.userId, user.id),
+      gte(eventsTable.startTime, startOfDay), 
+      lte(eventsTable.startTime, endOfDay)
+    )
   );
-  const sorted = events.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
+  
+  const gcalEvents = await fetchGoogleEvents(user.id, startOfDay, endOfDay);
+  const allEvents = [...events, ...gcalEvents];
+  
+  const sorted = allEvents.sort((a, b) => a.startTime.getTime() - b.startTime.getTime());
 
   const workStart = new Date(startOfDay); workStart.setHours(9, 0, 0, 0);
   const workEnd = new Date(startOfDay); workEnd.setHours(18, 0, 0, 0);

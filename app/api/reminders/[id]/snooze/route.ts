@@ -14,7 +14,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { id } = await params;
   const body = await req.json();
   const snoozeUntil = body.snoozeUntil ? new Date(body.snoozeUntil) : new Date(Date.now() + 30 * 60 * 1000);
-  const [reminder] = await db.update(remindersTable).set({ status: "snoozed", snoozedUntil: snoozeUntil }).where(eq(remindersTable.id, parseInt(id))).returning();
+  const [reminder] = await db.update(remindersTable).set({ status: "snoozed", snoozedUntil: snoozeUntil }).where(and(eq(remindersTable.id, parseInt(id)), eq(remindersTable.userId, user.id))).returning();
   if (!reminder) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(serializeReminder(reminder));
 }

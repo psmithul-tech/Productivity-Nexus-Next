@@ -15,13 +15,11 @@ export async function GET(req: NextRequest) {
   const status = searchParams.get("status");
   const priority = searchParams.get("priority");
   const bucket = searchParams.get("bucket");
-  const conditions = [];
+  const conditions = [eq(tasksTable.userId, user.id)];
   if (status && status !== "all") conditions.push(eq(tasksTable.status, status));
   if (priority) conditions.push(eq(tasksTable.priority, priority));
   if (bucket) conditions.push(eq(tasksTable.bucket, bucket));
-  const tasks = conditions.length > 0
-    ? await db.select().from(tasksTable).where(and(...conditions))
-    : await db.select().from(tasksTable);
+  const tasks = await db.select().from(tasksTable).where(and(...conditions));
   return NextResponse.json(tasks.map(serializeTask));
 }
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, eventsTable } from "@/lib/db";
 import { eq, and, gte, lte } from "drizzle-orm";
 import { createClient } from "@/utils/supabase/server";
+import { fetchGoogleEvents } from "@/lib/google-calendar";
 
 function serializeEvent(e: typeof eventsTable.$inferSelect) {
   return { ...e, startTime: e.startTime.toISOString(), endTime: e.endTime.toISOString(), createdAt: e.createdAt.toISOString() };
@@ -16,15 +17,23 @@ export async function GET(req: NextRequest) {
   const from = searchParams.get("from");
   const to = searchParams.get("to");
 
-  const conditions = [];
+  const conditions = [eq(eventsTable.userId, user.id)];
   if (from) conditions.push(gte(eventsTable.startTime, new Date(from)));
   if (to) conditions.push(lte(eventsTable.endTime, new Date(to)));
 
-  const events = conditions.length > 0
-    ? await db.select().from(eventsTable).where(and(...conditions))
-    : await db.select().from(eventsTable);
+  const events = await db.select().from(eventsTable).where(and(...conditions));
+  
+  let gcalEvents: any[] = [];
+  if (from && to) {
+    gcalEvents = await fetchGoogleEvents(user.id, new Date(from), new Date(to));
+  }
+  
+  const allEvents = [
+    ...events.map(serializeEvent), 
+    ...gcalEvents.map(serializeEvent)
+  ];
 
-  return NextResponse.json(events.map(serializeEvent));
+  return NextResponse.json(allEvents);
 }
 
 export async function POST(req: NextRequest) {

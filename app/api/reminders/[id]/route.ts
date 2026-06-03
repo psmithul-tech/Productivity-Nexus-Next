@@ -15,7 +15,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const body = await req.json();
   const updates: Record<string, unknown> = { ...body };
   if (body.scheduledAt) updates.scheduledAt = new Date(body.scheduledAt);
-  const [reminder] = await db.update(remindersTable).set(updates).where(eq(remindersTable.id, parseInt(id))).returning();
+  const [reminder] = await db.update(remindersTable).set(updates).where(and(eq(remindersTable.id, parseInt(id)), eq(remindersTable.userId, user.id))).returning();
   if (!reminder) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(serializeReminder(reminder));
 }
@@ -25,6 +25,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
-  await db.delete(remindersTable).where(eq(remindersTable.id, parseInt(id)));
+  await db.delete(remindersTable).where(and(eq(remindersTable.id, parseInt(id)), eq(remindersTable.userId, user.id)));
   return new NextResponse(null, { status: 204 });
 }
