@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, conversations, messages, tasksTable } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { createClient } from "@/utils/supabase/server";
-import { ai, buildSystemPrompt, extractTaskFromResponse, stripCreateTask } from "@/lib/gemini";
+import { ai, buildSystemPrompt } from "@/lib/gemini";
 
 export async function GET() {
   const supabase = await createClient();
