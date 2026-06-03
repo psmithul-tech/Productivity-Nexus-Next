@@ -4,5 +4,13 @@
       "path": "/api/cron/ping",
       "schedule": "0 * * * *"
     }
-  ]
+  ],
+  "functions": {
+    "app/api/webhooks/telegram/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/cron/ping/route.ts": {
+      "maxDuration": 60
+    }
+  }
 }
