@@ -1,12 +1,13 @@
 import { NextRequest } from "next/server";
 import { db, conversations, messages, tasksTable } from "@/lib/db";
-import { eq } from "drizzle-orm";
-import { auth } from "@/lib/auth";
+import { eq, and } from "drizzle-orm";
+import { createClient } from "@/utils/supabase/server";
 import { ai, buildSystemPrompt, extractTaskFromResponse, stripCreateTask } from "@/lib/gemini";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  if (!session) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
 
   const { id } = await params;
   const convId = parseInt(id);
@@ -68,7 +69,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
         if (taskData) {
           try {
-            await db.insert(tasksTable).values({
+            await db.insert(tasksTable).values({ userId: user.id, 
               title: String(taskData.title || "New task"),
               priority: String(taskData.priority || "medium"),
               bucket: String(taskData.bucket || "today"),

@@ -1,18 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, settingsTable } from "@/lib/db";
-import { auth } from "@/lib/auth";
+import { createClient } from "@/utils/supabase/server";
 
 export async function GET() {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const [settings] = await db.select().from(settingsTable);
   if (!settings) return NextResponse.json({ error: "No settings found" }, { status: 404 });
   return NextResponse.json({ ...settings, createdAt: settings.createdAt.toISOString() });
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await req.json();
   const [existing] = await db.select().from(settingsTable);
   if (existing) {

@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, eventsTable } from "@/lib/db";
 import { eq, and, gte, lte } from "drizzle-orm";
-import { auth } from "@/lib/auth";
+import { createClient } from "@/utils/supabase/server";
 
 function serializeEvent(e: typeof eventsTable.$inferSelect) {
   return { ...e, startTime: e.startTime.toISOString(), endTime: e.endTime.toISOString(), createdAt: e.createdAt.toISOString() };
 }
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const now = new Date();
   const startOfDay = new Date(now); startOfDay.setHours(0, 0, 0, 0);

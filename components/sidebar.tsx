@@ -1,12 +1,12 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { signOut, useSession } from "next-auth/react";
+import { usePathname, useRouter } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard, CheckSquare, Calendar, Bell, Sparkles,
   BarChart3, Settings, LogOut, Zap, Menu, X
 } from "lucide-react";
-import { useState } from "react";
 
 const navItems = [
   { href: "/", icon: LayoutDashboard, label: "Dashboard" },
@@ -20,8 +20,20 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const [user, setUser] = useState<any>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const supabase = createClient();
+  const router = useRouter();
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  };
 
   return (
     <>
@@ -77,16 +89,16 @@ export function Sidebar() {
         {/* User */}
         <div className="p-3 border-t border-border">
           <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-muted transition-colors">
-            {session?.user?.image
-              ? <img src={session.user.image} className="h-8 w-8 rounded-full object-cover" alt="" />
-              : <div className="h-8 w-8 rounded-full gradient-primary flex items-center justify-center text-xs font-bold text-white">{session?.user?.name?.[0] ?? "U"}</div>
+            {user?.user_metadata?.avatar_url
+              ? <img src={user.user_metadata.avatar_url} className="h-8 w-8 rounded-full object-cover" alt="" />
+              : <div className="h-8 w-8 rounded-full gradient-primary flex items-center justify-center text-xs font-bold text-white">{user?.email?.[0]?.toUpperCase() ?? "U"}</div>
             }
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{session?.user?.name ?? "User"}</p>
-              <p className="text-xs text-muted-foreground truncate">{session?.user?.email ?? ""}</p>
+              <p className="text-sm font-medium truncate">{user?.user_metadata?.full_name ?? "User"}</p>
+              <p className="text-xs text-muted-foreground truncate">{user?.email ?? ""}</p>
             </div>
             <button
-              onClick={() => signOut({ callbackUrl: "/login" })}
+              onClick={handleSignOut}
               className="p-1.5 rounded-md hover:bg-destructive/10 hover:text-destructive transition-colors"
               title="Sign out"
             >

@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, tasksTable } from "@/lib/db";
 import { eq, and, lte, sql } from "drizzle-orm";
-import { auth } from "@/lib/auth";
+import { createClient } from "@/utils/supabase/server";
 
 function serializeTask(t: typeof tasksTable.$inferSelect) {
   return { ...t, dueDate: t.dueDate?.toISOString() ?? null, completedAt: t.completedAt?.toISOString() ?? null, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString() };
 }
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
   const priority = searchParams.get("priority");
@@ -25,11 +26,12 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await req.json();
   if (!body.title) return NextResponse.json({ error: "title is required" }, { status: 400 });
-  const [task] = await db.insert(tasksTable).values({
+  const [task] = await db.insert(tasksTable).values({ userId: user.id, 
     ...body,
     dueDate: body.dueDate ? new Date(body.dueDate) : undefined,
   }).returning();

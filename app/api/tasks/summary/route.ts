@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, tasksTable } from "@/lib/db";
-import { auth } from "@/lib/auth";
+import { createClient } from "@/utils/supabase/server";
 
 export async function GET() {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const all = await db.select().from(tasksTable);
   const now = new Date();
   const overdue = all.filter((t) => t.status === "active" && t.dueDate && new Date(t.dueDate) < now);

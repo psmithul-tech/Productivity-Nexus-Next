@@ -1,14 +1,14 @@
 "use client";
 import { useState } from "react";
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Zap, Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { createClient } from "@/utils/supabase/client";
 
 export default function LoginPage() {
   const router = useRouter();
+  const supabase = createClient();
   const [mode, setMode] = useState<"login" | "register">("login");
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
@@ -19,32 +19,47 @@ export default function LoginPage() {
     setLoading(true);
     try {
       if (mode === "register") {
-        const res = await fetch("/api/auth/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, password }),
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
         });
-        const data = await res.json();
-        if (!res.ok) { toast.error(data.error); setLoading(false); return; }
-        toast.success("Account created! Signing in…");
+        if (error) { toast.error(error.message); setLoading(false); return; }
+        toast.success("Account created! You can now sign in.");
+        setMode("login");
+        setLoading(false);
+        return;
       }
-      const result = await signIn("credentials", { email, password, redirect: false });
-      if (result?.error) {
-        toast.error("Invalid email or password.");
+      
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) {
+        toast.error(error.message);
         setLoading(false);
       } else {
+        toast.success("Signed in successfully!");
         router.push("/");
         router.refresh();
       }
-    } catch {
-      toast.error("Something went wrong. Please try again.");
+    } catch (err: any) {
+      toast.error(err.message || "Something went wrong. Please try again.");
       setLoading(false);
     }
   }
 
   async function handleGoogle() {
     setLoading(true);
-    await signIn("google", { callbackUrl: "/" });
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${location.origin}/auth/callback`,
+      }
+    });
+    if (error) {
+      toast.error(error.message);
+      setLoading(false);
+    }
   }
 
   return (
@@ -66,7 +81,7 @@ export default function LoginPage() {
           {/* Tabs */}
           <div className="flex rounded-lg border border-border p-1 mb-6">
             {(["login", "register"] as const).map((m) => (
-              <button key={m} onClick={() => setMode(m)} className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${mode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+              <button key={m} type="button" onClick={() => setMode(m)} className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${mode === m ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
                 {m === "login" ? "Sign In" : "Sign Up"}
               </button>
             ))}
@@ -74,6 +89,7 @@ export default function LoginPage() {
 
           {/* Google */}
           <button
+            type="button"
             onClick={handleGoogle}
             disabled={loading}
             className="w-full flex items-center justify-center gap-3 py-2.5 rounded-lg border border-border bg-muted hover:bg-secondary transition-colors text-sm font-medium mb-4"
@@ -90,16 +106,6 @@ export default function LoginPage() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {mode === "register" && (
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1.5">Full Name</label>
-                <input
-                  type="text" required value={name} onChange={(e) => setName(e.target.value)}
-                  placeholder="John Doe"
-                  className="w-full px-3.5 py-2.5 rounded-lg border border-input bg-muted text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
-                />
-              </div>
-            )}
             <div>
               <label className="block text-sm font-medium text-foreground mb-1.5">Email</label>
               <input
@@ -113,7 +119,7 @@ export default function LoginPage() {
               <div className="relative">
                 <input
                   type={showPw ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••" minLength={8}
+                  placeholder="••••••••" minLength={6}
                   className="w-full px-3.5 py-2.5 pr-10 rounded-lg border border-input bg-muted text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm"
                 />
                 <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
@@ -123,7 +129,7 @@ export default function LoginPage() {
             </div>
             <button
               type="submit" disabled={loading}
-              className="w-full py-2.5 rounded-lg font-semibold text-sm transition-all flex items-center justify-center gap-2 text-primary-foreground"
+              className="w-full py-2.5 rounded-lg font-semibold text-sm transition-all flex items-center justify-center gap-2 text-primary-foreground cursor-pointer"
               style={{ background: "linear-gradient(135deg, hsl(265 90% 65%), hsl(265 70% 45%))" }}
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}

@@ -18,6 +18,7 @@ export type User = typeof usersTable.$inferSelect;
 // Events
 export const eventsTable = pgTable("events", {
   id: serial("id").primaryKey(),
+  userId: text("user_id").notNull().default("00000000-0000-0000-0000-000000000000"),
   title: text("title").notNull(),
   description: text("description"),
   location: text("location"),
@@ -34,6 +35,7 @@ export type CalendarEvent = typeof eventsTable.$inferSelect;
 // Tasks
 export const tasksTable = pgTable("tasks", {
   id: serial("id").primaryKey(),
+  userId: text("user_id").notNull().default("00000000-0000-0000-0000-000000000000"),
   title: text("title").notNull(),
   description: text("description"),
   status: text("status").notNull().default("active"),
@@ -53,6 +55,7 @@ export type Task = typeof tasksTable.$inferSelect;
 // Reminders
 export const remindersTable = pgTable("reminders", {
   id: serial("id").primaryKey(),
+  userId: text("user_id").notNull().default("00000000-0000-0000-0000-000000000000"),
   taskId: integer("task_id").notNull(),
   channel: text("channel").notNull(),
   scheduledAt: timestamp("scheduled_at", { withTimezone: true }).notNull(),
@@ -67,6 +70,7 @@ export type Reminder = typeof remindersTable.$inferSelect;
 // Conversations
 export const conversations = pgTable("conversations", {
   id: serial("id").primaryKey(),
+  userId: text("user_id").notNull().default("00000000-0000-0000-0000-000000000000"),
   title: text("title").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 });
@@ -85,6 +89,7 @@ export type Message = typeof messages.$inferSelect;
 // Settings
 export const settingsTable = pgTable("settings", {
   id: serial("id").primaryKey(),
+  userId: text("user_id").notNull().default("00000000-0000-0000-0000-000000000000").unique(),
   quietHoursStart: text("quiet_hours_start").notNull().default("22:00"),
   quietHoursEnd: text("quiet_hours_end").notNull().default("08:00"),
   reminderTone: text("reminder_tone").notNull().default("normal"),

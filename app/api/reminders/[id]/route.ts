@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, remindersTable } from "@/lib/db";
-import { eq } from "drizzle-orm";
-import { auth } from "@/lib/auth";
+import { eq, and } from "drizzle-orm";
+import { createClient } from "@/utils/supabase/server";
 
 function serializeReminder(r: typeof remindersTable.$inferSelect) {
   return { ...r, scheduledAt: r.scheduledAt.toISOString(), snoozedUntil: r.snoozedUntil?.toISOString() ?? null, createdAt: r.createdAt.toISOString() };
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
   const body = await req.json();
   const updates: Record<string, unknown> = { ...body };
@@ -20,8 +21,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
   await db.delete(remindersTable).where(eq(remindersTable.id, parseInt(id)));
   return new NextResponse(null, { status: 204 });
