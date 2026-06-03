@@ -16,6 +16,8 @@ interface AppSettings {
   discordWebhookUrl: string;
   telegramBotToken: string;
   telegramChatId: string;
+  googleAccessToken?: string;
+  googleRefreshToken?: string;
 }
 
 const DEFAULTS: AppSettings = {
@@ -157,6 +159,18 @@ export default function SettingsPage() {
 
   useEffect(() => {
     fetchSettings();
+    
+    // Handle redirect errors from OAuth
+    const params = new URLSearchParams(window.location.search);
+    const err = params.get("error");
+    const success = params.get("success");
+    if (err) toast.error("Google Auth Failed", { description: err.replace(/_/g, " ") });
+    if (success === "google_connected") toast.success("Google Calendar connected successfully!");
+    
+    // Clean up URL
+    if (err || success) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
   }, []);
 
   function update<K extends keyof AppSettings>(key: K, value: AppSettings[K]) {
@@ -224,6 +238,24 @@ export default function SettingsPage() {
     setSettings(DEFAULTS);
     setIsDirty(true);
     toast.info("Settings reset to defaults", { duration: 2000 });
+  }
+
+  async function handleDisconnectGoogle() {
+    try {
+      setSaving(true);
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...settings, googleAccessToken: null, googleRefreshToken: null }),
+      });
+      if (!res.ok) throw new Error("Failed to disconnect");
+      setSettings(prev => ({ ...prev, googleAccessToken: "", googleRefreshToken: "" }));
+      toast.success("Disconnected from Google Calendar");
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -481,6 +513,47 @@ export default function SettingsPage() {
                   className="w-full rounded-xl border border-border bg-background/50 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
                 />
               </div>
+            </div>
+          </Section>
+
+          {/* ── Google Calendar ── */}
+          <Section
+            title="Google Calendar"
+            description="Sync tasks and events with your Google account"
+          >
+            <div className="flex items-center justify-between p-4 rounded-xl border border-border/50 bg-background/20 max-w-md">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 p-2">
+                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21 5.5H3V19C3 19.55 3.45 20 4 20H20C20.55 20 21 19.55 21 19V5.5Z" fill="#F4B400"/>
+                    <path d="M21 5.5H3V11H21V5.5Z" fill="#4285F4"/>
+                    <path d="M21 5.5H3V8.5H21V5.5Z" fill="#DB4437"/>
+                    <path d="M15 8.5H3V5.5C3 4.95 3.45 4.5 4 4.5H20C20.55 4.5 21 4.95 21 5.5V8.5H15Z" fill="#0F9D58"/>
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">Google Calendar</p>
+                  <p className="text-xs text-muted-foreground">
+                    {settings.googleAccessToken ? "Connected and syncing" : "Not connected"}
+                  </p>
+                </div>
+              </div>
+              
+              {settings.googleAccessToken ? (
+                <button
+                  onClick={handleDisconnectGoogle}
+                  className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-500/20 transition-colors"
+                >
+                  Disconnect
+                </button>
+              ) : (
+                <a
+                  href="/api/auth/google"
+                  className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+                >
+                  Connect Google
+                </a>
+              )}
             </div>
           </Section>
 
