@@ -34,7 +34,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     async start(controller) {
       try {
         const responseStream = await ai.models.generateContentStream({
-          model: "gemini-3.1-flash-lite",
+          model: "gemini-2.5-flash",
           contents: contents,
           config: {
             systemInstruction: systemPrompt,

@@ -64,7 +64,7 @@ Format the message nicely with a greeting, a summary of their day, and the struc
       let message = `☀️ *Good Morning! Here is your daily briefing:*\n\nYou have ${allEvents.length} events and ${activeTasks.length} tasks scheduled for today.`;
       try {
         const aiRes = await ai.models.generateContent({
-          model: "gemini-3.1-flash-lite",
+          model: "gemini-2.5-flash",
           contents: prompt,
         });
         if (aiRes.text) message = aiRes.text;
