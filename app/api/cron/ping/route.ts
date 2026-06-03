@@ -61,12 +61,16 @@ Tasks: ${activeTasks.length === 0 ? 'None' : JSON.stringify(activeTasks.map(t =>
 
 Format the message nicely with a greeting, a summary of their day, and the structured list of things to do. If they have no tasks, encourage them to take it easy.`;
 
-      const aiRes = await ai.models.generateContent({
-        model: "gemini-3.1-flash-lite",
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-      });
-      
-      const message = aiRes.text || "Good morning! Here is your daily briefing.";
+      let message = `☀️ *Good Morning! Here is your daily briefing:*\n\nYou have ${allEvents.length} events and ${activeTasks.length} tasks scheduled for today.`;
+      try {
+        const aiRes = await ai.models.generateContent({
+          model: "gemini-3.1-flash-lite",
+          contents: prompt,
+        });
+        if (aiRes.text) message = aiRes.text;
+      } catch (err) {
+        console.error("AI Cron Ping Error:", err);
+      }
 
       // Send Discord Ping
       if (config.discordWebhookUrl) {
