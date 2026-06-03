@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
+import { ai } from "@/lib/gemini";
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -16,12 +17,14 @@ export async function POST(req: NextRequest) {
     if (type === "discord") {
       if (!url) return NextResponse.json({ error: "Discord Webhook URL is missing." }, { status: 400 });
       
+      const prompt = `You are Restia, an AI Chief of Staff. Write a very brief (1-2 sentences), cheerful, and human-like welcome message to test a Discord integration. Introduce yourself. Use emojis.`;
+      const aiRes = await ai.models.generateContent({ model: "gemini-3.1-flash-lite", contents: [{ role: "user", parts: [{ text: prompt }] }] });
+      const textMsg = aiRes.text || "👋 Hello, I'm Restia! Your Discord integration is working perfectly.";
+      
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          content: "👋 Hello from Productivity Nexus! Your Discord integration is working perfectly."
-        })
+        body: JSON.stringify({ content: textMsg })
       });
       
       if (!res.ok) throw new Error("Discord API rejected the request. Check your URL.");
@@ -40,12 +43,16 @@ export async function POST(req: NextRequest) {
       }
 
       // 2. Send Test Message
+      const prompt = `You are Restia, an AI Chief of Staff. Write a very brief (1-2 sentences), cheerful, and human-like welcome message to test a Telegram integration. Introduce yourself. Tell them they can reply to add tasks. Use emojis.`;
+      const aiRes = await ai.models.generateContent({ model: "gemini-3.1-flash-lite", contents: [{ role: "user", parts: [{ text: prompt }] }] });
+      const textMsg = aiRes.text || "👋 Hello, I'm Restia! Your Telegram integration is working perfectly. You can now reply to me to add tasks or check your schedule!";
+
       const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chat_id: chatId,
-          text: "👋 Hello from Productivity Nexus! Your Telegram integration is working perfectly. You can now reply to me to add tasks or check your schedule!"
+          text: textMsg
         })
       });
       

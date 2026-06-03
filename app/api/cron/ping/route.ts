@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, settingsTable, tasksTable, eventsTable } from "@/lib/db";
 import { eq, and, sql } from "drizzle-orm";
 import { fetchGoogleEvents } from "@/lib/google-calendar";
+import { ai } from "@/lib/gemini";
 
 export async function GET(req: NextRequest) {
   // Ensure the request is authorized by Vercel Cron
@@ -49,27 +50,23 @@ export async function GET(req: NextRequest) {
 
       // Format Message
       const formatTime = (d: Date) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      
-      let message = `☀️ *Good Morning! Here is your daily briefing:*\n\n`;
-      
-      message += `📅 *Events Today (${allEvents.length}):*\n`;
-      if (allEvents.length === 0) {
-        message += `_No events scheduled._\n`;
-      } else {
-        allEvents.forEach(e => {
-          message += `- ${formatTime(e.startTime)}: ${e.title}\n`;
-        });
-      }
-
-      message += `\n📝 *Tasks for Today (${tasks.length}):*\n`;
       const activeTasks = tasks.filter(t => t.status === "active");
-      if (activeTasks.length === 0) {
-        message += `_All tasks completed!_\n`;
-      } else {
-        activeTasks.forEach(t => {
-          message += `- [ ] ${t.title}${t.priority === 'urgent' || t.priority === 'high' ? ' 🚨' : ''}\n`;
-        });
-      }
+
+      const prompt = `You are Restia, the user's AI Chief of Staff.
+Write a personalized, warm morning briefing for the user based on their schedule today.
+Keep it human-like, encouraging, and concise. Use markdown.
+Here is their schedule for today:
+Events: ${allEvents.length === 0 ? 'None' : JSON.stringify(allEvents.map(e => ({ title: e.title, time: formatTime(e.startTime) })))}
+Tasks: ${activeTasks.length === 0 ? 'None' : JSON.stringify(activeTasks.map(t => ({ title: t.title, priority: t.priority })))}
+
+Format the message nicely with a greeting, a summary of their day, and the structured list of things to do. If they have no tasks, encourage them to take it easy.`;
+
+      const aiRes = await ai.models.generateContent({
+        model: "gemini-3.1-flash-lite",
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+      });
+      
+      const message = aiRes.text || "Good morning! Here is your daily briefing.";
 
       // Send Discord Ping
       if (config.discordWebhookUrl) {
