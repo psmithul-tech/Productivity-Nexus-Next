@@ -4,7 +4,13 @@ import { eq, and, lte, sql } from "drizzle-orm";
 import { createClient } from "@/utils/supabase/server";
 
 function serializeTask(t: typeof tasksTable.$inferSelect) {
-  return { ...t, dueDate: t.dueDate?.toISOString() ?? null, completedAt: t.completedAt?.toISOString() ?? null, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString() };
+  return { 
+    ...t, 
+    dueDate: t.dueDate?.toISOString() ?? null, 
+    completedAt: t.completedAt?.toISOString() ?? null, 
+    createdAt: (t.createdAt ?? new Date()).toISOString(), 
+    updatedAt: (t.updatedAt ?? new Date()).toISOString() 
+  };
 }
 
 export async function GET(req: NextRequest) {
@@ -14,7 +20,10 @@ export async function GET(req: NextRequest) {
   const now = new Date();
   const endOfDay = new Date(now); endOfDay.setHours(23, 59, 59, 999);
   const tasks = await db.select().from(tasksTable).where(
-    sql`(${tasksTable.bucket} = 'today' OR (${tasksTable.dueDate} <= ${endOfDay} AND ${tasksTable.status} = 'active'))`
+    and(
+      eq(tasksTable.userId, user.id),
+      sql`(${tasksTable.bucket} = 'today' OR (${tasksTable.dueDate} <= ${endOfDay} AND ${tasksTable.status} = 'active'))`
+    )
   );
   return NextResponse.json(tasks.map(serializeTask));
 }

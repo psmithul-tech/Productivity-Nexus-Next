@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, tasksTable } from "@/lib/db";
+import { eq } from "drizzle-orm";
 import { createClient } from "@/utils/supabase/server";
 
 export async function GET() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const all = await db.select().from(tasksTable);
+  const all = await db.select().from(tasksTable).where(eq(tasksTable.userId, user.id));
   const now = new Date();
   const overdue = all.filter((t) => t.status === "active" && t.dueDate && new Date(t.dueDate) < now);
   const byPriority = { low: 0, medium: 0, high: 0, urgent: 0 };

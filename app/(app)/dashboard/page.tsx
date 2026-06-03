@@ -32,9 +32,15 @@ export default function DashboardPage() {
   const [todayEvents, setTodayEvents] = useState<EventData | null>(null);
   const [todayTasks, setTodayTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const now = new Date();
-  const greeting = now.getHours() < 12 ? "Good morning" : now.getHours() < 17 ? "Good afternoon" : "Good evening";
-  const dateStr = now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  const [timeState, setTimeState] = useState({ greeting: "", dateStr: "" });
+
+  useEffect(() => {
+    const d = new Date();
+    setTimeState({
+      greeting: d.getHours() < 12 ? "Good morning" : d.getHours() < 17 ? "Good afternoon" : "Good evening",
+      dateStr: d.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
+    });
+  }, []);
 
   useEffect(() => {
     Promise.all([
@@ -54,8 +60,8 @@ export default function DashboardPage() {
               <Zap className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">{greeting} 👋</h1>
-              <p className="text-sm text-muted-foreground">{dateStr}</p>
+              <h1 className="text-2xl font-bold">{timeState.greeting || "Welcome"} 👋</h1>
+              <p className="text-sm text-muted-foreground">{timeState.dateStr || "Loading date..."}</p>
             </div>
           </div>
         </div>
