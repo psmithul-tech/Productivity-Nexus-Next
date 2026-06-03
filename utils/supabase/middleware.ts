@@ -35,7 +35,7 @@ export async function updateSession(request: NextRequest) {
     !user &&
     !request.nextUrl.pathname.startsWith("/login") &&
     !request.nextUrl.pathname.startsWith("/auth") &&
-    !request.nextUrl.pathname.startsWith("/api/health") &&
+    !request.nextUrl.pathname.startsWith("/api/") &&   // ← all API routes bypass auth (they handle it themselves)
     !request.nextUrl.pathname.startsWith("/privacy") &&
     !request.nextUrl.pathname.startsWith("/terms") &&
     request.nextUrl.pathname !== "/"
