@@ -52,16 +52,26 @@ export async function GET(req: NextRequest) {
       const formatTime = (d: Date) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const activeTasks = tasks.filter(t => t.status === "active");
 
+      // Check for tasks ending soon (due within the next 2 hours or overdue)
+      const endingSoon = activeTasks.filter(t => {
+        if (!t.dueDate) return false;
+        const due = new Date(t.dueDate).getTime();
+        const nowMs = now.getTime();
+        const diffHours = (due - nowMs) / (1000 * 60 * 60);
+        return diffHours <= 2; // overdue or due within 2 hours
+      });
+
       const prompt = `You are Restia, the user's AI Chief of Staff.
-Write a personalized, warm morning briefing for the user based on their schedule today.
+It is currently ${formatTime(now)}. Write a personalized, warm hourly update for the user.
 Keep it human-like, encouraging, and concise. Use markdown.
 Here is their schedule for today:
 Events: ${allEvents.length === 0 ? 'None' : JSON.stringify(allEvents.map(e => ({ title: e.title, time: formatTime(e.startTime) })))}
-Tasks: ${activeTasks.length === 0 ? 'None' : JSON.stringify(activeTasks.map(t => ({ title: t.title, priority: t.priority })))}
+Tasks: ${activeTasks.length === 0 ? 'None' : JSON.stringify(activeTasks.map(t => ({ title: t.title, priority: t.priority, due: t.dueDate })))}
+Tasks Ending Soon/Overdue: ${endingSoon.length === 0 ? 'None' : JSON.stringify(endingSoon.map(t => ({ title: t.title })))}
 
-Format the message nicely with a greeting, a summary of their day, and the structured list of things to do. If they have no tasks, encourage them to take it easy.`;
+Format the message nicely with a greeting. If there are tasks ending soon, strongly emphasize them! If they have no tasks, encourage them to take it easy.`;
 
-      let message = `☀️ *Good Morning! Here is your daily briefing:*\n\nYou have ${allEvents.length} events and ${activeTasks.length} tasks scheduled for today.`;
+      let message = `🕒 *Hourly Update:*\n\nYou have ${allEvents.length} events and ${activeTasks.length} tasks scheduled for today.`;
       try {
         const aiRes = await ai.models.generateContent({
           model: "gemini-2.5-flash",

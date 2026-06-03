@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     }
 
     const userId = userSettings.userId;
-    const systemPrompt = buildSystemPrompt();
+    const systemPrompt = buildSystemPrompt() + "\nCRITICAL RULE: You MUST always output a cheerful, conversational text response to the user, EVEN IF you are calling a function/tool! Never return only a function call without text.";
 
     // Call Gemini to parse and respond
     const response = await ai.models.generateContent({
@@ -135,8 +135,22 @@ export async function POST(req: NextRequest) {
       text: finalText
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Telegram webhook error:", error);
+    
+    // We try to send an error message back to the user if we know their Chat ID
+    try {
+      const body = await req.clone().json().catch(() => ({}));
+      const chatId = body?.message?.chat?.id?.toString();
+      if (chatId) {
+        return NextResponse.json({
+          method: "sendMessage",
+          chat_id: chatId,
+          text: `Oops! I encountered an error: ${error.message}`
+        });
+      }
+    } catch(e) {}
+    
     return NextResponse.json({ ok: true }); // Still return 200 so Telegram doesn't retry infinitely
   }
 }
