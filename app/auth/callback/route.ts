@@ -17,12 +17,16 @@ export async function GET(request: Request) {
         const updateData: any = { googleAccessToken: provider_token };
         if (provider_refresh_token) updateData.googleRefreshToken = provider_refresh_token;
         
-        await db.insert(settingsTable)
-          .values({ userId: user.id, ...updateData })
-          .onConflictDoUpdate({
-            target: settingsTable.userId,
-            set: updateData
-          });
+        try {
+          await db.insert(settingsTable)
+            .values({ userId: user.id, ...updateData })
+            .onConflictDoUpdate({
+              target: settingsTable.userId,
+              set: updateData
+            });
+        } catch (dbError) {
+          console.error("Failed to save Google tokens to database:", dbError);
+        }
       }
       
       const forwardedHost = request.headers.get('x-forwarded-host'); // original origin before load balancer
