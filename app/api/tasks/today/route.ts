@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
   const tasks = await db.select().from(tasksTable).where(
     and(
       eq(tasksTable.userId, user.id),
-      sql`(${tasksTable.bucket} = 'today' OR (${tasksTable.dueDate} <= ${endOfDay} AND ${tasksTable.status} = 'active'))`
+      sql`(${tasksTable.bucket} = 'today' OR (${tasksTable.dueDate} <= ${endOfDay.toISOString()}::timestamp AND ${tasksTable.status} = 'active'))`
     )
   );
   return NextResponse.json(tasks.map(serializeTask));

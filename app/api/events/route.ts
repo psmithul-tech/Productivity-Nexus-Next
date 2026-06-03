@@ -5,7 +5,13 @@ import { createClient } from "@/utils/supabase/server";
 import { fetchGoogleEvents } from "@/lib/google-calendar";
 
 function serializeEvent(e: typeof eventsTable.$inferSelect) {
-  return { ...e, startTime: e.startTime.toISOString(), endTime: e.endTime.toISOString(), createdAt: e.createdAt.toISOString() };
+  const safeDate = (d: any) => (d instanceof Date && !isNaN(d.getTime()) ? d : new Date());
+  return { 
+    ...e, 
+    startTime: safeDate(e.startTime).toISOString(), 
+    endTime: safeDate(e.endTime).toISOString(), 
+    createdAt: safeDate(e.createdAt).toISOString() 
+  };
 }
 
 export async function GET(req: NextRequest) {
