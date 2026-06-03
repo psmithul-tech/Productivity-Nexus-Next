@@ -7,7 +7,7 @@ import { Toaster } from "sonner";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Productivity Nexus — AI Chief of Staff",
+  title: "Restia — AI Chief of Staff",
   description: "Your intelligent executive assistant for tasks, calendar, reminders, and more.",
 };
 

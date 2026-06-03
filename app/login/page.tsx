@@ -71,7 +71,7 @@ export default function LoginPage() {
             <Zap className="h-7 w-7 text-white" />
           </div>
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-foreground">Productivity Nexus</h1>
+            <h1 className="text-2xl font-bold text-foreground">Restia</h1>
             <p className="text-muted-foreground text-sm mt-1">Your AI Chief of Staff</p>
           </div>
         </div>

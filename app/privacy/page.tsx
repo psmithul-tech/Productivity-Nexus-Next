@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Zap } from "lucide-react";
 
 export const metadata = {
-  title: "Privacy Policy | Productivity Nexus",
+  title: "Privacy Policy | Restia",
 };
 
 export default function PrivacyPolicy() {
@@ -14,7 +14,7 @@ export default function PrivacyPolicy() {
             <div className="h-10 w-10 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, hsl(265 90% 65%), hsl(265 70% 45%))" }}>
               <Zap className="h-5 w-5 text-white" />
             </div>
-            <span className="text-xl font-bold">Productivity Nexus</span>
+            <span className="text-xl font-bold">Restia</span>
           </Link>
         </div>
 
@@ -25,7 +25,7 @@ export default function PrivacyPolicy() {
           <section className="mb-8 space-y-4">
             <h2 className="text-2xl font-semibold">1. Information We Collect</h2>
             <p>
-              When you use Productivity Nexus, we collect information you provide directly to us, such as when you create an account, create tasks, events, and reminders, or communicate with us.
+              When you use Restia, we collect information you provide directly to us, such as when you create an account, create tasks, events, and reminders, or communicate with us.
             </p>
             <ul className="list-disc pl-6 space-y-2">
               <li><strong>Account Information:</strong> We collect your name, email address, and profile picture (if authenticated via Google) to provide you with an account.</li>
@@ -48,7 +48,7 @@ export default function PrivacyPolicy() {
           <section className="mb-8 space-y-4">
             <h2 className="text-2xl font-semibold">3. Third-Party Services & Google API</h2>
             <p>
-              Productivity Nexus uses Supabase for database storage and authentication. We do not sell your personal data to any third-party services.
+              Restia uses Supabase for database storage and authentication. We do not sell your personal data to any third-party services.
             </p>
             <p>
               If you choose to authenticate via Google, our app complies with the Google API Services User Data Policy, including the Limited Use requirements. Your data accessed through Google APIs is only used to provide or improve user-facing features.

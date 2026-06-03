@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Zap } from "lucide-react";
 
 export const metadata = {
-  title: "Terms of Service | Productivity Nexus",
+  title: "Terms of Service | Restia",
 };
 
 export default function TermsOfService() {
@@ -14,7 +14,7 @@ export default function TermsOfService() {
             <div className="h-10 w-10 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, hsl(265 90% 65%), hsl(265 70% 45%))" }}>
               <Zap className="h-5 w-5 text-white" />
             </div>
-            <span className="text-xl font-bold">Productivity Nexus</span>
+            <span className="text-xl font-bold">Restia</span>
           </Link>
         </div>
 
@@ -25,14 +25,14 @@ export default function TermsOfService() {
           <section className="mb-8 space-y-4">
             <h2 className="text-2xl font-semibold">1. Acceptance of Terms</h2>
             <p>
-              By accessing or using Productivity Nexus, you agree to be bound by these Terms of Service. If you disagree with any part of the terms, you may not access the service.
+              By accessing or using Restia, you agree to be bound by these Terms of Service. If you disagree with any part of the terms, you may not access the service.
             </p>
           </section>
 
           <section className="mb-8 space-y-4">
             <h2 className="text-2xl font-semibold">2. Description of Service</h2>
             <p>
-              Productivity Nexus is a personal productivity application providing task management, calendar integrations, and AI-assisted scheduling. The service is provided "as is" and "as available".
+              Restia is a personal productivity application providing task management, calendar integrations, and AI-assisted scheduling. The service is provided "as is" and "as available".
             </p>
           </section>
 
@@ -57,14 +57,14 @@ export default function TermsOfService() {
           <section className="mb-8 space-y-4">
             <h2 className="text-2xl font-semibold">5. Intellectual Property</h2>
             <p>
-              The service and its original content (excluding user-provided content), features, and functionality are and will remain the exclusive property of Productivity Nexus and its licensors.
+              The service and its original content (excluding user-provided content), features, and functionality are and will remain the exclusive property of Restia and its licensors.
             </p>
           </section>
 
           <section className="mb-8 space-y-4">
             <h2 className="text-2xl font-semibold">6. Limitation of Liability</h2>
             <p>
-              In no event shall Productivity Nexus, nor its developers or partners, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your access to or use of or inability to access or use the service.
+              In no event shall Restia, nor its developers or partners, be liable for any indirect, incidental, special, consequential or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses, resulting from your access to or use of or inability to access or use the service.
             </p>
           </section>
 
