@@ -457,7 +457,7 @@ export default function SettingsPage() {
                   </label>
                   <button 
                     onClick={() => handleTest("telegram")}
-                    disabled={testing === "telegram" || !settings.telegramBotToken || !settings.telegramChatId}
+                    disabled={testing === "telegram" || !settings.telegramBotToken}
                     className="text-[10px] text-primary hover:underline disabled:opacity-50 disabled:no-underline"
                   >
                     {testing === "telegram" ? "Registering & Testing..." : "Set Webhook & Test"}

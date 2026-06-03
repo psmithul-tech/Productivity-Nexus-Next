@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, message: "Discord test message sent!" });
       
     } else if (type === "telegram") {
-      if (!token || !chatId) return NextResponse.json({ error: "Telegram Token or Chat ID missing." }, { status: 400 });
+      if (!token) return NextResponse.json({ error: "Telegram Token missing." }, { status: 400 });
       
       // 1. Set Webhook
       if (origin) {
@@ -45,6 +45,11 @@ export async function POST(req: NextRequest) {
         if (!setWebhookRes.ok) {
           console.error("Failed to set webhook", await setWebhookRes.text());
         }
+      }
+
+      // If no Chat ID is provided, just return success for webhook registration
+      if (!chatId) {
+        return NextResponse.json({ success: true, message: "Webhook registered! Send a message to your bot to get your Chat ID." });
       }
 
       // 2. Send Test Message
