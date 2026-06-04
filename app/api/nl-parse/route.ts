@@ -41,9 +41,11 @@ Output ONLY a raw JSON object with the following schema, and no markdown blocks.
   }
 }
 
+CRITICAL: For dates, output LOCAL time ISO 8601 strings WITHOUT the 'Z' (e.g. "2024-05-10T15:00:00"). Do NOT append Z or UTC offsets.
+
 Examples:
 Input: "Meeting with John tomorrow at 3pm"
-Output: {"type": "event", "data": {"title": "Meeting with John", "startTime": "2024-05-10T15:00:00Z", "endTime": "2024-05-10T16:00:00Z"}}
+Output: {"type": "event", "data": {"title": "Meeting with John", "startTime": "2024-05-10T15:00:00", "endTime": "2024-05-10T16:00:00"}}
 
 Input: "Buy milk urgent"
 Output: {"type": "task", "data": {"title": "Buy milk", "priority": "urgent", "bucket": "today"}}
@@ -62,6 +64,20 @@ Output: {"type": "task", "data": {"title": "Buy milk", "priority": "urgent", "bu
     const text = response.text;
     const jsonStr = (text || "").replace(/```json/g, "").replace(/```/g, "").trim();
     const parsed = JSON.parse(jsonStr);
+
+    // Convert local time strings to UTC based on user timezone
+    if (parsed.data) {
+      const { fromZonedTime } = require("date-fns-tz");
+      if (parsed.data.dueDate && parsed.data.dueDate !== "null") {
+        parsed.data.dueDate = fromZonedTime(parsed.data.dueDate.substring(0, 19), timezone).toISOString();
+      }
+      if (parsed.data.startTime && parsed.data.startTime !== "null") {
+        parsed.data.startTime = fromZonedTime(parsed.data.startTime.substring(0, 19), timezone).toISOString();
+      }
+      if (parsed.data.endTime && parsed.data.endTime !== "null") {
+        parsed.data.endTime = fromZonedTime(parsed.data.endTime.substring(0, 19), timezone).toISOString();
+      }
+    }
 
     return NextResponse.json(parsed);
   } catch (error) {

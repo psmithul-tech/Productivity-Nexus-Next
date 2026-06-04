@@ -142,11 +142,12 @@ CRITICAL: When the user specifies an exact time (e.g. "9:47 am"), you MUST outpu
     for (const line of eventActions) {
       try {
         const data = JSON.parse(line.replace("ACTION_CREATE_EVENT:", ""));
+        const { fromZonedTime } = require("date-fns-tz");
         await db.insert(eventsTable).values({
           userId,
           title: data.title,
-          startTime: new Date(data.startTime),
-          endTime: new Date(data.endTime),
+          startTime: fromZonedTime(data.startTime.substring(0, 19), userTz),
+          endTime: fromZonedTime(data.endTime.substring(0, 19), userTz),
           source: "telegram",
         });
         confirmations.push(`📅 Scheduled: ${data.title}`);
