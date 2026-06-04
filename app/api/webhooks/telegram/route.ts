@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { waitUntil } from "@vercel/functions";
 import { db, settingsTable, tasksTable, eventsTable, remindersTable } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { eq, and, gte } from "drizzle-orm";
 import { pushTaskToGoogleCalendar } from "@/lib/google-calendar";
 import { getAIClient } from "@/lib/gemini";
 import { callOpenRouter } from "@/lib/openrouter";
@@ -12,6 +12,7 @@ import {
   normalizeTimeZone,
   parseDateTimeInTimeZone,
   timeOnDateInTimeZone,
+  startOfDayInTimeZone,
 } from "@/lib/timezone";
 
 // Helper: send a message to Telegram
@@ -87,6 +88,14 @@ async function processMessage(chatId: string, text: string, token: string, userI
             )
             .join("\n");
 
+    const allEvents = await db.select().from(eventsTable).where(and(
+       eq(eventsTable.userId, userId),
+       gte(eventsTable.endTime, startOfDayInTimeZone(now, userTz))
+    ));
+
+    const eventList = allEvents.length === 0 ? "No upcoming events." :
+      allEvents.map(e => `• [ID:${e.id}] ${e.title} (${formatTimeInTimeZone(new Date(e.startTime), userTz)} - ${formatTimeInTimeZone(new Date(e.endTime), userTz)} on ${formatDateInTimeZone(new Date(e.startTime), userTz)})`).join("\n");
+
     console.log(`[Telegram Debug] userTz: ${userTz}, timeStr: ${timeStr}, dateStr: ${dateStr}, localIso: ${localIso}`);
 
     // Build a prompt that gives Gemini NO room to compute its own time
@@ -103,6 +112,9 @@ YOU MUST TREAT THE ABOVE AS GROUND TRUTH. If the user asks what time it is, repl
 ## ACTIVE TASKS
 ${taskList}
 
+## UPCOMING EVENTS
+${eventList}
+
 ## INSTRUCTIONS
 - Always reply conversationally and warmly. You have a cheerful, caring personality with emojis.
 - If the user asks for their tasks/list, list them clearly from the task context above.
@@ -114,6 +126,9 @@ ${taskList}
 - If creating an event, include after your message:
   ACTION_CREATE_EVENT:{"title":"...","startTime":"YYYY-MM-DDTHH:mm:00","endTime":"YYYY-MM-DDTHH:mm:00"}
   Same rules: local time, no 'Z', no offset.
+- If the user wants to EDIT or RESCHEDULE an event, find the ID in UPCOMING EVENTS and include after your message:
+  ACTION_EDIT_EVENT:{"eventId":123,"title":"...","startTime":"YYYY-MM-DDTHH:mm:00","endTime":"YYYY-MM-DDTHH:mm:00"}
+  Include ALL fields (title, startTime, endTime) with the updated values. Same time rules apply.
 - Keep responses concise (1-4 sentences) and Telegram-friendly (plain text + emojis, no markdown).`;
 
     console.log("[Telegram] Calling OpenRouter (owl-alpha)...");
@@ -137,11 +152,13 @@ ${taskList}
     // Parse ACTION lines from response
     const taskActions = replyText.match(/ACTION_CREATE_TASK:\{[^\n]+\}/g) ?? [];
     const eventActions = replyText.match(/ACTION_CREATE_EVENT:\{[^\n]+\}/g) ?? [];
+    const editEventActions = replyText.match(/ACTION_EDIT_EVENT:\{[^\n]+\}/g) ?? [];
 
     // Strip action lines from visible reply
     replyText = replyText
       .replace(/ACTION_CREATE_TASK:\{[^\n]+\}/g, "")
       .replace(/ACTION_CREATE_EVENT:\{[^\n]+\}/g, "")
+      .replace(/ACTION_EDIT_EVENT:\{[^\n]+\}/g, "")
       .trim();
 
     const confirmations: string[] = [];
@@ -207,6 +224,22 @@ ${taskList}
         confirmations.push(`📅 Scheduled: ${data.title} (${formatTimeInTimeZone(startTime, userTz)} - ${formatTimeInTimeZone(endTime, userTz)})`);
       } catch (e) {
         console.error("[Telegram] Failed to parse event action:", e);
+      }
+    }
+
+    for (const line of editEventActions) {
+      try {
+        const data = JSON.parse(line.replace("ACTION_EDIT_EVENT:", ""));
+        const startTime = parseDateTimeInTimeZone(data.startTime, userTz);
+        const endTime = parseDateTimeInTimeZone(data.endTime, userTz);
+        await db.update(eventsTable).set({
+          title: data.title,
+          startTime,
+          endTime,
+        }).where(and(eq(eventsTable.id, data.eventId), eq(eventsTable.userId, userId)));
+        confirmations.push(`✏️ Updated Event: ${data.title} (${formatTimeInTimeZone(startTime, userTz)} - ${formatTimeInTimeZone(endTime, userTz)})`);
+      } catch (e) {
+        console.error("[Telegram] Failed to parse edit event action:", e);
       }
     }
 

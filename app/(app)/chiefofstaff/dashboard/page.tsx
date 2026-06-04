@@ -171,14 +171,35 @@ export default function DashboardPage() {
       const res = await fetch("/api/nl-parse", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: quickAddText }),
+        body: JSON.stringify({ query: quickAddText }),
       });
-      if (!res.ok) throw new Error("Failed");
-      toast.success("Added to tasks via AI");
+      if (!res.ok) throw new Error("Failed to parse");
+      const parsed = await res.json();
+      
+      if (parsed.type === "task") {
+        const taskRes = await fetch("/api/tasks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(parsed.data)
+        });
+        if (!taskRes.ok) throw new Error("Failed to create task");
+        toast.success("Added task via AI");
+      } else if (parsed.type === "event") {
+        const eventRes = await fetch("/api/events", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(parsed.data)
+        });
+        if (!eventRes.ok) throw new Error("Failed to create event");
+        toast.success("Added event via AI");
+      } else {
+        toast.error("Could not understand input");
+      }
+      
       setQuickAddText("");
       fetchData();
     } catch {
-      toast.error("Failed to add task");
+      toast.error("Failed to add task/event");
     } finally {
       setIsAdding(false);
     }

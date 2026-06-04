@@ -70,16 +70,18 @@ function formatTime(iso: string) {
 
 // ─── Add Event Modal ──────────────────────────────────────────────────────────
 
-function AddEventModal({
+function EventModal({
   open,
   defaultDate,
+  editEvent,
   onClose,
   onSave,
 }: {
   open: boolean;
   defaultDate: Date;
+  editEvent?: CalendarEvent | null;
   onClose: () => void;
-  onSave: (event: NewEvent) => Promise<void>;
+  onSave: (event: any) => Promise<void>;
 }) {
   const defaultStart = () => {
     const d = new Date(defaultDate);
@@ -105,17 +107,27 @@ function AddEventModal({
 
   useEffect(() => {
     if (open) {
-      setForm({
-        title: "",
-        startTime: defaultStart(),
-        endTime: defaultEnd(),
-        location: "",
-        description: "",
-      });
+      if (editEvent) {
+        setForm({
+          title: editEvent.title,
+          startTime: editEvent.startTime.slice(0, 16),
+          endTime: editEvent.endTime.slice(0, 16),
+          location: editEvent.location || "",
+          description: editEvent.description || "",
+        });
+      } else {
+        setForm({
+          title: "",
+          startTime: defaultStart(),
+          endTime: defaultEnd(),
+          location: "",
+          description: "",
+        });
+      }
       setErr(null);
       setTimeout(() => firstRef.current?.focus(), 50);
     }
-  }, [open, defaultDate]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [open, defaultDate, editEvent]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -126,6 +138,7 @@ function AddEventModal({
     setErr(null);
     try {
       await onSave({
+        ...(editEvent ? { id: editEvent.id } : {}),
         ...form,
         startTime: new Date(form.startTime).toISOString(),
         endTime: new Date(form.endTime).toISOString(),
@@ -144,7 +157,7 @@ function AddEventModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative z-10 w-full max-w-md rounded-2xl border border-border bg-card/90 p-6 backdrop-blur-xl shadow-2xl">
-        <h2 className="mb-5 text-lg font-semibold text-foreground">New Event</h2>
+        <h2 className="mb-5 text-lg font-semibold text-foreground">{editEvent ? "Edit Event" : "New Event"}</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="mb-1 block text-xs font-medium text-muted-foreground">Title</label>
@@ -220,7 +233,7 @@ function AddEventModal({
               disabled={saving}
               className="flex-1 rounded-xl border border-primary/30 bg-primary/20 py-2.5 text-sm font-medium text-primary hover:bg-primary/30 transition-colors disabled:opacity-50"
             >
-              {saving ? "Saving…" : "Create Event"}
+              {saving ? "Saving…" : editEvent ? "Save Changes" : "Create Event"}
             </button>
           </div>
         </form>
@@ -241,6 +254,7 @@ export default function CalendarPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(now);
   const [showModal, setShowModal] = useState(false);
+  const [editEvent, setEditEvent] = useState<CalendarEvent | null>(null);
   const [deletingId, setDeletingId] = useState<number | string | null>(null);
 
   async function fetchEvents(y: number, m: number) {
@@ -291,15 +305,21 @@ export default function CalendarPage() {
     else setMonth(m => m + 1);
   }
 
-  async function handleCreate(event: NewEvent) {
-    const res = await fetch("/api/events", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(event),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: "Unknown error" }));
-      throw new Error(err.error ?? `HTTP ${res.status}`);
+  async function handleSave(event: any) {
+    if (event.id) {
+      const res = await fetch(`/api/events/${event.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(event),
+      });
+      if (!res.ok) throw new Error("Failed to update event");
+    } else {
+      const res = await fetch("/api/events", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(event),
+      });
+      if (!res.ok) throw new Error("Failed to create event");
     }
     await fetchEvents(year, month);
   }
@@ -347,11 +367,12 @@ export default function CalendarPage() {
 
   return (
     <>
-      <AddEventModal
+      <EventModal
         open={showModal}
         defaultDate={selectedDate}
-        onClose={() => setShowModal(false)}
-        onSave={handleCreate}
+        editEvent={editEvent}
+        onClose={() => { setShowModal(false); setEditEvent(null); }}
+        onSave={handleSave}
       />
 
       <div className="relative min-h-screen pb-12">
@@ -364,7 +385,7 @@ export default function CalendarPage() {
           <div className="mb-6 flex items-center justify-between">
             <h1 className="text-3xl font-extrabold tracking-tight text-white">Calendar</h1>
           <button
-            onClick={() => setShowModal(true)}
+            onClick={() => { setEditEvent(null); setShowModal(true); }}
             className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm font-medium text-primary hover:bg-primary/20 transition-all"
           >
             <span className="text-base leading-none">+</span> New Event
@@ -504,7 +525,7 @@ export default function CalendarPage() {
                 </p>
               </div>
               <button
-                onClick={() => setShowModal(true)}
+                onClick={() => { setEditEvent(null); setShowModal(true); }}
                 className="rounded-lg border border-border p-1.5 text-muted-foreground hover:bg-white/5 hover:text-foreground transition-colors"
                 title="Add event"
               >
@@ -526,7 +547,7 @@ export default function CalendarPage() {
                 <span className="text-3xl">📭</span>
                 <p className="text-sm">No events or tasks this day</p>
                 <button
-                  onClick={() => setShowModal(true)}
+                  onClick={() => { setEditEvent(null); setShowModal(true); }}
                   className="mt-1 rounded-xl border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs text-primary hover:bg-primary/20 transition-colors"
                 >
                   Add event
@@ -571,13 +592,21 @@ export default function CalendarPage() {
                         <p className="text-sm font-medium text-foreground leading-snug">
                           {ev.title}
                         </p>
-                        <button
-                          onClick={() => handleDelete(ev.id)}
-                          disabled={deletingId === ev.id}
-                          className="flex-shrink-0 opacity-0 group-hover:opacity-100 flex h-5 w-5 items-center justify-center rounded border border-red-500/20 bg-red-500/10 text-[10px] text-red-400 hover:bg-red-500/20 transition-all disabled:opacity-50"
-                        >
-                          {deletingId === ev.id ? "…" : "✕"}
-                        </button>
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => { setEditEvent(ev); setShowModal(true); }}
+                            className="flex-shrink-0 opacity-0 group-hover:opacity-100 flex h-5 w-5 items-center justify-center rounded border border-blue-500/20 bg-blue-500/10 text-[10px] text-blue-400 hover:bg-blue-500/20 transition-all"
+                          >
+                            ✎
+                          </button>
+                          <button
+                            onClick={() => handleDelete(ev.id)}
+                            disabled={deletingId === ev.id}
+                            className="flex-shrink-0 opacity-0 group-hover:opacity-100 flex h-5 w-5 items-center justify-center rounded border border-red-500/20 bg-red-500/10 text-[10px] text-red-400 hover:bg-red-500/20 transition-all disabled:opacity-50"
+                          >
+                            {deletingId === ev.id ? "…" : "✕"}
+                          </button>
+                        </div>
                       </div>
                       <p className="mt-1 text-xs text-muted-foreground">
                         {formatTime(ev.startTime)} – {formatTime(ev.endTime)}
