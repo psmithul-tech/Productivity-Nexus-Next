@@ -72,7 +72,7 @@ Keep the tone encouraging, premium, and concise. Don't use markdown headers (##)
     console.error("Gemini API error, falling back to OpenRouter:", error);
     try {
       const { callOpenRouter } = await import("@/lib/openrouter");
-      const fallbackText = await callOpenRouter(prompt, undefined, { model: "google/gemini-2.5-flash", temperature: 0.7 });
+      const fallbackText = await callOpenRouter(prompt, undefined, { model: "google/gemini-2.5-flash", temperature: 0.7, maxTokens: 800 });
       return NextResponse.json({
         text: fallbackText,
         stats: {

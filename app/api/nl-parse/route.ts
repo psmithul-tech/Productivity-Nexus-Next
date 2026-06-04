@@ -80,8 +80,9 @@ Output: {"type":"event","data":{"title":"Dentist appointment","startTime":"2026-
     try {
       text = await callOpenRouter(query, systemInstruction, {
         model: "openrouter/owl-alpha",
-        temperature: 0.1,
+        temperature: 0.7,
         jsonMode: true,
+        maxTokens: 1000
       });
       console.log(`[nl-parse] Used openrouter/owl-alpha`);
     } catch (err: any) {
