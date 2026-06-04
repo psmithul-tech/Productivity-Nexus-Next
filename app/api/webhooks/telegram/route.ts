@@ -4,6 +4,7 @@ import { db, settingsTable, tasksTable, eventsTable, remindersTable } from "@/li
 import { eq } from "drizzle-orm";
 import { pushTaskToGoogleCalendar } from "@/lib/google-calendar";
 import { getAIClient } from "@/lib/gemini";
+import { callOpenRouter } from "@/lib/openrouter";
 import {
   formatDateInTimeZone,
   formatLocalIsoInTimeZone,
@@ -115,35 +116,23 @@ ${taskList}
   Same rules: local time, no 'Z', no offset.
 - Keep responses concise (1-4 sentences) and Telegram-friendly (plain text + emojis, no markdown).`;
 
-    console.log("[Telegram] Calling Gemini...");
-    const ai = getAIClient(settings.geminiApiKey);
-    // Model fallback chain: try cheapest model first, fall back if rate limited
-    const MODELS = ["gemini-3.1-flash-lite", "gemini-2.5-flash-lite", "gemma-4-31b"];
+    console.log("[Telegram] Calling OpenRouter (owl-alpha)...");
+    
     let replyText = "I'm here! How can I help? 😊";
     
-    for (const model of MODELS) {
-      try {
-        const response = await ai.models.generateContent({
-          model,
-          contents: [{ role: "user", parts: [{ text }] }],
-          config: {
-            systemInstruction: systemPrompt,
-            maxOutputTokens: 600,
-            temperature: 0.7,
-          },
-        });
-        replyText = response.text ?? replyText;
-        console.log(`[Telegram] Used model: ${model}`);
-        break;
-      } catch (modelErr: any) {
-        if (modelErr.status === 429) {
-          console.warn(`[Telegram] ${model} rate limited, trying next model...`);
-          continue;
-        }
-        throw modelErr;
-      }
+    try {
+      const responseText = await callOpenRouter(text, systemPrompt, {
+        model: "openrouter/owl-alpha",
+        temperature: 0.7,
+        maxTokens: 600,
+      });
+      replyText = responseText ?? replyText;
+      console.log("[Telegram] OpenRouter responded.");
+    } catch (err: any) {
+      console.error("[Telegram] OpenRouter failed:", err);
+      // Fallback if needed, though owl-alpha is robust
+      replyText = "Sorry, I'm having trouble thinking right now. Please try again later.";
     }
-    console.log("[Telegram] Gemini responded.");
 
     // Parse ACTION lines from response
     const taskActions = replyText.match(/ACTION_CREATE_TASK:\{[^\n]+\}/g) ?? [];

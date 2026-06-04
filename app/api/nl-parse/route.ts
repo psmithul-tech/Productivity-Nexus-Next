@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAIClient } from "@/lib/gemini";
 import { createClient } from "@/utils/supabase/server";
 import { db, settingsTable } from "@/lib/db";
 import { eq } from "drizzle-orm";
+import { callOpenRouter } from "@/lib/openrouter";
 import {
   formatDateInTimeZone,
   formatLocalIsoInTimeZone,
@@ -21,8 +21,6 @@ export async function POST(req: NextRequest) {
 
   const [settings] = await db.select().from(settingsTable).where(eq(settingsTable.userId, user.id));
   const timezone = normalizeTimeZone(settings?.timezone || requestedTimezone);
-  const ai = getAIClient(settings?.geminiApiKey || null);
-  if (!ai) return NextResponse.json({ error: "Gemini API key not configured" }, { status: 400 });
 
   const now = new Date();
   const localIso = formatLocalIsoInTimeZone(now, timezone);
@@ -76,35 +74,22 @@ Output: {"type":"task","data":{"title":"Buy milk","priority":"urgent","bucket":"
 Input: "Dentist appointment at 2:30pm"
 Output: {"type":"event","data":{"title":"Dentist appointment","startTime":"2026-06-04T14:30:00","endTime":"2026-06-04T15:30:00"}}
 `;
-  // Model strategy: try best model first, fall back to cheaper model if rate limited
-  const MODELS = ["gemini-2.5-flash", "gemini-3.1-flash-lite", "gemma-4-31b"];
-  
   try {
     let text: string | null = null;
     
-    for (const model of MODELS) {
-      try {
-        const response = await ai.models.generateContent({
-          model,
-          contents: [{ role: "user", parts: [{ text: query }] }],
-          config: {
-            systemInstruction: { role: "system", parts: [{ text: systemInstruction }] },
-            temperature: 0.1,
-          },
-        });
-        text = response.text ?? null;
-        console.log(`[nl-parse] Used model: ${model}`);
-        break; // Success — stop trying models
-      } catch (modelErr: any) {
-        if (modelErr.status === 429) {
-          console.warn(`[nl-parse] ${model} rate limited, trying next model...`);
-          continue;
-        }
-        throw modelErr; // Re-throw non-rate-limit errors
-      }
+    try {
+      text = await callOpenRouter(query, systemInstruction, {
+        model: "openrouter/owl-alpha",
+        temperature: 0.1,
+        jsonMode: true,
+      });
+      console.log(`[nl-parse] Used openrouter/owl-alpha`);
+    } catch (err: any) {
+      console.error(`[nl-parse] OpenRouter failed:`, err);
+      throw err;
     }
     
-    if (!text) throw new Error("All models failed");
+    if (!text) throw new Error("OpenRouter returned no text");
 
     const jsonStr = text.replace(/```json/g, "").replace(/```/g, "").trim();
     const parsed = JSON.parse(jsonStr);
