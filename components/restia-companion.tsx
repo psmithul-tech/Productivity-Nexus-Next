@@ -53,28 +53,55 @@ export function RestiaCompanion() {
     let timeoutId: NodeJS.Timeout;
 
     const roamingLoop = () => {
-      // Realistic behavior: stay in place (idle) and occasionally share a thought.
-      // No more frantic random walking or magic casting.
-      setIsMoving(false);
-      setInternalAnim("idle");
-      
-      // Occasional random thought bubble (less frequent)
-      if (Math.random() > 0.8) {
-        setBubbleText(RANDOM_THOUGHTS[Math.floor(Math.random() * RANDOM_THOUGHTS.length)]);
-        setTimeout(() => setBubbleText(null), 5000);
+      // 30% chance to move, 70% chance to just stay idle and maybe think
+      const shouldMove = Math.random() > 0.7;
+
+      if (shouldMove) {
+        // Calculate new position respecting window bounds
+        const padding = 150; // Sprite size to prevent clipping
+        const maxX = Math.max(0, window.innerWidth - padding);
+        const maxY = Math.max(0, window.innerHeight - padding);
+
+        const newX = Math.max(0, Math.min(Math.random() * maxX, maxX));
+        const newY = Math.max(0, Math.min(Math.random() * maxY, maxY));
+
+        // Calculate distance to determine duration (e.g. 150 pixels per second)
+        const dist = Math.sqrt(Math.pow(newX - pos.x, 2) + Math.pow(newY - pos.y, 2));
+        const duration = Math.max(2, dist / 150); 
+        
+        setFlipX(newX > pos.x);
+        setMoveDuration(duration);
+        setIsMoving(true);
+        setPos({ x: newX, y: newY });
+
+        // Wait for movement to finish, then go back to idle
+        timeoutId = setTimeout(() => {
+          setIsMoving(false);
+          roamingLoop();
+        }, duration * 1000);
+      } else {
+        setIsMoving(false);
+        setInternalAnim("idle");
+        
+        // Occasional random thought bubble
+        if (Math.random() > 0.7) {
+          setBubbleText(RANDOM_THOUGHTS[Math.floor(Math.random() * RANDOM_THOUGHTS.length)]);
+          setTimeout(() => setBubbleText(null), 4000);
+        }
+        
+        // Idle for 10 to 25 seconds
+        timeoutId = setTimeout(() => {
+          setInternalAnim(null);
+          roamingLoop();
+        }, 10000 + Math.random() * 15000);
       }
-      
-      timeoutId = setTimeout(() => {
-        setInternalAnim(null);
-        roamingLoop();
-      }, 10000 + Math.random() * 10000); // 10-20s idle cycles
     };
 
     // Initial wait
-    timeoutId = setTimeout(roamingLoop, 3000);
+    timeoutId = setTimeout(roamingLoop, 5000);
 
     return () => clearTimeout(timeoutId);
-  }, [mounted, isRoaming, isOpen, moveDuration]);
+  }, [mounted, isRoaming, isOpen, pos.x, pos.y]);
 
   // Determine animation class based on context + internal state
   let animClass = "restia-idle";
