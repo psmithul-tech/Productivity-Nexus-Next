@@ -7,7 +7,7 @@ const pool = new Pool({
 });
 
 async function main() {
-  const { rows } = await pool.query("SELECT id, timezone FROM settings");
+  const { rows } = await pool.query("SELECT id, user_id, telegram_chat_id, timezone FROM settings");
   console.log(rows);
   process.exit(0);
 }

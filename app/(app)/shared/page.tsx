@@ -255,9 +255,9 @@ function AddTaskModal({
             <div>
               <label className="block text-xs font-semibold text-white/50 mb-1.5 uppercase tracking-wider">Due Date</label>
               <input
-                type="date"
-                value={dueDate}
-                onChange={e => setDueDate(e.target.value)}
+                type="datetime-local"
+                value={dueDate ? new Date(new Date(dueDate).getTime() - new Date(dueDate).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : ""}
+                onChange={(e) => setDueDate(e.target.value ? new Date(e.target.value).toISOString() : "")}
                 className="w-full rounded-xl bg-white/5 border border-white/10 focus:border-violet-500/50 px-4 py-2.5 text-sm text-white outline-none transition-colors"
               />
             </div>

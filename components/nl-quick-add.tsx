@@ -33,8 +33,11 @@ export function NLQuickAdd() {
           body: JSON.stringify(data),
         });
         if (taskRes.ok) {
+          const dueDateStr = data.dueDate ? new Date(data.dueDate).toLocaleString("en-US", {
+            month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"
+          }) : "";
           toast.success(`✅ Task created`, {
-            description: data.title,
+            description: `${data.title}${dueDateStr ? ` · ${dueDateStr}` : ""}`,
             duration: 3000,
           });
           setInput("");

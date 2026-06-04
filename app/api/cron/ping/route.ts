@@ -3,6 +3,8 @@ import { db, settingsTable, tasksTable, eventsTable } from "@/lib/db";
 import { eq, and, sql } from "drizzle-orm";
 import { getAIClient } from "@/lib/gemini";
 
+export const dynamic = "force-dynamic";
+
 async function sendTelegramMessage(chatId: string, botToken: string, message: string) {
   // Telegram Markdown (V1) doesn't support **bold**, only *bold*
   const safeMessage = message.replace(/\*\*/g, '*');
@@ -118,7 +120,7 @@ export async function GET(req: NextRequest) {
       }
 
       // ── PERIODIC SUMMARY NOTIFICATIONS ──
-      const freq = config.pingFrequency || 30;
+      const freq = parseInt(String(config.pingFrequency)) || 30;
       if (currentMinute % freq === 0) {
         if (config.hourlyUpdatesEnabled !== false) {
           const tasks = await db.select().from(tasksTable).where(

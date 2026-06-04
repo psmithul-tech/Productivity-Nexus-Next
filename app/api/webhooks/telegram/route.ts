@@ -54,6 +54,8 @@ async function processMessage(chatId: string, text: string, token: string, userI
             )
             .join("\n");
 
+    console.log(`[Telegram Debug] userTz: ${userTz}, timeStr: ${timeStr}, dateStr: ${dateStr}, userId: ${userId}`);
+
     const systemPrompt = `You are Restia, the user's warm, witty and proactive AI Chief of Staff. You communicate via Telegram. Today is ${dateStr} at ${timeStr} in the user's timezone (${userTz}).
 
 Current active tasks:
@@ -103,8 +105,8 @@ CRITICAL: When the user specifies an exact time (e.g. "9:47 am"), you MUST outpu
         let dueDate = null;
         if (data.dueDate && data.dueDate !== "null") {
           const { fromZonedTime } = require("date-fns-tz");
-          // If the AI included a 'Z' despite instructions, strip it so fromZonedTime treats it as local time
-          const cleanDate = data.dueDate.replace("Z", "");
+          // Ensure we strictly take the local time portion (YYYY-MM-DDTHH:mm:ss)
+          const cleanDate = data.dueDate.substring(0, 19);
           dueDate = fromZonedTime(cleanDate, userTz);
         }
 

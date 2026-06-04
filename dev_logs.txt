@@ -1,0 +1,18 @@
+
+> nexus-next@0.1.0 dev
+> next dev
+
+⚠ Port 3000 is in use by process 70938, using available port 3001 instead.
+▲ Next.js 16.2.7 (Turbopack)
+- Local:         http://localhost:3001
+- Network:       http://192.168.0.109:3001
+- Environments: .env.local
+✓ Ready in 296ms
+
+[Telegram] Webhook received: {"message":{"chat":{"id":6284351149},"text":"test time"}}
+[Telegram] Processing message from 6284351149: "test time"
+ POST /api/webhooks/telegram 200 in 727ms (next.js: 157ms, proxy.ts: 122ms, application-code: 449ms)
+[Telegram Debug] userTz: Asia/Kolkata, timeStr: 10:09 AM, dateStr: Thursday, June 4, 2026, userId: 5f378b20-67b2-4a15-83f8-5a89351bf1e8
+[Telegram] Calling Gemini...
+[Telegram] Gemini responded.
+[Telegram] Reply sent to 6284351149
