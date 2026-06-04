@@ -117,9 +117,8 @@ ${taskList}
 
     console.log("[Telegram] Calling Gemini...");
     const ai = getAIClient(settings.geminiApiKey);
-    
     // Model fallback chain: try cheapest model first, fall back if rate limited
-    const MODELS = ["gemini-3.1-flash-lite", "gemini-2.5-flash-lite"];
+    const MODELS = ["gemini-3.1-flash-lite", "gemini-2.5-flash-lite", "gemma-4-31b"];
     let replyText = "I'm here! How can I help? 😊";
     
     for (const model of MODELS) {

@@ -77,7 +77,7 @@ Input: "Dentist appointment at 2:30pm"
 Output: {"type":"event","data":{"title":"Dentist appointment","startTime":"2026-06-04T14:30:00","endTime":"2026-06-04T15:30:00"}}
 `;
   // Model strategy: try best model first, fall back to cheaper model if rate limited
-  const MODELS = ["gemini-2.5-flash", "gemini-3.1-flash-lite"];
+  const MODELS = ["gemini-2.5-flash", "gemini-3.1-flash-lite", "gemma-4-31b"];
   
   try {
     let text: string | null = null;

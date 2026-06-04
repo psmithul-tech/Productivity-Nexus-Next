@@ -319,30 +319,33 @@ Rules:
 
             try {
               const ai = getAIClient(config.geminiApiKey);
+              const MODELS = [CHECKIN_MODEL, CHECKIN_FALLBACK_MODEL, "gemma-4-31b"];
+              let success = false;
               
-              // Try cheap model first (highest rate limits)
-              try {
-                const aiRes = await ai.models.generateContent({
-                  model: CHECKIN_MODEL,
-                  contents: prompt,
-                  config: { maxOutputTokens: 400, temperature: 0.8 },
-                });
-                if (aiRes.text) message = aiRes.text;
-              } catch (primaryErr: any) {
-                console.warn(`[Cron] ${CHECKIN_MODEL} failed (${primaryErr.status || 'unknown'}), trying fallback...`);
-                
-                // Try fallback model
+              for (const model of MODELS) {
                 try {
                   const aiRes = await ai.models.generateContent({
-                    model: CHECKIN_FALLBACK_MODEL,
+                    model: model,
                     contents: prompt,
                     config: { maxOutputTokens: 400, temperature: 0.8 },
                   });
-                  if (aiRes.text) message = aiRes.text;
-                } catch (fallbackErr: any) {
-                  console.warn(`[Cron] Fallback model also failed, using template. Error: ${fallbackErr.status || fallbackErr.message}`);
-                  // message stays as templateMessage
+                  if (aiRes.text) {
+                    message = aiRes.text;
+                    success = true;
+                    console.log(`[Cron] Used model: ${model}`);
+                    break;
+                  }
+                } catch (modelErr: any) {
+                  if (modelErr.status === 429) {
+                    console.warn(`[Cron] ${model} failed (429 Rate Limit), trying fallback...`);
+                    continue;
+                  }
+                  throw modelErr;
                 }
+              }
+              
+              if (!success) {
+                console.warn(`[Cron] All AI models failed, using template fallback.`);
               }
             } catch (err) {
               console.error("AI Cron Ping Error:", err);
