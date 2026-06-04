@@ -53,53 +53,21 @@ export function RestiaCompanion() {
     let timeoutId: NodeJS.Timeout;
 
     const roamingLoop = () => {
-      // Decide what to do: 60% move, 20% think, 20% magic
-      const rand = Math.random();
+      // Realistic behavior: stay in place (idle) and occasionally share a thought.
+      // No more frantic random walking or magic casting.
+      setIsMoving(false);
+      setInternalAnim("idle");
       
-      if (rand < 0.6) {
-        // Move
-        const newX = Math.max(20, Math.random() * (window.innerWidth - 120));
-        const newY = Math.max(80, Math.random() * (window.innerHeight - 120)); // Avoid top nav
-        
-        setPos(prev => {
-          const dist = Math.sqrt(Math.pow(newX - prev.x, 2) + Math.pow(newY - prev.y, 2));
-          const duration = dist / 150; // 150px per second
-          setMoveDuration(duration);
-          
-          if (newX < prev.x) setFlipX(true);
-          else setFlipX(false);
-          
-          return { x: newX, y: newY };
-        });
-        
-        setIsMoving(true);
-        setInternalAnim(null);
-        setBubbleText(null);
-        
-        timeoutId = setTimeout(() => {
-          setIsMoving(false);
-          roamingLoop();
-        }, moveDuration * 1000 + 1000); // add 1s buffer
-        
-      } else {
-        // Stay still and do an idle behavior
-        setIsMoving(false);
-        if (Math.random() > 0.5) {
-          setInternalAnim("magic");
-        } else {
-          setInternalAnim("idle");
-          // Random thought bubble
-          if (Math.random() > 0.4) {
-            setBubbleText(RANDOM_THOUGHTS[Math.floor(Math.random() * RANDOM_THOUGHTS.length)]);
-            setTimeout(() => setBubbleText(null), 4000);
-          }
-        }
-        
-        timeoutId = setTimeout(() => {
-          setInternalAnim(null);
-          roamingLoop();
-        }, 5000 + Math.random() * 5000);
+      // Occasional random thought bubble (less frequent)
+      if (Math.random() > 0.8) {
+        setBubbleText(RANDOM_THOUGHTS[Math.floor(Math.random() * RANDOM_THOUGHTS.length)]);
+        setTimeout(() => setBubbleText(null), 5000);
       }
+      
+      timeoutId = setTimeout(() => {
+        setInternalAnim(null);
+        roamingLoop();
+      }, 10000 + Math.random() * 10000); // 10-20s idle cycles
     };
 
     // Initial wait
