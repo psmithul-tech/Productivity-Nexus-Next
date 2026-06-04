@@ -69,7 +69,21 @@ Keep the tone encouraging, premium, and concise. Don't use markdown headers (##)
       }
     });
   } catch (error) {
-    console.error("Review generation error:", error);
-    return NextResponse.json({ error: "Failed to generate review" }, { status: 500 });
+    console.error("Gemini API error, falling back to OpenRouter:", error);
+    try {
+      const { callOpenRouter } = await import("@/lib/openrouter");
+      const fallbackText = await callOpenRouter(prompt, undefined, { model: "google/gemini-2.5-flash", temperature: 0.7 });
+      return NextResponse.json({
+        text: fallbackText,
+        stats: {
+          tasks: completedTasks.length,
+          focusMinutes: totalFocusMinutes,
+          habits: habitLogs.length,
+        }
+      });
+    } catch (fallbackError) {
+      console.error("OpenRouter fallback error:", fallbackError);
+      return NextResponse.json({ error: "Failed to generate review" }, { status: 500 });
+    }
   }
 }

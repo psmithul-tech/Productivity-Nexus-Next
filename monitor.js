@@ -238,8 +238,8 @@ setInterval(async () => {
   try {
     const opts = CRON_SECRET ? { headers: { Authorization: `Bearer ${CRON_SECRET}` } } : {};
     await fetchJson(`${LOCAL_URL}/api/cron/ping`, opts);
-    console.log(c.green("  [Cron] Sent hourly reminder update"));
+    console.log(c.green("  [Cron] Sent periodic reminder update"));
   } catch (e) {
     // Ignore cron errors
   }
-}, 60 * 60 * 1000); // Every hour
+}, 60 * 1000); // Every minute
