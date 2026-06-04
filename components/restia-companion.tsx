@@ -87,8 +87,9 @@ export function RestiaCompanion() {
     <>
       <style>{`
         @keyframes restia-idle {
-          0%, 49.9% { background-position: 0% 0%; }
-          50%, 100% { background-position: 50% 0%; }
+          0%, 33.2% { background-position: 0% 0%; }
+          33.3%, 66.5% { background-position: 50% 0%; }
+          66.6%, 100% { background-position: 100% 0%; }
         }
         @keyframes restia-thinking {
           0%, 33.2% { background-position: 0% 50%; }
@@ -96,8 +97,9 @@ export function RestiaCompanion() {
           66.6%, 100% { background-position: 100% 50%; }
         }
         @keyframes restia-action {
-          0%, 49.9% { background-position: 0% 100%; }
-          50%, 100% { background-position: 50% 100%; }
+          0%, 33.2% { background-position: 0% 100%; }
+          33.3%, 66.5% { background-position: 50% 100%; }
+          66.6%, 100% { background-position: 100% 100%; }
         }
         .sprite-base {
           background-image: url('/restia-sprite.png');
@@ -243,10 +245,10 @@ export function RestiaCompanion() {
           {/* Subtle glow instead of solid background */}
           <div className="absolute inset-0 bg-primary/10 blur-2xl rounded-full scale-75 group-hover:scale-110 group-hover:bg-primary/20 transition-all duration-500" />
           
-          <div 
-            className={`sprite-base ${animClass} w-[150px] h-[150px] overflow-visible transition-all duration-300 transform group-hover:scale-105 group-active:scale-95 filter drop-shadow-2xl`} 
+            className={`sprite-base ${animClass} w-[150px] h-[150px] overflow-visible transform group-hover:scale-105 group-active:scale-95 filter drop-shadow-2xl`} 
             style={{ 
-              transform: flipX ? 'scaleX(-1)' : 'scaleX(1)'
+              transform: flipX ? 'scaleX(-1)' : 'scaleX(1)',
+              transition: 'transform 0.3s ease'
             }}
           />
         </button>
