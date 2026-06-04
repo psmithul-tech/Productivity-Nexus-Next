@@ -1,7 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAIClient } from "@/lib/gemini";
-import { db, settingsTable } from "@/lib/db";
-import { eq } from "drizzle-orm";
 import { createClient } from "@/utils/supabase/server";
 
 export async function POST(req: NextRequest) {
@@ -9,37 +6,32 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const [settings] = await db.select().from(settingsTable).where(eq(settingsTable.userId, user.id));
-  if (!settings?.geminiApiKey) {
-    return NextResponse.json({ error: "Gemini API Key missing. Add it in Settings." }, { status: 400 });
-  }
-
   try {
     const { text } = await req.json();
     if (!text) {
       return new Response(JSON.stringify({ error: "Text is required" }), { status: 400 });
     }
 
-    const ai = getAIClient(settings.geminiApiKey);
-    const response = await ai.models.generateContent({
-      model: "gemini-3.1-flash-tts-preview",
-      contents: text,
+    // Call our local Python Chatterbox TTS server
+    const response = await fetch("http://127.0.0.1:8000/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, voice: "britney" })
     });
 
-    // Check if the response contains inlineData with audio
-    const part = response.candidates?.[0]?.content?.parts?.[0];
-    if (part?.inlineData?.data && part.inlineData.mimeType?.startsWith("audio/")) {
-      const audioBuffer = Buffer.from(part.inlineData.data, "base64");
-      return new Response(audioBuffer, {
-        headers: {
-          "Content-Type": part.inlineData.mimeType,
-          "Cache-Control": "public, max-age=31536000",
-        },
-      });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Chatterbox server error: ${errorText}`);
     }
 
-    // Fallback if no audio part is returned (e.g. model decided to just output text)
-    return new Response(JSON.stringify({ error: "Model did not return audio." }), { status: 500 });
+    const audioBuffer = await response.arrayBuffer();
+    
+    return new Response(audioBuffer, {
+      headers: {
+        "Content-Type": "audio/wav",
+        "Cache-Control": "public, max-age=31536000",
+      },
+    });
 
   } catch (error: any) {
     console.error("TTS error:", error);
