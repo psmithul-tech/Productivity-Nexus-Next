@@ -117,8 +117,9 @@ export async function GET(req: NextRequest) {
         tasksNotified++;
       }
 
-      // ── HALF-HOURLY SUMMARY NOTIFICATIONS ──
-      if (currentMinute === 0 || currentMinute === 30) {
+      // ── PERIODIC SUMMARY NOTIFICATIONS ──
+      const freq = config.pingFrequency || 30;
+      if (currentMinute % freq === 0) {
         if (config.hourlyUpdatesEnabled !== false) {
           const tasks = await db.select().from(tasksTable).where(
             and(

@@ -322,10 +322,11 @@ function TaskCard({
     const now = new Date();
     const diff = date.getTime() - now.getTime();
     const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-    if (days < 0) return { label: "Overdue", cls: "text-red-400" };
-    if (days === 0) return { label: "Today", cls: "text-yellow-400" };
-    if (days === 1) return { label: "Tomorrow", cls: "text-blue-400" };
-    return { label: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }), cls: "text-white/40" };
+    const timeStr = date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+    if (days < 0) return { label: `Overdue, ${timeStr}`, cls: "text-red-400" };
+    if (days === 0) return { label: `Today, ${timeStr}`, cls: "text-yellow-400" };
+    if (days === 1) return { label: `Tomorrow, ${timeStr}`, cls: "text-blue-400" };
+    return { label: date.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }), cls: "text-white/40" };
   };
 
   return (

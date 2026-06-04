@@ -99,6 +99,7 @@ export const settingsTable = pgTable("settings", {
   quietHoursEnd: text("quiet_hours_end").notNull().default("08:00"),
   reminderTone: text("reminder_tone").notNull().default("normal"),
   timezone: text("timezone").notNull().default("UTC"),
+  pingFrequency: integer("ping_frequency").notNull().default(30),
   telegramChatId: text("telegram_chat_id"),
   telegramBotToken: text("telegram_bot_token"),
   discordWebhookUrl: text("discord_webhook_url"),

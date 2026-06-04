@@ -63,8 +63,8 @@ INSTRUCTIONS:
 - Always reply conversationally and warmly. You have a cheerful, caring personality with emojis.
 - If the user asks for their tasks/list, list them clearly from the task context above.
 - If the user wants to ADD a task, extract it, confirm warmly, and include AFTER your message:
-  ACTION_CREATE_TASK:{"title":"...","priority":"medium","bucket":"today","dueDate":"ISO string or null"}
-CRITICAL: When the user specifies an exact time (e.g. "9:47 am"), you MUST convert that time in their timezone (${userTz}) to a UTC ISO 8601 datetime string. Do not just put the date, put the exact time in UTC!
+  ACTION_CREATE_TASK:{"title":"...","priority":"medium","bucket":"today","dueDate":"YYYY-MM-DDTHH:mm:00 or null"}
+CRITICAL: When the user specifies an exact time (e.g. "9:47 am"), you MUST output that time as a local ISO string WITHOUT a trailing 'Z'. For example, if they say 9:47 am, output "2026-06-04T09:47:00". Do NOT convert to UTC yourself!
 - If adding MULTIPLE tasks, include one ACTION_CREATE_TASK line per task.
 - If creating an event, include after your message:
   ACTION_CREATE_EVENT:{"title":"...","startTime":"ISO string","endTime":"ISO string"}
@@ -100,7 +100,13 @@ CRITICAL: When the user specifies an exact time (e.g. "9:47 am"), you MUST conve
     for (const line of taskActions) {
       try {
         const data = JSON.parse(line.replace("ACTION_CREATE_TASK:", ""));
-        const dueDate = data.dueDate && data.dueDate !== "null" ? new Date(data.dueDate) : null;
+        let dueDate = null;
+        if (data.dueDate && data.dueDate !== "null") {
+          const { fromZonedTime } = require("date-fns-tz");
+          // If the AI included a 'Z' despite instructions, strip it so fromZonedTime treats it as local time
+          const cleanDate = data.dueDate.replace("Z", "");
+          dueDate = fromZonedTime(cleanDate, userTz);
+        }
 
         const [newTask] = await db
           .insert(tasksTable)

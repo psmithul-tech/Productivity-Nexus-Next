@@ -227,7 +227,7 @@ export default function DashboardPage() {
                         const isOverdue = due < new Date();
                         return (
                           <span className={`text-[10px] font-medium shrink-0 ${isOverdue ? "text-red-400" : "text-white/30"}`}>
-                            {isOverdue ? "⚠ " : ""}{due.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                            {isOverdue ? "⚠ " : ""}{due.toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
                           </span>
                         );
                       })()}

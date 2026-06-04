@@ -20,6 +20,7 @@ interface AppSettings {
   googleRefreshToken?: string;
   geminiApiKey: string;
   username: string;
+  pingFrequency: number;
 }
 
 const DEFAULTS: AppSettings = {
@@ -35,6 +36,7 @@ const DEFAULTS: AppSettings = {
   telegramChatId: "",
   geminiApiKey: "",
   username: "",
+  pingFrequency: 30,
 };
 
 // ─── Section ──────────────────────────────────────────────────────────────────
@@ -491,11 +493,30 @@ export default function SettingsPage() {
                 onChange={(v) => update("focusModeEnabled", v)}
               />
               <Toggle
-                label="Hourly Updates"
-                description="Receive a brief digest of your schedule every hour"
+                label="Scheduled Updates"
+                description="Receive a brief digest of your schedule regularly"
                 checked={settings.hourlyUpdatesEnabled}
                 onChange={(v) => update("hourlyUpdatesEnabled", v)}
               />
+              
+              {settings.hourlyUpdatesEnabled && (
+                <div className="rounded-xl border border-border/50 bg-background/20 px-4 py-3.5 mt-2 transition-all">
+                  <label className="mb-2 block text-sm font-medium text-foreground">
+                    Update Frequency
+                  </label>
+                  <select
+                    value={settings.pingFrequency}
+                    onChange={(e) => update("pingFrequency", parseInt(e.target.value))}
+                    className="w-full rounded-lg border border-border bg-background/50 px-3 py-2 text-sm text-foreground focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
+                  >
+                    <option value={15}>Every 15 minutes</option>
+                    <option value={30}>Every 30 minutes</option>
+                    <option value={60}>Every 1 hour</option>
+                    <option value={120}>Every 2 hours</option>
+                    <option value={240}>Every 4 hours</option>
+                  </select>
+                </div>
+              )}
             </div>
           </Section>
 

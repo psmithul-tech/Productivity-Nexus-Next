@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
     focusModeEnabled: 'focusModeEnabled',
     hourlyUpdatesEnabled: 'hourlyUpdatesEnabled',
     timezone: 'timezone',
+    pingFrequency: 'pingFrequency',
     discordWebhookUrl: 'discordWebhookUrl',
     telegramBotToken: 'telegramBotToken',
     telegramChatId: 'telegramChatId',

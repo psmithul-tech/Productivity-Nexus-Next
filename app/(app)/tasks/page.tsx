@@ -303,7 +303,7 @@ function TaskRow({
             <span className="text-[10px] text-white/30">{BUCKET_LABELS[task.bucket] ?? task.bucket}</span>
             {task.dueDate && (
               <span className={`text-[10px] ${new Date(task.dueDate) < new Date() && task.status === "active" ? "text-red-400" : "text-white/25"}`}>
-                · Due {new Date(task.dueDate).toLocaleDateString()}
+                · Due {new Date(task.dueDate).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
               </span>
             )}
             {task.recurrence && (
