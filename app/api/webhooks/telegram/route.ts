@@ -109,7 +109,7 @@ ${taskList}
 - If the user asks what time or date it is, say exactly: "It's ${timeStr} on ${dateStr}" — do NOT calculate any other time.
 - If the user wants to ADD a task, extract it, confirm warmly, and include AFTER your message:
   ACTION_CREATE_TASK:{"title":"...","priority":"medium","bucket":"today","dueDate":"YYYY-MM-DDTHH:mm:00 or null"}
-  CRITICAL for dueDate: Output the time EXACTLY as the user says it in local time. If they say "10:20 AM", output "T10:20:00". If they say "3pm", output "T15:00:00". Use the date from current_datetime as the base date. NEVER append 'Z' or any timezone offset. NEVER convert to UTC.
+  CRITICAL for dueDate: Output the time EXACTLY as the user says it in local time. If they say "10:20 AM", output "T10:20:00". If they say "3pm", output "T15:00:00". If NO TIME is specified, output "T00:00:00". Use the date from current_datetime as the base date. NEVER append 'Z' or any timezone offset. NEVER convert to UTC.
 - If adding MULTIPLE tasks, include one ACTION_CREATE_TASK line per task.
 - If creating an event, include after your message:
   ACTION_CREATE_EVENT:{"title":"...","startTime":"YYYY-MM-DDTHH:mm:00","endTime":"YYYY-MM-DDTHH:mm:00"}
@@ -167,7 +167,15 @@ ${taskList}
           .returning({ id: tasksTable.id });
 
         if (dueDate && newTask) {
-          const reminderDate = timeOnDateInTimeZone(dueDate, userTz, "09:00");
+          // Check if time is 00:00:00 in local timezone
+          const hour = parseInt(new Intl.DateTimeFormat("en-US", { timeZone: userTz, hour: "numeric", hour12: false }).format(dueDate));
+          const minute = parseInt(new Intl.DateTimeFormat("en-US", { timeZone: userTz, minute: "numeric" }).format(dueDate));
+          
+          let reminderDate = dueDate;
+          if (hour === 0 && minute === 0) {
+            reminderDate = timeOnDateInTimeZone(dueDate, userTz, "09:00");
+          }
+
           if (reminderDate > new Date()) {
             await db.insert(remindersTable).values({
               userId, taskId: newTask.id, channel: "telegram", scheduledAt: reminderDate,
