@@ -61,7 +61,8 @@ CRITICAL TIMEZONE RULES:
 - The CURRENT LOCAL TIME for the user is ${dateStr} at ${timeStr}.
 - You MUST use this exact time as your current reference.
 - Do NOT convert this time to UTC or any other timezone.
-- Do NOT subtract or add hours to this time. If the user asks for their time, you simply say it is ${timeStr}.`;
+- Do NOT subtract or add hours to this time. If the user asks for their time, you simply say it is ${timeStr}.
+
 Current active tasks:
 ${taskList}
 
