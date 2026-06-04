@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, settingsTable, tasksTable, eventsTable } from "@/lib/db";
 import { eq, and, gte, lte, or, sql } from "drizzle-orm";
-import { getAIClient } from "@/lib/gemini";
 import {
   endOfDayInTimeZone,
   formatDateInTimeZone,
@@ -13,13 +12,6 @@ import {
 } from "@/lib/timezone";
 
 export const dynamic = "force-dynamic";
-
-// ── Model Strategy ──
-// Use the cheapest model with highest rate limits for periodic check-ins.
-// gemini-3.1-flash-lite: 15 RPM, 500 RPD (best for cron)
-// gemini-2.5-flash: 5 RPM, 20 RPD (reserved for task parsing / conversations)
-const CHECKIN_MODEL = "gemini-3.1-flash-lite";
-const CHECKIN_FALLBACK_MODEL = "gemini-2.5-flash-lite";
 
 async function sendTelegramMessage(chatId: string, botToken: string, message: string) {
   const safeMessage = message.replace(/\*\*/g, '*');
@@ -51,7 +43,7 @@ async function sendDiscordMessage(webhookUrl: string, message: string) {
   }
 }
 
-// ── Build a rich template check-in (no AI needed) ──
+// ── Build a beautiful rich template check-in (No AI) ──
 function buildTemplateCheckin(
   userTimeStr: string,
   activeTasks: any[],
@@ -74,11 +66,12 @@ function buildTemplateCheckin(
   else if (h24 < 17) greeting = "Good afternoon";
   else greeting = "Good evening";
 
-  lines.push(`${greeting}! 🕒 It's *${userTimeStr}*\n`);
+  lines.push(`✨ *${greeting}!* 🕒 It's *${userTimeStr}*\n`);
+  lines.push(`Here is your schedule overview:\n`);
 
   // Overdue tasks — URGENT
   if (overdue.length > 0) {
-    lines.push(`🚨 *${overdue.length} Overdue Task${overdue.length > 1 ? "s" : ""}:*`);
+    lines.push(`🚨 *${overdue.length} Overdue Task${overdue.length > 1 ? "s" : ""}*`);
     overdue.forEach(t => {
       lines.push(`  ⚠️ ${t.title}${t.dueDate ? ` (was due ${formatTimeInTimeZone(new Date(t.dueDate), userTz)})` : ""}`);
     });
@@ -87,7 +80,7 @@ function buildTemplateCheckin(
 
   // Due soon
   if (endingSoon.length > 0) {
-    lines.push(`⏰ *Due Soon:*`);
+    lines.push(`⏰ *Due Soon*`);
     endingSoon.forEach(t => {
       const dueStr = t.dueDate ? formatTimeInTimeZone(new Date(t.dueDate), userTz) : "";
       lines.push(`  🔸 ${t.title}${dueStr ? ` — ${dueStr}` : ""}`);
@@ -97,11 +90,22 @@ function buildTemplateCheckin(
 
   // Upcoming events (next 60 min)
   if (upcoming.length > 0) {
-    lines.push(`📅 *Coming Up:*`);
+    lines.push(`📅 *Coming Up Soon*`);
     upcoming.forEach(e => {
       lines.push(`  📌 ${e.title} at ${formatTime(new Date(e.startTime))}`);
     });
     lines.push("");
+  }
+
+  // Events today
+  if (allEvents.length > 0) {
+    lines.push(`📆 *${allEvents.length} Event${allEvents.length > 1 ? "s" : ""} Today*`);
+    allEvents.forEach(e => {
+      lines.push(`  🔹 ${e.title} at ${formatTime(new Date(e.startTime))}`);
+    });
+    lines.push("");
+  } else {
+    lines.push("📆 *No events scheduled today*\n");
   }
 
   // Active tasks summary
@@ -130,16 +134,6 @@ function buildTemplateCheckin(
     lines.push("✨ *No active tasks* — enjoy the clear schedule!\n");
   }
 
-  // Events today
-  if (allEvents.length > 0) {
-    lines.push(`📆 *${allEvents.length} Event${allEvents.length > 1 ? "s" : ""} Today*`);
-    allEvents.forEach(e => {
-      lines.push(`  📌 ${e.title} at ${formatTime(new Date(e.startTime))}`);
-    });
-  } else {
-    lines.push("📆 No events scheduled today");
-  }
-
   // Motivational closer
   const closers = [
     "\n💪 You've got this!",
@@ -147,15 +141,11 @@ function buildTemplateCheckin(
     "\n🌟 One task at a time!",
     "\n☕ Stay focused, stay sharp!",
     "\n🎯 Eyes on the prize!",
+    "\n🔥 Let's make today count!",
   ];
   lines.push(closers[Math.floor(Date.now() / 60000) % closers.length]);
 
   return lines.join("\n");
-}
-
-// ── Delay helper to avoid RPM limits ──
-function delay(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 export async function GET(req: NextRequest) {
@@ -281,88 +271,16 @@ export async function GET(req: NextRequest) {
             return new Date(t.dueDate).getTime() < now.getTime();
           });
 
-          // Build the rich template (always works, no AI needed)
-          const templateMessage = buildTemplateCheckin(
+          // Build the rich template (No AI needed)
+          const message = buildTemplateCheckin(
             userTimeStr, activeTasks, allEvents, upcoming, endingSoon, overdue, formatTime, userTz
           );
-
-          let message = templateMessage;
-          
-          // Only try AI if user has API key — use the cheap model
-          if (config.geminiApiKey) {
-            const localDateStr = formatDateInTimeZone(now, userTz);
-            const prompt = `You are Restia, the user's AI Chief of Staff sending a periodic check-in on Telegram.
-
-## CURRENT TIME (AUTHORITATIVE — DO NOT OVERRIDE)
-current_time: "${userTimeStr}"
-current_date: "${localDateStr}"
-timezone: "${userTz}"
-
-Write a warm, personalized check-in. Use the current_time above as ground truth — do NOT compute a different time.
-
-Status:
-- Overdue: ${overdue.length === 0 ? 'None' : JSON.stringify(overdue.map(t => ({ title: t.title, due: t.dueDate ? formatDateTimeInTimeZone(new Date(t.dueDate), userTz) : null })))}
-- Due Soon (2hr): ${endingSoon.length === 0 ? 'None' : JSON.stringify(endingSoon.map(t => ({ title: t.title, due: t.dueDate ? formatTimeInTimeZone(new Date(t.dueDate), userTz) : null })))}
-- Upcoming Events (60 min): ${upcoming.length === 0 ? 'None' : JSON.stringify(upcoming.map(e => ({ title: e.title, time: formatTime(new Date(e.startTime)) })))}
-- All Today's Events: ${allEvents.length === 0 ? 'None' : JSON.stringify(allEvents.map(e => ({ title: e.title, time: formatTime(new Date(e.startTime)) })))}
-- Active Tasks (${activeTasks.length}): ${activeTasks.length === 0 ? 'None' : JSON.stringify(activeTasks.slice(0, 8).map(t => ({ title: t.title, priority: t.priority, due: t.dueDate ? formatDateTimeInTimeZone(new Date(t.dueDate), userTz) : null })))}
-
-Rules:
-- Start with "*${userTimeStr} Check-in*" and a time-appropriate greeting — use the exact time "${userTimeStr}"
-- If overdue tasks exist, start with ⚠️ warnings
-- If upcoming events in next 30 min, give strong heads-up
-- List tasks with priority emojis (🔴 urgent, 🟠 high, 🔵 medium, ⚪ low)
-- Show due times for each task that has one
-- End with a brief motivational line
-- Keep it under 180 words
-- Use single asterisks for *bold*, NOT double`;
-
-            try {
-              const ai = getAIClient(config.geminiApiKey);
-              const MODELS = [CHECKIN_MODEL, CHECKIN_FALLBACK_MODEL, "gemma-4-31b"];
-              let success = false;
-              
-              for (const model of MODELS) {
-                try {
-                  const aiRes = await ai.models.generateContent({
-                    model: model,
-                    contents: prompt,
-                    config: { maxOutputTokens: 400, temperature: 0.8 },
-                  });
-                  if (aiRes.text) {
-                    message = aiRes.text;
-                    success = true;
-                    console.log(`[Cron] Used model: ${model}`);
-                    break;
-                  }
-                } catch (modelErr: any) {
-                  if (modelErr.status === 429) {
-                    console.warn(`[Cron] ${model} failed (429 Rate Limit), trying fallback...`);
-                    continue;
-                  }
-                  throw modelErr;
-                }
-              }
-              
-              if (!success) {
-                console.warn(`[Cron] All AI models failed, using template fallback.`);
-              }
-            } catch (err) {
-              console.error("AI Cron Ping Error:", err);
-              // message stays as templateMessage
-            }
-          }
 
           if (config.discordWebhookUrl) await sendDiscordMessage(config.discordWebhookUrl, message);
           if (config.telegramChatId && config.telegramBotToken) {
             await sendTelegramMessage(config.telegramChatId, config.telegramBotToken, message);
           }
           processed++;
-
-          // Stagger API calls between users to avoid RPM limits
-          if (processed < usersWithConfig.length) {
-            await delay(5000); // 5 second gap between users
-          }
         }
       }
     }
