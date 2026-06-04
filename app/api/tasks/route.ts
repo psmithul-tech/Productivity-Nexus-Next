@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, tasksTable } from "@/lib/db";
-import { eq, and, lte, sql } from "drizzle-orm";
+import { eq, and, lte, sql, or, arrayContains } from "drizzle-orm";
 import { createClient } from "@/utils/supabase/server";
 import { pushTaskToGoogleCalendar } from "@/lib/google-calendar";
 
@@ -16,7 +16,13 @@ export async function GET(req: NextRequest) {
   const status = searchParams.get("status");
   const priority = searchParams.get("priority");
   const bucket = searchParams.get("bucket");
-  const conditions = [eq(tasksTable.userId, user.id)];
+  const conditions = [
+    or(
+      eq(tasksTable.userId, user.id),
+      arrayContains(tasksTable.sharedWith, ["*"]),
+      eq(tasksTable.assignedTo, user.id)
+    )
+  ];
   if (status && status !== "all") conditions.push(eq(tasksTable.status, status));
   if (priority) conditions.push(eq(tasksTable.priority, priority));
   if (bucket) conditions.push(eq(tasksTable.bucket, bucket));

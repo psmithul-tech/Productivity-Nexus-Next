@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { waitUntil } from "@vercel/functions";
 import { db, settingsTable, tasksTable, eventsTable, remindersTable } from "@/lib/db";
-import { eq, and, gte } from "drizzle-orm";
+import { eq, and, gte, or, arrayContains } from "drizzle-orm";
 import { pushTaskToGoogleCalendar } from "@/lib/google-calendar";
 import { getAIClient } from "@/lib/gemini";
 import { callOpenRouter } from "@/lib/openrouter";
@@ -73,7 +73,13 @@ async function processMessage(chatId: string, text: string, token: string, userI
     }
 
     // Fetch active tasks for context
-    const allTasks = await db.select().from(tasksTable).where(eq(tasksTable.userId, userId));
+    const allTasks = await db.select().from(tasksTable).where(
+      or(
+        eq(tasksTable.userId, userId),
+        arrayContains(tasksTable.sharedWith, ["*"]),
+        eq(tasksTable.assignedTo, userId)
+      )
+    );
     const activeTasks = allTasks.filter((t) => t.status === "active");
 
     const taskList =

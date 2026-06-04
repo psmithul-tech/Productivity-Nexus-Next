@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, settingsTable, tasksTable, eventsTable, reviewsTable, focusSessionsTable, habitLogsTable } from "@/lib/db";
-import { eq, and, gte, lte, or, sql, desc } from "drizzle-orm";
+import { eq, and, gte, lte, or, sql, desc, arrayContains } from "drizzle-orm";
 import {
   endOfDayInTimeZone,
   formatDateInTimeZone,
@@ -207,7 +207,11 @@ export async function GET(req: NextRequest) {
       // ── EXACT-TIME TASK NOTIFICATIONS ──
       const exactDueTasks = await db.select().from(tasksTable).where(
         and(
-          eq(tasksTable.userId, config.userId),
+          or(
+            eq(tasksTable.userId, config.userId),
+            arrayContains(tasksTable.sharedWith, ["*"]),
+            eq(tasksTable.assignedTo, config.userId)
+          ),
           eq(tasksTable.status, "active"),
           gte(tasksTable.dueDate, startOfMinute),
           lte(tasksTable.dueDate, endOfMinute)
@@ -225,13 +229,37 @@ export async function GET(req: NextRequest) {
         tasksNotified++;
       }
 
+      // ── EXACT-TIME EVENT NOTIFICATIONS ──
+      const fifteenMinsFromNowStart = new Date(startOfMinute.getTime() + 15 * 60000);
+      const fifteenMinsFromNowEnd = new Date(endOfMinute.getTime() + 15 * 60000);
+      
+      const exactUpcomingEvents = await db.select().from(eventsTable).where(
+        and(
+          eq(eventsTable.userId, config.userId),
+          gte(eventsTable.startTime, fifteenMinsFromNowStart),
+          lte(eventsTable.startTime, fifteenMinsFromNowEnd)
+        )
+      );
+
+      for (const evt of exactUpcomingEvents) {
+        const eventMsg = `📅 *Meeting Reminder*\n\n${evt.title} is starting in 15 minutes!`;
+        if (config.discordWebhookUrl) await sendDiscordMessage(config.discordWebhookUrl, eventMsg);
+        if (config.telegramChatId && config.telegramBotToken) {
+          await sendTelegramMessage(config.telegramChatId, config.telegramBotToken, eventMsg);
+        }
+      }
+
       // ── PERIODIC SUMMARY NOTIFICATIONS ──
       const freq = parseInt(String(config.pingFrequency)) || 30;
       if (currentMinute % freq === 0) {
         if (config.hourlyUpdatesEnabled !== false) {
           const tasks = await db.select().from(tasksTable).where(
             and(
-              eq(tasksTable.userId, config.userId),
+              or(
+                eq(tasksTable.userId, config.userId),
+                arrayContains(tasksTable.sharedWith, ["*"]),
+                eq(tasksTable.assignedTo, config.userId)
+              ),
               eq(tasksTable.status, "active"),
               or(
                 eq(tasksTable.bucket, "today"),
