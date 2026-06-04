@@ -16,6 +16,8 @@ interface RestiaContextType {
   input: string;
   setInput: (v: string) => void;
   streaming: boolean;
+  isRoaming: boolean;
+  setIsRoaming: (v: boolean) => void;
 }
 
 const RestiaContext = createContext<RestiaContextType | null>(null);
@@ -26,6 +28,7 @@ export function RestiaProvider({ children }: { children: React.ReactNode }) {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
+  const [isRoaming, setIsRoaming] = useState(true);
   
   const [activeId, setActiveId] = useState<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -151,7 +154,7 @@ export function RestiaProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <RestiaContext.Provider value={{ isOpen, setIsOpen, animState, messages, sendMessage, input, setInput, streaming }}>
+    <RestiaContext.Provider value={{ isOpen, setIsOpen, animState, messages, sendMessage, input, setInput, streaming, isRoaming, setIsRoaming }}>
       {children}
     </RestiaContext.Provider>
   );

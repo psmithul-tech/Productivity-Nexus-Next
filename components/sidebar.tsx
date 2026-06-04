@@ -115,7 +115,7 @@ export function Sidebar() {
                 {group.title}
               </h4>
               <ul className="space-y-0.5">
-                {group.items.map(({ href, icon: Icon, label, badge }) => {
+                {group.items.map(({ href, icon: Icon, label }: any) => {
                   const active = pathname.startsWith(href);
                   return (
                     <li key={href}>
@@ -138,11 +138,6 @@ export function Sidebar() {
                         )}
                         <Icon className={`relative z-10 h-4 w-4 shrink-0 ${active ? "text-indigo-400" : ""}`} />
                         <span className="relative z-10 flex-1">{label}</span>
-                        {badge && (
-                          <span className={`relative z-10 px-1.5 py-px rounded text-[9px] font-bold tracking-wider ${active ? "bg-indigo-500/20 text-indigo-300" : "bg-white/[0.06] text-white/35"}`}>
-                            {badge}
-                          </span>
-                        )}
                       </Link>
                     </li>
                   );
