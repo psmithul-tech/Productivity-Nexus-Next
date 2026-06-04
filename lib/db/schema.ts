@@ -163,3 +163,13 @@ export const habitLogsTable = pgTable("habit_logs", {
 });
 export type HabitLog = typeof habitLogsTable.$inferSelect;
 
+// Reviews
+export const reviewsTable = pgTable("reviews", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  text: text("text").notNull(),
+  stats: text("stats"), // JSON string
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+export type Review = typeof reviewsTable.$inferSelect;
+

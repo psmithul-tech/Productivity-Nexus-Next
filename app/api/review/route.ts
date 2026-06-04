@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, tasksTable, focusSessionsTable, habitLogsTable, settingsTable } from "@/lib/db";
-import { eq, and, gte } from "drizzle-orm";
+import { db, tasksTable, focusSessionsTable, habitLogsTable, settingsTable, reviewsTable } from "@/lib/db";
+import { eq, and, gte, desc } from "drizzle-orm";
 import { createClient } from "@/utils/supabase/server";
-import { getAIClient } from "@/lib/gemini";
 
 export async function GET(req: NextRequest) {
   const supabase = await createClient();
@@ -10,9 +9,23 @@ export async function GET(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const [settings] = await db.select().from(settingsTable).where(eq(settingsTable.userId, user.id));
-  const ai = getAIClient(settings?.geminiApiKey || null);
-  if (!ai) return NextResponse.json({ error: "Gemini API key not configured" }, { status: 400 });
 
+  // Check if a review already exists
+  const [latestReview] = await db
+    .select()
+    .from(reviewsTable)
+    .where(eq(reviewsTable.userId, user.id))
+    .orderBy(desc(reviewsTable.createdAt))
+    .limit(1);
+
+  if (latestReview) {
+    return NextResponse.json({
+      text: latestReview.text,
+      stats: latestReview.stats ? JSON.parse(latestReview.stats) : null
+    });
+  }
+
+  // If no review exists at all, generate the initial one
   const oneWeekAgo = new Date();
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
@@ -34,7 +47,7 @@ export async function GET(req: NextRequest) {
   );
 
   const habitLogs = await db.select().from(habitLogsTable).where(
-    gte(habitLogsTable.createdAt, oneWeekAgo) // We aren't filtering by user directly on logs but this is a personal app so it's fine for the hackathon prototype.
+    gte(habitLogsTable.createdAt, oneWeekAgo)
   );
 
   const totalFocusMinutes = focusSessions.reduce((acc, s) => acc + s.completedMinutes, 0);
@@ -54,36 +67,30 @@ Write a 3-section markdown response:
 Keep the tone encouraging, premium, and concise. Don't use markdown headers (##), just bold text.`;
 
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      config: { temperature: 0.7 },
+    const { callOpenRouter } = await import("@/lib/openrouter");
+    // Only use openrouter, limit tokens
+    const text = await callOpenRouter(prompt, undefined, { model: "google/gemini-2.5-flash", temperature: 0.7, maxTokens: 2000 });
+    
+    if (!text) {
+      throw new Error("Empty response from OpenRouter");
+    }
+
+    const stats = {
+      tasks: completedTasks.length,
+      focusMinutes: totalFocusMinutes,
+      habits: habitLogs.length,
+    };
+
+    // Save initial review
+    await db.insert(reviewsTable).values({
+      userId: user.id,
+      text,
+      stats: JSON.stringify(stats)
     });
 
-    return NextResponse.json({
-      text: response.text,
-      stats: {
-        tasks: completedTasks.length,
-        focusMinutes: totalFocusMinutes,
-        habits: habitLogs.length,
-      }
-    });
+    return NextResponse.json({ text, stats });
   } catch (error) {
-    console.error("Gemini API error, falling back to OpenRouter:", error);
-    try {
-      const { callOpenRouter } = await import("@/lib/openrouter");
-      const fallbackText = await callOpenRouter(prompt, undefined, { model: "google/gemini-2.5-flash", temperature: 0.7, maxTokens: 800 });
-      return NextResponse.json({
-        text: fallbackText,
-        stats: {
-          tasks: completedTasks.length,
-          focusMinutes: totalFocusMinutes,
-          habits: habitLogs.length,
-        }
-      });
-    } catch (fallbackError) {
-      console.error("OpenRouter fallback error:", fallbackError);
-      return NextResponse.json({ error: "Failed to generate review" }, { status: 500 });
-    }
+    console.error("OpenRouter API error:", error);
+    return NextResponse.json({ error: "Failed to generate review" }, { status: 500 });
   }
 }

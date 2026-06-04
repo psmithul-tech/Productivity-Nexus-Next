@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, settingsTable, tasksTable, eventsTable } from "@/lib/db";
-import { eq, and, gte, lte, or, sql } from "drizzle-orm";
+import { db, settingsTable, tasksTable, eventsTable, reviewsTable, focusSessionsTable, habitLogsTable } from "@/lib/db";
+import { eq, and, gte, lte, or, sql, desc } from "drizzle-orm";
 import {
   endOfDayInTimeZone,
   formatDateInTimeZone,
@@ -281,6 +281,46 @@ export async function GET(req: NextRequest) {
             await sendTelegramMessage(config.telegramChatId, config.telegramBotToken, message);
           }
           processed++;
+        }
+      }
+
+      // ── WEEKLY AI REVIEW (Sunday 8 PM) ──
+      const userDate = new Date(now.toLocaleString("en-US", { timeZone: userTz }));
+      if (userDate.getDay() === 0 && userDate.getHours() === 20 && currentMinute === 0) {
+        try {
+          const [latestReview] = await db.select().from(reviewsTable).where(eq(reviewsTable.userId, config.userId)).orderBy(desc(reviewsTable.createdAt)).limit(1);
+          let shouldGenerate = true;
+          if (latestReview) {
+            const daysSince = (now.getTime() - new Date(latestReview.createdAt).getTime()) / (1000 * 3600 * 24);
+            if (daysSince < 6) shouldGenerate = false;
+          }
+
+          if (shouldGenerate) {
+            const oneWeekAgo = new Date();
+            oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+            
+            const completedTasks = await db.select().from(tasksTable).where(and(eq(tasksTable.userId, config.userId), eq(tasksTable.status, "completed"), gte(tasksTable.completedAt, oneWeekAgo)));
+            const focusSessions = await db.select().from(focusSessionsTable).where(and(eq(focusSessionsTable.userId, config.userId), eq(focusSessionsTable.status, "completed"), gte(focusSessionsTable.completedAt, oneWeekAgo)));
+            const habitLogs = await db.select().from(habitLogsTable).where(gte(habitLogsTable.createdAt, oneWeekAgo));
+            
+            const totalFocusMinutes = focusSessions.reduce((acc, s) => acc + s.completedMinutes, 0);
+            
+            const prompt = `You are a productivity coach. Generate a short, motivating Weekly Retrospective for the user based on their data from the last 7 days.\n\nData:\n- Completed tasks: ${completedTasks.length} (${completedTasks.map(t => t.title).join(", ")})\n- Focus sessions completed: ${focusSessions.length} (Total: ${totalFocusMinutes} minutes)\n- Habits logged: ${habitLogs.length} instances\n\nWrite a 3-section markdown response:\n1. **Highlights**: 2-3 bullet points celebrating wins.\n2. **Analysis**: A short paragraph analyzing their focus time and task completion.\n3. **Focus for Next Week**: 1-2 constructive suggestions.\n\nKeep the tone encouraging, premium, and concise. Don't use markdown headers (##), just bold text.`;
+
+            const { callOpenRouter } = await import("@/lib/openrouter");
+            const text = await callOpenRouter(prompt, undefined, { model: "google/gemini-2.5-flash", temperature: 0.7, maxTokens: 2000 });
+            
+            if (text) {
+               const stats = { tasks: completedTasks.length, focusMinutes: totalFocusMinutes, habits: habitLogs.length };
+               await db.insert(reviewsTable).values({ userId: config.userId, text, stats: JSON.stringify(stats) });
+               
+               if (config.telegramChatId && config.telegramBotToken) {
+                 await sendTelegramMessage(config.telegramChatId, config.telegramBotToken, `📊 *Your Weekly Review is ready!*\n\n${text}`);
+               }
+            }
+          }
+        } catch (e) {
+          console.error("Weekly review cron error:", e);
         }
       }
     }
