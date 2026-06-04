@@ -117,18 +117,34 @@ ${taskList}
 
     console.log("[Telegram] Calling Gemini...");
     const ai = getAIClient(settings.geminiApiKey);
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: [{ role: "user", parts: [{ text }] }],
-      config: {
-        systemInstruction: systemPrompt,
-        maxOutputTokens: 600,
-        temperature: 0.7,
-      },
-    });
+    
+    // Model fallback chain: try cheapest model first, fall back if rate limited
+    const MODELS = ["gemini-3.1-flash-lite", "gemini-2.5-flash-lite"];
+    let replyText = "I'm here! How can I help? 😊";
+    
+    for (const model of MODELS) {
+      try {
+        const response = await ai.models.generateContent({
+          model,
+          contents: [{ role: "user", parts: [{ text }] }],
+          config: {
+            systemInstruction: systemPrompt,
+            maxOutputTokens: 600,
+            temperature: 0.7,
+          },
+        });
+        replyText = response.text ?? replyText;
+        console.log(`[Telegram] Used model: ${model}`);
+        break;
+      } catch (modelErr: any) {
+        if (modelErr.status === 429) {
+          console.warn(`[Telegram] ${model} rate limited, trying next model...`);
+          continue;
+        }
+        throw modelErr;
+      }
+    }
     console.log("[Telegram] Gemini responded.");
-
-    let replyText = response.text ?? "I'm here! How can I help? 😊";
 
     // Parse ACTION lines from response
     const taskActions = replyText.match(/ACTION_CREATE_TASK:\{[^\n]+\}/g) ?? [];

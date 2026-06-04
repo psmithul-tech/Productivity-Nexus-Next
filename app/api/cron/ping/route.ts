@@ -14,8 +14,14 @@ import {
 
 export const dynamic = "force-dynamic";
 
+// ── Model Strategy ──
+// Use the cheapest model with highest rate limits for periodic check-ins.
+// gemini-3.1-flash-lite: 15 RPM, 500 RPD (best for cron)
+// gemini-2.5-flash: 5 RPM, 20 RPD (reserved for task parsing / conversations)
+const CHECKIN_MODEL = "gemini-3.1-flash-lite";
+const CHECKIN_FALLBACK_MODEL = "gemini-2.5-flash-lite";
+
 async function sendTelegramMessage(chatId: string, botToken: string, message: string) {
-  // Telegram Markdown (V1) doesn't support **bold**, only *bold*
   const safeMessage = message.replace(/\*\*/g, '*');
   
   try {
@@ -43,6 +49,113 @@ async function sendDiscordMessage(webhookUrl: string, message: string) {
   } catch (e) {
     console.error("Discord webhook failed:", e);
   }
+}
+
+// ── Build a rich template check-in (no AI needed) ──
+function buildTemplateCheckin(
+  userTimeStr: string,
+  activeTasks: any[],
+  allEvents: any[],
+  upcoming: any[],
+  endingSoon: any[],
+  overdue: any[],
+  formatTime: (d: Date) => string,
+  userTz: string,
+): string {
+  const lines: string[] = [];
+
+  // Time-appropriate greeting
+  const hour = parseInt(userTimeStr.split(":")[0]);
+  const isPM = userTimeStr.includes("PM");
+  const h24 = isPM && hour !== 12 ? hour + 12 : (!isPM && hour === 12 ? 0 : hour);
+  
+  let greeting = "Good day";
+  if (h24 < 12) greeting = "Good morning";
+  else if (h24 < 17) greeting = "Good afternoon";
+  else greeting = "Good evening";
+
+  lines.push(`${greeting}! 🕒 It's *${userTimeStr}*\n`);
+
+  // Overdue tasks — URGENT
+  if (overdue.length > 0) {
+    lines.push(`🚨 *${overdue.length} Overdue Task${overdue.length > 1 ? "s" : ""}:*`);
+    overdue.forEach(t => {
+      lines.push(`  ⚠️ ${t.title}${t.dueDate ? ` (was due ${formatTimeInTimeZone(new Date(t.dueDate), userTz)})` : ""}`);
+    });
+    lines.push("");
+  }
+
+  // Due soon
+  if (endingSoon.length > 0) {
+    lines.push(`⏰ *Due Soon:*`);
+    endingSoon.forEach(t => {
+      const dueStr = t.dueDate ? formatTimeInTimeZone(new Date(t.dueDate), userTz) : "";
+      lines.push(`  🔸 ${t.title}${dueStr ? ` — ${dueStr}` : ""}`);
+    });
+    lines.push("");
+  }
+
+  // Upcoming events (next 60 min)
+  if (upcoming.length > 0) {
+    lines.push(`📅 *Coming Up:*`);
+    upcoming.forEach(e => {
+      lines.push(`  📌 ${e.title} at ${formatTime(new Date(e.startTime))}`);
+    });
+    lines.push("");
+  }
+
+  // Active tasks summary
+  if (activeTasks.length > 0) {
+    const urgent = activeTasks.filter(t => t.priority === "urgent" || t.priority === "high");
+    lines.push(`📋 *${activeTasks.length} Active Tasks* ${urgent.length > 0 ? `(${urgent.length} high priority)` : ""}`);
+    
+    // Show top 5 tasks
+    const topTasks = activeTasks
+      .sort((a, b) => {
+        const pOrder: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 };
+        return (pOrder[a.priority] ?? 2) - (pOrder[b.priority] ?? 2);
+      })
+      .slice(0, 5);
+    
+    topTasks.forEach(t => {
+      const emoji = t.priority === "urgent" ? "🔴" : t.priority === "high" ? "🟠" : t.priority === "medium" ? "🔵" : "⚪";
+      const dueStr = t.dueDate ? ` · ${formatTimeInTimeZone(new Date(t.dueDate), userTz)}` : "";
+      lines.push(`  ${emoji} ${t.title}${dueStr}`);
+    });
+    if (activeTasks.length > 5) {
+      lines.push(`  _...and ${activeTasks.length - 5} more_`);
+    }
+    lines.push("");
+  } else {
+    lines.push("✨ *No active tasks* — enjoy the clear schedule!\n");
+  }
+
+  // Events today
+  if (allEvents.length > 0) {
+    lines.push(`📆 *${allEvents.length} Event${allEvents.length > 1 ? "s" : ""} Today*`);
+    allEvents.forEach(e => {
+      lines.push(`  📌 ${e.title} at ${formatTime(new Date(e.startTime))}`);
+    });
+  } else {
+    lines.push("📆 No events scheduled today");
+  }
+
+  // Motivational closer
+  const closers = [
+    "\n💪 You've got this!",
+    "\n🚀 Keep up the momentum!",
+    "\n🌟 One task at a time!",
+    "\n☕ Stay focused, stay sharp!",
+    "\n🎯 Eyes on the prize!",
+  ];
+  lines.push(closers[Math.floor(Date.now() / 60000) % closers.length]);
+
+  return lines.join("\n");
+}
+
+// ── Delay helper to avoid RPM limits ──
+function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 export async function GET(req: NextRequest) {
@@ -160,47 +273,80 @@ export async function GET(req: NextRequest) {
             if (!t.dueDate) return false;
             const due = new Date(t.dueDate).getTime();
             const diffHours = (due - now.getTime()) / (1000 * 60 * 60);
-            return diffHours <= 2;
+            return diffHours > 0 && diffHours <= 2;
           });
 
-          const localDateStr = formatDateInTimeZone(now, userTz);
-          const prompt = `You are Restia, the user's AI Chief of Staff.
+          const overdue = activeTasks.filter(t => {
+            if (!t.dueDate) return false;
+            return new Date(t.dueDate).getTime() < now.getTime();
+          });
+
+          // Build the rich template (always works, no AI needed)
+          const templateMessage = buildTemplateCheckin(
+            userTimeStr, activeTasks, allEvents, upcoming, endingSoon, overdue, formatTime, userTz
+          );
+
+          let message = templateMessage;
+          
+          // Only try AI if user has API key — use the cheap model
+          if (config.geminiApiKey) {
+            const localDateStr = formatDateInTimeZone(now, userTz);
+            const prompt = `You are Restia, the user's AI Chief of Staff sending a periodic check-in on Telegram.
 
 ## CURRENT TIME (AUTHORITATIVE — DO NOT OVERRIDE)
 current_time: "${userTimeStr}"
 current_date: "${localDateStr}"
 timezone: "${userTz}"
 
-Write a personalized, warm check-in for the user. Use the current_time above as ground truth.
-Keep it human-like, encouraging, and concise. Use markdown (use single asterisks *bold* instead of double).
+Write a warm, personalized check-in. Use the current_time above as ground truth — do NOT compute a different time.
 
-Here is their current status:
-Upcoming Events (next 60 min): ${upcoming.length === 0 ? 'None' : JSON.stringify(upcoming.map(e => ({ title: e.title, time: formatTime(new Date(e.startTime)) })))}
-All Today's Events: ${allEvents.length === 0 ? 'None' : JSON.stringify(allEvents.map(e => ({ title: e.title, time: formatTime(new Date(e.startTime)) })))}
-Active Tasks: ${activeTasks.length === 0 ? 'None' : JSON.stringify(activeTasks.map(t => ({ title: t.title, priority: t.priority, due: t.dueDate ? formatDateTimeInTimeZone(new Date(t.dueDate), userTz) : null })))}
-Tasks Due Soon/Overdue: ${endingSoon.length === 0 ? 'None' : JSON.stringify(endingSoon.map(t => ({ title: t.title })))}
+Status:
+- Overdue: ${overdue.length === 0 ? 'None' : JSON.stringify(overdue.map(t => ({ title: t.title, due: t.dueDate ? formatDateTimeInTimeZone(new Date(t.dueDate), userTz) : null })))}
+- Due Soon (2hr): ${endingSoon.length === 0 ? 'None' : JSON.stringify(endingSoon.map(t => ({ title: t.title, due: t.dueDate ? formatTimeInTimeZone(new Date(t.dueDate), userTz) : null })))}
+- Upcoming Events (60 min): ${upcoming.length === 0 ? 'None' : JSON.stringify(upcoming.map(e => ({ title: e.title, time: formatTime(new Date(e.startTime)) })))}
+- All Today's Events: ${allEvents.length === 0 ? 'None' : JSON.stringify(allEvents.map(e => ({ title: e.title, time: formatTime(new Date(e.startTime)) })))}
+- Active Tasks (${activeTasks.length}): ${activeTasks.length === 0 ? 'None' : JSON.stringify(activeTasks.slice(0, 8).map(t => ({ title: t.title, priority: t.priority, due: t.dueDate ? formatDateTimeInTimeZone(new Date(t.dueDate), userTz) : null })))}
 
 Rules:
-- Start with a time-appropriate greeting using current_time "${userTimeStr}" — do NOT compute a different time
-- If there's an upcoming meeting in the next 30 min, STRONGLY warn about it
-- If there are overdue/due-soon tasks, emphasize them with urgency
-- Keep it under 200 words
-- Format the message nicely with emoji`;
+- Start with "*${userTimeStr} Check-in*" and a time-appropriate greeting — use the exact time "${userTimeStr}"
+- If overdue tasks exist, start with ⚠️ warnings
+- If upcoming events in next 30 min, give strong heads-up
+- List tasks with priority emojis (🔴 urgent, 🟠 high, 🔵 medium, ⚪ low)
+- Show due times for each task that has one
+- End with a brief motivational line
+- Keep it under 180 words
+- Use single asterisks for *bold*, NOT double`;
 
-          let message = `🕒 *${userTimeStr} Check-in*\n\nYou have ${allEvents.length} events and ${activeTasks.length} active tasks today.`;
-          
-          if (!config.geminiApiKey) {
-            message += "\n\n_(AI updates disabled. Add your Gemini API Key in Settings to enable Restia's personalized updates.)_";
-          } else {
             try {
               const ai = getAIClient(config.geminiApiKey);
-              const aiRes = await ai.models.generateContent({
-                model: "gemini-2.5-flash",
-                contents: prompt,
-              });
-              if (aiRes.text) message = aiRes.text;
+              
+              // Try cheap model first (highest rate limits)
+              try {
+                const aiRes = await ai.models.generateContent({
+                  model: CHECKIN_MODEL,
+                  contents: prompt,
+                  config: { maxOutputTokens: 400, temperature: 0.8 },
+                });
+                if (aiRes.text) message = aiRes.text;
+              } catch (primaryErr: any) {
+                console.warn(`[Cron] ${CHECKIN_MODEL} failed (${primaryErr.status || 'unknown'}), trying fallback...`);
+                
+                // Try fallback model
+                try {
+                  const aiRes = await ai.models.generateContent({
+                    model: CHECKIN_FALLBACK_MODEL,
+                    contents: prompt,
+                    config: { maxOutputTokens: 400, temperature: 0.8 },
+                  });
+                  if (aiRes.text) message = aiRes.text;
+                } catch (fallbackErr: any) {
+                  console.warn(`[Cron] Fallback model also failed, using template. Error: ${fallbackErr.status || fallbackErr.message}`);
+                  // message stays as templateMessage
+                }
+              }
             } catch (err) {
               console.error("AI Cron Ping Error:", err);
+              // message stays as templateMessage
             }
           }
 
@@ -209,6 +355,11 @@ Rules:
             await sendTelegramMessage(config.telegramChatId, config.telegramBotToken, message);
           }
           processed++;
+
+          // Stagger API calls between users to avoid RPM limits
+          if (processed < usersWithConfig.length) {
+            await delay(5000); // 5 second gap between users
+          }
         }
       }
     }

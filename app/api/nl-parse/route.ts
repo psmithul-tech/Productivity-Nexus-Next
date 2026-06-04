@@ -76,19 +76,37 @@ Output: {"type":"task","data":{"title":"Buy milk","priority":"urgent","bucket":"
 Input: "Dentist appointment at 2:30pm"
 Output: {"type":"event","data":{"title":"Dentist appointment","startTime":"2026-06-04T14:30:00","endTime":"2026-06-04T15:30:00"}}
 `;
-
+  // Model strategy: try best model first, fall back to cheaper model if rate limited
+  const MODELS = ["gemini-2.5-flash", "gemini-3.1-flash-lite"];
+  
   try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: [{ role: "user", parts: [{ text: query }] }],
-      config: {
-        systemInstruction: { role: "system", parts: [{ text: systemInstruction }] },
-        temperature: 0.1,
-      },
-    });
+    let text: string | null = null;
+    
+    for (const model of MODELS) {
+      try {
+        const response = await ai.models.generateContent({
+          model,
+          contents: [{ role: "user", parts: [{ text: query }] }],
+          config: {
+            systemInstruction: { role: "system", parts: [{ text: systemInstruction }] },
+            temperature: 0.1,
+          },
+        });
+        text = response.text ?? null;
+        console.log(`[nl-parse] Used model: ${model}`);
+        break; // Success — stop trying models
+      } catch (modelErr: any) {
+        if (modelErr.status === 429) {
+          console.warn(`[nl-parse] ${model} rate limited, trying next model...`);
+          continue;
+        }
+        throw modelErr; // Re-throw non-rate-limit errors
+      }
+    }
+    
+    if (!text) throw new Error("All models failed");
 
-    const text = response.text;
-    const jsonStr = (text || "").replace(/```json/g, "").replace(/```/g, "").trim();
+    const jsonStr = text.replace(/```json/g, "").replace(/```/g, "").trim();
     const parsed = JSON.parse(jsonStr);
 
     // Convert local time strings to UTC based on user timezone
