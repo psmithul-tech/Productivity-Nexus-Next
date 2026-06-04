@@ -56,8 +56,12 @@ async function processMessage(chatId: string, text: string, token: string, userI
 
     console.log(`[Telegram Debug] userTz: ${userTz}, timeStr: ${timeStr}, dateStr: ${dateStr}, userId: ${userId}`);
 
-    const systemPrompt = `You are Restia, the user's warm, witty and proactive AI Chief of Staff. You communicate via Telegram. Today is ${dateStr} at ${timeStr} in the user's timezone (${userTz}).
-
+    const systemPrompt = `You are Restia, the user's warm, witty and proactive AI Chief of Staff. You communicate via Telegram.
+CRITICAL TIMEZONE RULES:
+- The CURRENT LOCAL TIME for the user is ${dateStr} at ${timeStr}.
+- You MUST use this exact time as your current reference.
+- Do NOT convert this time to UTC or any other timezone.
+- Do NOT subtract or add hours to this time. If the user asks for their time, you simply say it is ${timeStr}.`;
 Current active tasks:
 ${taskList}
 
