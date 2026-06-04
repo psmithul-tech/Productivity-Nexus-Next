@@ -245,6 +245,7 @@ export function RestiaCompanion() {
           {/* Subtle glow instead of solid background */}
           <div className="absolute inset-0 bg-primary/10 blur-2xl rounded-full scale-75 group-hover:scale-110 group-hover:bg-primary/20 transition-all duration-500" />
           
+          <div
             className={`sprite-base ${animClass} w-[150px] h-[150px] overflow-visible transform group-hover:scale-105 group-active:scale-95 filter drop-shadow-2xl`} 
             style={{ 
               transform: flipX ? 'scaleX(-1)' : 'scaleX(1)',
