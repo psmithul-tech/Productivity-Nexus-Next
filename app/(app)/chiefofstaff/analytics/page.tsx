@@ -15,19 +15,16 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     async function fetchStats() {
-      // Mock data generator for the last 7 days since complex aggregations in PG might be overkill for this prototype.
-      // In a real app we'd fetch from an API route that groups by date.
-      const days = Array.from({ length: 7 }).map((_, i) => {
-        const d = new Date();
-        d.setDate(d.getDate() - (6 - i));
-        return {
-          date: d.toLocaleDateString("en-US", { weekday: "short" }),
-          tasks: Math.floor(Math.random() * 8) + 2,
-          focus: Math.floor(Math.random() * 120) + 30,
-        };
-      });
-      setStats(days);
-      setLoading(false);
+      try {
+        const res = await fetch("/api/analytics");
+        if (!res.ok) throw new Error("Failed to fetch");
+        const data = await res.json();
+        setStats(data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
     }
     fetchStats();
   }, []);

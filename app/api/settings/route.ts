@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
     telegramBotToken: 'telegramBotToken',
     telegramChatId: 'telegramChatId',
     geminiApiKey: 'geminiApiKey',
+    openrouterApiKey: 'openrouterApiKey',
     googleAccessToken: 'googleAccessToken',
     googleRefreshToken: 'googleRefreshToken',
     accentColor: 'accentColor',

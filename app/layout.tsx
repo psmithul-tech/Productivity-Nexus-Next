@@ -12,12 +12,12 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Restia — AI Chief of Staff",
-  description: "Your intelligent executive assistant for tasks, calendar, reminders, and more.",
+  title: "Restia — Your Personal AI Operating System",
+  description: "Restia is a modular AI operating system for your life. Launch Chief of Staff, your AI productivity agent, and unlock more modules soon.",
   icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon.ico",
-    apple: "/favicon.ico",
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
   },
   verification: {
     google: "DbJl-1AhgerkXOlX68G_owhxOqoncgwBwa0fChNA-ik",

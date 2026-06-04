@@ -30,20 +30,7 @@ export async function GET(req: NextRequest) {
       )
     );
 
-  // Also include ALL tasks that have any sharedWith entries (the family board shows the shared pool)
-  const allSharedTasks = await db.execute(
-    `SELECT * FROM tasks WHERE shared_with IS NOT NULL AND array_length(shared_with, 1) > 0`
-  );
-  
-  // Combine own shared tasks + all family pool tasks
-  const taskIds = new Set(sharedTasks.map(t => t.id));
   const combined = [...sharedTasks];
-  for (const row of (allSharedTasks as any).rows ?? []) {
-    if (!taskIds.has(row.id)) {
-      combined.push(row as any);
-      taskIds.add(row.id);
-    }
-  }
 
   // Enrich with owner usernames
   const ownerIds = [...new Set(combined.map(t => t.userId))];

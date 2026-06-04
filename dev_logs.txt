@@ -17,3 +17,4 @@
 [Telegram] Gemini responded.
 [Telegram] Reply sent to 6284351149
   Reload env: .env.local
+✓ Compiled in 168ms

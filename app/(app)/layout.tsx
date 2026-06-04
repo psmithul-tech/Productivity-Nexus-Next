@@ -10,6 +10,9 @@ import { eq } from "drizzle-orm";
 import { CommandPalette } from "@/components/command-palette";
 import { NotificationCenter } from "@/components/notification-center";
 
+import { SidebarProvider } from "@/components/sidebar-context";
+import { MobileToggle } from "@/components/mobile-toggle";
+
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -26,25 +29,27 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const isOnboarding = pathname.includes("/onboarding");
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#0a0a0f] text-white selection:bg-primary/30">
-      <AutoReloader />
-      <ClientProviders />
-      <CommandPalette />
-      <Sidebar />
+    <SidebarProvider>
+      <div className="flex h-screen overflow-hidden bg-[#0a0a0f] text-white selection:bg-primary/30">
+        <AutoReloader />
+        <ClientProviders />
+        <CommandPalette />
+        <Sidebar />
 
-      {/* Main content area — sidebar is 260px wide */}
-      <main className="flex-1 ml-0 md:ml-[260px] flex flex-col overflow-hidden">
-        {/* Sticky top bar */}
-        {!isOnboarding && (
-          <div className="sticky top-0 z-30 flex items-center gap-3 px-4 sm:px-6 py-3 bg-[#0a0a0f]/80 backdrop-blur-xl border-b border-white/5">
-            <div className="flex-1 min-w-0">
-              <NLQuickAdd />
+        {/* Main content area — sidebar is 260px wide */}
+        <main className="flex-1 ml-0 md:ml-[260px] flex flex-col overflow-hidden">
+          {/* Sticky top bar */}
+          {!isOnboarding && (
+            <div className="sticky top-0 z-30 flex items-center gap-3 px-4 sm:px-6 py-3 bg-[#0a0a0f]/80 backdrop-blur-xl border-b border-white/5">
+              <MobileToggle />
+              <div className="flex-1 min-w-0">
+                <NLQuickAdd />
+              </div>
+              <div className="shrink-0">
+                <NotificationCenter />
+              </div>
             </div>
-            <div className="shrink-0">
-              <NotificationCenter />
-            </div>
-          </div>
-        )}
+          )}
 
         {/* Scrollable page content */}
         <div className="flex-1 overflow-y-auto">
@@ -54,5 +59,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </main>
     </div>
+    </SidebarProvider>
   );
 }

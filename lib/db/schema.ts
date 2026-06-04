@@ -110,6 +110,7 @@ export const settingsTable = pgTable("settings", {
   googleAccessToken: text("google_access_token"),
   googleRefreshToken: text("google_refresh_token"),
   geminiApiKey: text("gemini_api_key"),
+  openrouterApiKey: text("openrouter_api_key"),
   accentColor: text("accent_color").notNull().default("purple"),
   username: text("username").unique(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

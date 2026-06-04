@@ -6,48 +6,56 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, CheckSquare, Calendar, Bell, Sparkles,
-  BarChart3, Settings, LogOut, Zap, Menu, X, Timer, Users, Flame, Award, AtSign
+  BarChart3, Settings, LogOut, Briefcase, Menu, X, Timer, Users, Flame, Award, AtSign, Cpu
 } from "lucide-react";
 
 const navigationGroups = [
   {
-    title: "Overview",
+    title: "Restia",
     items: [
-      { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-      { href: "/assistant", icon: Sparkles, label: "AI Assistant", badge: "AI" },
+      { href: "/dashboard", icon: Cpu, label: "Modules Hub" },
+    ]
+  },
+  {
+    title: "Chief of Staff",
+    items: [
+      { href: "/chiefofstaff/dashboard", icon: LayoutDashboard, label: "Overview" },
+      { href: "/chiefofstaff/assistant", icon: Sparkles, label: "AI Assistant", badge: "AI" },
     ]
   },
   {
     title: "Workspace",
     items: [
-      { href: "/tasks", icon: CheckSquare, label: "Tasks" },
-      { href: "/calendar", icon: Calendar, label: "Calendar" },
-      { href: "/shared", icon: Users, label: "Family Board" },
+      { href: "/chiefofstaff/tasks", icon: CheckSquare, label: "Tasks" },
+      { href: "/chiefofstaff/calendar", icon: Calendar, label: "Calendar" },
+      { href: "/chiefofstaff/shared", icon: Users, label: "Family Board" },
     ]
   },
   {
     title: "Routines",
     items: [
-      { href: "/habits", icon: Flame, label: "Habits" },
-      { href: "/focus", icon: Timer, label: "Focus Timer" },
-      { href: "/review", icon: Award, label: "Weekly Review" },
-      { href: "/reminders", icon: Bell, label: "Reminders" },
+      { href: "/chiefofstaff/habits", icon: Flame, label: "Habits" },
+      { href: "/chiefofstaff/focus", icon: Timer, label: "Focus Timer" },
+      { href: "/chiefofstaff/review", icon: Award, label: "Weekly Review" },
+      { href: "/chiefofstaff/reminders", icon: Bell, label: "Reminders" },
     ]
   },
   {
     title: "System",
     items: [
-      { href: "/analytics", icon: BarChart3, label: "Analytics" },
-      { href: "/settings", icon: Settings, label: "Settings" },
+      { href: "/chiefofstaff/analytics", icon: BarChart3, label: "Analytics" },
+      { href: "/chiefofstaff/settings", icon: Settings, label: "Settings" },
     ]
   }
 ];
+
+import { useSidebar } from "./sidebar-context";
 
 export function Sidebar() {
   const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
   const [username, setUsername] = useState<string | null>(null);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const { mobileOpen, setMobileOpen } = useSidebar();
   const [supabase] = useState(() => createClient());
   const router = useRouter();
 
@@ -72,14 +80,6 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Mobile toggle */}
-      <button
-        className="fixed top-3.5 left-3.5 z-50 md:hidden p-2 rounded-xl bg-[#0e0e16]/95 backdrop-blur-md border border-white/10 shadow-lg text-white/70 hover:text-white transition-colors"
-        onClick={() => setMobileOpen(!mobileOpen)}
-        aria-label="Toggle menu"
-      >
-        {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-      </button>
 
       {/* Overlay */}
       <AnimatePresence>
@@ -98,13 +98,13 @@ export function Sidebar() {
       <aside className={`fixed top-0 left-0 h-full z-40 w-[260px] flex flex-col border-r border-white/[0.06] bg-[#080810]/98 backdrop-blur-3xl transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}>
         {/* Logo */}
         <div className="flex items-center gap-3 px-5 py-5 border-b border-white/[0.06]">
-          <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-[0_0_20px_rgba(99,102,241,0.35)]">
-            <Zap className="h-4.5 w-4.5 text-white" />
+          <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-700 shadow-[0_0_20px_rgba(139,92,246,0.35)]">
+            <Briefcase className="h-4.5 w-4.5 text-white" />
             <div className="absolute inset-0 rounded-xl ring-1 ring-white/20" />
           </div>
           <div>
-            <p className="font-bold text-sm tracking-tight text-white leading-none">Restia</p>
-            <p className="text-[10px] font-medium text-white/40 uppercase tracking-widest mt-0.5">Chief of Staff</p>
+            <p className="font-bold text-sm tracking-tight text-white leading-none">Restia <span className="text-[9px] text-white/30 font-semibold uppercase tracking-widest ml-1">OS</span></p>
+            <p className="text-[10px] font-medium text-violet-400/60 uppercase tracking-widest mt-0.5">Chief of Staff</p>
           </div>
         </div>
 

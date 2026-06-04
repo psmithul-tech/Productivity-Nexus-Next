@@ -19,6 +19,7 @@ interface AppSettings {
   googleAccessToken?: string;
   googleRefreshToken?: string;
   geminiApiKey: string;
+  openrouterApiKey: string;
   username: string;
   pingFrequency: number;
 }
@@ -35,6 +36,7 @@ const DEFAULTS: AppSettings = {
   telegramBotToken: "",
   telegramChatId: "",
   geminiApiKey: "",
+  openrouterApiKey: "",
   username: "",
   pingFrequency: 30,
 };
@@ -601,6 +603,32 @@ export default function SettingsPage() {
                   ⚠️ No API key set — AI features are currently disabled.
                 </div>
               )}
+            </div>
+            
+            <div className="mt-6 pt-4 border-t border-border/50 max-w-md">
+              <div className="mb-2 flex items-center justify-between">
+                <label className="block text-xs font-medium text-muted-foreground">
+                  OpenRouter API Key
+                </label>
+                <a
+                  href="https://openrouter.ai/keys"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[10px] text-primary hover:underline"
+                >
+                  Get your key &rarr;
+                </a>
+              </div>
+              <input
+                type="password"
+                value={settings.openrouterApiKey}
+                onChange={(e) => update("openrouterApiKey", e.target.value)}
+                placeholder="sk-or-v1-..."
+                className="w-full rounded-xl border border-border bg-background/50 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
+              />
+              <p className="mt-1.5 text-[10px] text-muted-foreground/60">
+                Powers tasks parsing and telegram conversational features.
+              </p>
             </div>
           </Section>
 

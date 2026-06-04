@@ -18,10 +18,10 @@ export function CommandPalette() {
       }
       // Single key shortcuts only when modal is closed and not typing in an input
       if (!open && !['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement).tagName)) {
-        if (e.key === 'c') router.push('/calendar');
-        if (e.key === 't') router.push('/tasks');
-        if (e.key === 'h') router.push('/habits');
-        if (e.key === 'f') router.push('/focus');
+        if (e.key === 'c') router.push('/chiefofstaff/calendar');
+        if (e.key === 't') router.push('/chiefofstaff/tasks');
+        if (e.key === 'h') router.push('/chiefofstaff/habits');
+        if (e.key === 'f') router.push('/chiefofstaff/focus');
         if (e.key === 'd') router.push('/dashboard');
       }
     };
@@ -59,28 +59,28 @@ export function CommandPalette() {
               onSelect={() => runCommand(() => router.push("/dashboard"))}
               className="flex cursor-pointer items-center rounded-lg px-2 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white mb-1"
             >
-              <Target className="mr-2 h-4 w-4" /> Dashboard
+              <Target className="mr-2 h-4 w-4" /> Modules Hub (D)
             </Command.Item>
             <Command.Item
-              onSelect={() => runCommand(() => router.push("/tasks"))}
+              onSelect={() => runCommand(() => router.push("/chiefofstaff/tasks"))}
               className="flex cursor-pointer items-center rounded-lg px-2 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white mb-1"
             >
               <CheckSquare className="mr-2 h-4 w-4" /> Tasks (T)
             </Command.Item>
             <Command.Item
-              onSelect={() => runCommand(() => router.push("/calendar"))}
+              onSelect={() => runCommand(() => router.push("/chiefofstaff/calendar"))}
               className="flex cursor-pointer items-center rounded-lg px-2 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white mb-1"
             >
               <Calendar className="mr-2 h-4 w-4" /> Calendar (C)
             </Command.Item>
             <Command.Item
-              onSelect={() => runCommand(() => router.push("/habits"))}
+              onSelect={() => runCommand(() => router.push("/chiefofstaff/habits"))}
               className="flex cursor-pointer items-center rounded-lg px-2 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white mb-1"
             >
               <Flame className="mr-2 h-4 w-4" /> Habits (H)
             </Command.Item>
             <Command.Item
-              onSelect={() => runCommand(() => router.push("/settings"))}
+              onSelect={() => runCommand(() => router.push("/chiefofstaff/settings"))}
               className="flex cursor-pointer items-center rounded-lg px-2 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white"
             >
               <Settings className="mr-2 h-4 w-4" /> Settings
