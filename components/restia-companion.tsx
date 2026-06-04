@@ -132,7 +132,7 @@ export function RestiaCompanion() {
           50%, 100% { background-position: 50% 100%; }
         }
         .sprite-base {
-          background-image: url('/restia-sprite.jpg');
+          background-image: url('/restia-sprite.png');
           background-size: 300% 300%;
         }
         .restia-idle { animation: restia-idle 2s infinite; }
@@ -270,13 +270,14 @@ export function RestiaCompanion() {
         {/* Floating Character Bubble */}
         <button 
           onClick={() => setIsOpen(!isOpen)}
-          className="relative group outline-none"
+          className="relative group outline-none focus:outline-none"
         >
-          <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full scale-75 group-hover:scale-110 transition-transform duration-500" />
+          {/* Subtle glow instead of solid background */}
+          <div className="absolute inset-0 bg-primary/10 blur-2xl rounded-full scale-75 group-hover:scale-110 group-hover:bg-primary/20 transition-all duration-500" />
+          
           <div 
-            className={`sprite-base ${animClass} w-[90px] h-[90px] rounded-full border-2 border-primary/40 shadow-2xl bg-white overflow-hidden transition-all duration-300 transform group-hover:scale-105 group-active:scale-95`} 
+            className={`sprite-base ${animClass} w-[150px] h-[150px] overflow-visible transition-all duration-300 transform group-hover:scale-105 group-active:scale-95 filter drop-shadow-2xl`} 
             style={{ 
-              mixBlendMode: 'normal',
               transform: flipX ? 'scaleX(-1)' : 'scaleX(1)'
             }}
           />
