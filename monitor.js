@@ -11,6 +11,11 @@ const { execSync } = require("child_process");
 const LOCAL_URL  = "http://localhost:3000";
 const TUNNEL_LOG = "/tmp/tunnel.log";
 const REFRESH_MS = 4000;
+let CRON_SECRET = "";
+try {
+  CRON_SECRET = fs.readFileSync("/Users/mika/Documents/Calendar/nexus-next/.env.local", "utf8")
+    .split("\n").find(l => l.startsWith("CRON_SECRET="))?.split("=")[1]?.trim() || "";
+} catch {}
 
 // ── ANSI helpers ────────────────────────────────────────────────────────────
 const ESC   = "\x1b[";
@@ -46,11 +51,11 @@ let state = {
 };
 
 // ── Fetch helpers ───────────────────────────────────────────────────────────
-function fetchJson(url) {
+function fetchJson(url, options = {}) {
   return new Promise((resolve, reject) => {
     const lib = url.startsWith("https") ? https : http;
     const start = Date.now();
-    const req = lib.get(url, { timeout: 5000 }, res => {
+    const req = lib.get(url, { timeout: 5000, ...options }, res => {
       let data = "";
       res.on("data", d => data += d);
       res.on("end", () => {
@@ -227,3 +232,14 @@ process.stdout.on("resize", draw);
 console.log(c.purple("\n  Starting Restia Monitor...\n"));
 tick();
 setInterval(tick, REFRESH_MS);
+
+// Local Cron Trigger (Bypasses Vercel Hobby daily limit)
+setInterval(async () => {
+  try {
+    const opts = CRON_SECRET ? { headers: { Authorization: `Bearer ${CRON_SECRET}` } } : {};
+    await fetchJson(`${LOCAL_URL}/api/cron/ping`, opts);
+    console.log(c.green("  [Cron] Sent hourly reminder update"));
+  } catch (e) {
+    // Ignore cron errors
+  }
+}, 60 * 60 * 1000); // Every hour

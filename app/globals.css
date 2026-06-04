@@ -22,7 +22,7 @@
     --input: 222 30% 14%;
     --ring: 265 90% 65%;
     --radius: 0.75rem;
-    --sidebar-width: 240px;
+    --sidebar-width: 260px;
   }
 
   * {
@@ -30,20 +30,29 @@
     box-sizing: border-box;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
     font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   ::selection {
     background-color: hsl(var(--primary) / 0.3);
   }
 
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  /* Global scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 9999px; }
   ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.5); }
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
 }
 
 @layer utilities {
@@ -81,5 +90,22 @@
 
   .gradient-card {
     background: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(222 35% 12%) 100%);
+  }
+
+  /* Custom scrollbar utility class */
+  .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 9999px; }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground) / 0.4); }
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+  .scrollbar-none { scrollbar-width: none; }
+
+  /* Page enter animation */
+  @keyframes page-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .page-enter {
+    animation: page-in 0.3s ease-out both;
   }
 }

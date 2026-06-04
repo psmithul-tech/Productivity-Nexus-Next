@@ -4,7 +4,14 @@ import { eq, and } from "drizzle-orm";
 import { createClient } from "@/utils/supabase/server";
 
 function serializeTask(t: typeof tasksTable.$inferSelect) {
-  return { ...t, dueDate: t.dueDate?.toISOString() ?? null, completedAt: t.completedAt?.toISOString() ?? null, createdAt: t.createdAt.toISOString(), updatedAt: t.updatedAt.toISOString() };
+  return { 
+    ...t, 
+    dueDate: t.dueDate?.toISOString() ?? null, 
+    completedAt: t.completedAt?.toISOString() ?? null, 
+    createdAt: t.createdAt.toISOString(), 
+    updatedAt: t.updatedAt.toISOString(),
+    recurrenceEndDate: t.recurrenceEndDate?.toISOString() ?? null,
+  };
 }
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

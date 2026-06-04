@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
-import { db, conversations, messages, tasksTable, eventsTable, remindersTable } from "@/lib/db";
+import { db, conversations, messages, tasksTable, eventsTable, remindersTable, settingsTable } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { createClient } from "@/utils/supabase/server";
-import { ai, buildSystemPrompt, tools } from "@/lib/gemini";
+import { getAIClient, buildSystemPrompt, tools } from "@/lib/gemini";
 import { pushTaskToGoogleCalendar } from "@/lib/google-calendar";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -21,6 +21,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   await db.insert(messages).values({ conversationId: convId, role: "user", content });
   const history = await db.select().from(messages).where(eq(messages.conversationId, convId));
   
+  const [settings] = await db.select().from(settingsTable).where(eq(settingsTable.userId, user.id));
+  
   const systemPrompt = buildSystemPrompt();
 
   const contents = history.map((m) => ({
@@ -33,6 +35,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const stream = new ReadableStream({
     async start(controller) {
       try {
+        const ai = getAIClient(settings?.geminiApiKey || null);
         const responseStream = await ai.models.generateContentStream({
           model: "gemini-3.1-flash-lite",
           contents: contents,
@@ -138,9 +141,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         }
 
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`));
-      } catch (err) {
+      } catch (err: any) {
         console.error("Gemini Error:", err);
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: "Stream error" })}\n\n`));
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: err.message || "Stream error" })}\n\n`));
       } finally {
         controller.close();
       }

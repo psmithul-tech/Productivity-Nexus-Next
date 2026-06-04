@@ -3,31 +3,66 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard, CheckSquare, Calendar, Bell, Sparkles,
-  BarChart3, Settings, LogOut, Zap, Menu, X
+  BarChart3, Settings, LogOut, Zap, Menu, X, Timer, Users, Flame, Award, AtSign
 } from "lucide-react";
 
-const navItems = [
-  { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/tasks", icon: CheckSquare, label: "Tasks" },
-  { href: "/calendar", icon: Calendar, label: "Calendar" },
-  { href: "/reminders", icon: Bell, label: "Reminders" },
-  { href: "/assistant", icon: Sparkles, label: "AI Assistant" },
-  { href: "/analytics", icon: BarChart3, label: "Analytics" },
-  { href: "/settings", icon: Settings, label: "Settings" },
+const navigationGroups = [
+  {
+    title: "Overview",
+    items: [
+      { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+      { href: "/assistant", icon: Sparkles, label: "AI Assistant", badge: "AI" },
+    ]
+  },
+  {
+    title: "Workspace",
+    items: [
+      { href: "/tasks", icon: CheckSquare, label: "Tasks" },
+      { href: "/calendar", icon: Calendar, label: "Calendar" },
+      { href: "/shared", icon: Users, label: "Family Board" },
+    ]
+  },
+  {
+    title: "Routines",
+    items: [
+      { href: "/habits", icon: Flame, label: "Habits" },
+      { href: "/focus", icon: Timer, label: "Focus Timer" },
+      { href: "/review", icon: Award, label: "Weekly Review" },
+      { href: "/reminders", icon: Bell, label: "Reminders" },
+    ]
+  },
+  {
+    title: "System",
+    items: [
+      { href: "/analytics", icon: BarChart3, label: "Analytics" },
+      { href: "/settings", icon: Settings, label: "Settings" },
+    ]
+  }
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const [user, setUser] = useState<any>(null);
+  const [username, setUsername] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
   const router = useRouter();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
-  }, []);
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+      // Fetch username from settings
+      if (data.user) {
+        fetch("/api/settings")
+          .then(r => r.ok ? r.json() : null)
+          .then(s => { if (s?.username) setUsername(s.username); })
+          .catch(() => {});
+      }
+    });
+  }, [supabase]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -39,68 +74,110 @@ export function Sidebar() {
     <>
       {/* Mobile toggle */}
       <button
-        className="fixed top-4 left-4 z-50 md:hidden p-2 rounded-lg bg-card border border-border"
+        className="fixed top-3.5 left-3.5 z-50 md:hidden p-2 rounded-xl bg-[#0e0e16]/95 backdrop-blur-md border border-white/10 shadow-lg text-white/70 hover:text-white transition-colors"
         onClick={() => setMobileOpen(!mobileOpen)}
+        aria-label="Toggle menu"
       >
-        {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
       </button>
 
       {/* Overlay */}
-      {mobileOpen && (
-        <div className="fixed inset-0 z-40 bg-black/60 md:hidden" onClick={() => setMobileOpen(false)} />
-      )}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm md:hidden"
+            onClick={() => setMobileOpen(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Sidebar */}
-      <aside className={`fixed top-0 left-0 h-full z-40 w-[240px] flex flex-col border-r border-border bg-card/90 backdrop-blur-xl transition-transform duration-300 ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}>
+      <aside className={`fixed top-0 left-0 h-full z-40 w-[260px] flex flex-col border-r border-white/[0.06] bg-[#080810]/98 backdrop-blur-3xl transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}>
         {/* Logo */}
-        <div className="flex items-center gap-2.5 px-5 py-5 border-b border-border">
-          <img src="/logo.png" alt="Logo" className="h-8 w-8 shrink-0 object-contain rounded-lg shadow-sm" />
+        <div className="flex items-center gap-3 px-5 py-5 border-b border-white/[0.06]">
+          <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-[0_0_20px_rgba(99,102,241,0.35)]">
+            <Zap className="h-4.5 w-4.5 text-white" />
+            <div className="absolute inset-0 rounded-xl ring-1 ring-white/20" />
+          </div>
           <div>
-            <p className="font-bold text-sm leading-none">Restia</p>
-            <p className="text-[11px] text-muted-foreground">Chief of Staff</p>
+            <p className="font-bold text-sm tracking-tight text-white leading-none">Restia</p>
+            <p className="text-[10px] font-medium text-white/40 uppercase tracking-widest mt-0.5">Chief of Staff</p>
           </div>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-          {navItems.map(({ href, icon: Icon, label }) => {
-            const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
-            return (
-              <Link
-                key={href}
-                href={href}
-                onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 group
-                  ${active
-                    ? "bg-primary/15 text-primary"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                  }`}
-              >
-                <Icon className={`h-4 w-4 shrink-0 transition-transform group-hover:scale-110 ${active ? "text-primary" : ""}`} />
-                {label}
-                {active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 px-3 py-4 space-y-5 overflow-y-auto scrollbar-none">
+          {navigationGroups.map((group) => (
+            <div key={group.title}>
+              <h4 className="px-2.5 mb-1.5 text-[9px] font-semibold tracking-[0.18em] text-white/25 uppercase">
+                {group.title}
+              </h4>
+              <ul className="space-y-0.5">
+                {group.items.map(({ href, icon: Icon, label, badge }) => {
+                  const active = pathname.startsWith(href);
+                  return (
+                    <li key={href}>
+                      <Link
+                        href={href}
+                        onClick={() => setMobileOpen(false)}
+                        className={`group relative flex items-center gap-3 px-2.5 py-2 rounded-xl text-[13px] font-medium transition-all duration-150
+                          ${active
+                            ? "text-indigo-300"
+                            : "text-white/45 hover:text-white/80 hover:bg-white/[0.04]"
+                          }`}
+                      >
+                        {active && (
+                          <motion.div
+                            layoutId="active-pill"
+                            className="absolute inset-0 rounded-xl bg-indigo-500/12 border border-indigo-500/15"
+                            initial={false}
+                            transition={{ type: "spring", stiffness: 400, damping: 35 }}
+                          />
+                        )}
+                        <Icon className={`relative z-10 h-4 w-4 shrink-0 ${active ? "text-indigo-400" : ""}`} />
+                        <span className="relative z-10 flex-1">{label}</span>
+                        {badge && (
+                          <span className={`relative z-10 px-1.5 py-px rounded text-[9px] font-bold tracking-wider ${active ? "bg-indigo-500/20 text-indigo-300" : "bg-white/[0.06] text-white/35"}`}>
+                            {badge}
+                          </span>
+                        )}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
         </nav>
 
         {/* User */}
-        <div className="p-3 border-t border-border">
-          <div className="flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-muted transition-colors">
+        <div className="p-3 border-t border-white/[0.06]">
+          <div className="group flex items-center gap-3 px-2.5 py-2.5 rounded-xl hover:bg-white/[0.04] transition-all duration-200 cursor-default border border-transparent hover:border-white/[0.06]">
             {user?.user_metadata?.avatar_url
-              ? <img src={user.user_metadata.avatar_url} className="h-8 w-8 rounded-full object-cover" alt="" />
-              : <div className="h-8 w-8 rounded-full gradient-primary flex items-center justify-center text-xs font-bold text-white">{user?.email?.[0]?.toUpperCase() ?? "U"}</div>
+              ? <img src={user.user_metadata.avatar_url} className="h-8 w-8 rounded-full object-cover ring-2 ring-white/10 shrink-0" alt="" />
+              : <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-xs font-bold text-white ring-2 ring-white/10 shrink-0">{user?.email?.[0]?.toUpperCase() ?? "U"}</div>
             }
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{user?.user_metadata?.full_name ?? "User"}</p>
-              <p className="text-xs text-muted-foreground truncate">{user?.email ?? ""}</p>
+              <p className="text-xs font-semibold text-white truncate leading-tight">
+                {user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User"}
+              </p>
+              {username ? (
+                <p className="text-[10px] text-indigo-400/70 truncate flex items-center gap-0.5 mt-px">
+                  <AtSign className="h-2.5 w-2.5" />{username}
+                </p>
+              ) : (
+                <p className="text-[10px] text-white/30 truncate mt-px">{user?.email ?? ""}</p>
+              )}
             </div>
             <button
               onClick={handleSignOut}
-              className="p-1.5 rounded-md hover:bg-destructive/10 hover:text-destructive transition-colors"
+              className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg hover:bg-red-500/15 text-white/30 hover:text-red-400 transition-all duration-200 shrink-0"
               title="Sign out"
             >
-              <LogOut className="h-4 w-4" />
+              <LogOut className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>

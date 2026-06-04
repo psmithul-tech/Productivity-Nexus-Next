@@ -1,33 +1,50 @@
 "use client";
-import { useEffect, useState } from "react";
-import { CheckSquare, Calendar, AlertCircle, Clock, Zap, Target, ArrowRight } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import {
+  CheckSquare, Calendar, AlertCircle, Clock, Zap, Target,
+  ArrowRight, Users, Flame, Plus, Check, Star, TrendingUp
+} from "lucide-react";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 
-type Summary = { total: number; active: number; completed: number; overdue: number; byPriority: Record<string, number>; byBucket: Record<string, number> };
+type Summary = {
+  total: number; active: number; completed: number; overdue: number;
+  byPriority: Record<string, number>; byBucket: Record<string, number>;
+};
 type EventData = { events: any[]; totalMeetingMinutes: number; totalFreeMinutes: number; freeSlots: any[] };
 type Task = { id: number; title: string; priority: string; dueDate: string | null; status: string };
+type AssignedTask = { id: number; title: string; priority: string; assignedByUsername: string; status: string; dueDate: string | null };
 
-const PRIORITY_COLORS: Record<string, string> = { 
-  urgent: "bg-red-500/20 text-red-500 border-red-500/30", 
-  high: "bg-orange-500/20 text-orange-500 border-orange-500/30", 
-  medium: "bg-blue-500/20 text-blue-500 border-blue-500/30", 
-  low: "bg-gray-500/20 text-gray-500 border-gray-500/30" 
+const PRIORITY_LEFT_BORDER: Record<string, string> = {
+  urgent: "border-l-red-500",
+  high: "border-l-orange-500",
+  medium: "border-l-blue-500",
+  low: "border-l-zinc-500",
 };
 
 function Skeleton({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse rounded-3xl bg-white/5 border border-white/5 ${className}`} />;
+  return <div className={`animate-pulse rounded-2xl bg-white/[0.04] border border-white/[0.03] ${className}`} />;
 }
 
-// SVG Progress Ring Component
-function ProgressRing({ radius, stroke, progress, colorClass }: { radius: number; stroke: number; progress: number; colorClass: string }) {
-  const normalizedRadius = radius - stroke * 2;
-  const circumference = normalizedRadius * 2 * Math.PI;
-  const strokeDashoffset = circumference - (progress / 100) * circumference;
-
+function ProgressRing({ radius, stroke, progress }: { radius: number; stroke: number; progress: number }) {
+  const r = radius - stroke * 2;
+  const circ = r * 2 * Math.PI;
+  const offset = circ - (progress / 100) * circ;
   return (
-    <svg height={radius * 2} width={radius * 2} className="transform -rotate-90 drop-shadow-xl">
-      <circle stroke="rgba(255,255,255,0.05)" fill="transparent" strokeWidth={stroke} r={normalizedRadius} cx={radius} cy={radius} />
-      <circle stroke="currentColor" fill="transparent" strokeWidth={stroke} strokeDasharray={circumference + ' ' + circumference} style={{ strokeDashoffset, transition: "stroke-dashoffset 1s ease-in-out" }} strokeLinecap="round" r={normalizedRadius} cx={radius} cy={radius} className={colorClass} />
+    <svg height={radius * 2} width={radius * 2} className="transform -rotate-90">
+      <circle stroke="rgba(255,255,255,0.06)" fill="transparent" strokeWidth={stroke} r={r} cx={radius} cy={radius} />
+      <circle
+        stroke="url(#ringGrad)" fill="transparent" strokeWidth={stroke}
+        strokeDasharray={`${circ} ${circ}`} style={{ strokeDashoffset: offset, transition: "stroke-dashoffset 1.2s ease-in-out" }}
+        strokeLinecap="round" r={r} cx={radius} cy={radius}
+      />
+      <defs>
+        <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="hsl(265,90%,70%)" />
+          <stop offset="100%" stopColor="hsl(220,90%,60%)" />
+        </linearGradient>
+      </defs>
     </svg>
   );
 }
@@ -36,192 +53,413 @@ export default function DashboardPage() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [todayEvents, setTodayEvents] = useState<EventData | null>(null);
   const [todayTasks, setTodayTasks] = useState<Task[]>([]);
+  const [assignedTasks, setAssignedTasks] = useState<AssignedTask[]>([]);
   const [loading, setLoading] = useState(true);
-  const [timeState, setTimeState] = useState({ greeting: "", dateStr: "" });
+  const [completingId, setCompletingId] = useState<number | null>(null);
+  const [timeState, setTimeState] = useState({ greeting: "", dateStr: "", name: "" });
+
+  const fetchData = useCallback(async () => {
+    try {
+      const [s, e, t, a] = await Promise.all([
+        fetch("/api/tasks/summary").then(r => r.ok ? r.json() : null),
+        fetch("/api/events/today").then(r => r.ok ? r.json() : null),
+        fetch("/api/tasks/today").then(r => r.ok ? r.json() : null),
+        fetch("/api/tasks/assigned").then(r => r.ok ? r.json() : []),
+      ]);
+      if (s && !s.error) setSummary(s);
+      if (e && !e.error) setTodayEvents(e);
+      if (Array.isArray(t)) setTodayTasks(t.filter((task: Task) => task.status === "active"));
+      if (Array.isArray(a)) setAssignedTasks(a.filter((task: AssignedTask) => task.status === "active"));
+    } catch { /* silent */ } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     const d = new Date();
-    setTimeState({
-      greeting: d.getHours() < 12 ? "Good Morning" : d.getHours() < 17 ? "Good Afternoon" : "Good Evening",
-      dateStr: d.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })
-    });
-
-    const fetchData = () => {
-      Promise.all([
-        fetch("/api/tasks/summary").then(r => r.json()),
-        fetch("/api/events/today").then(r => r.json()),
-        fetch("/api/tasks/today").then(r => r.json()),
-      ]).then(([s, e, t]) => { setSummary(s); setTodayEvents(e); setTodayTasks(t); setLoading(false); });
-    };
-
+    const h = d.getHours();
+    const greeting = h < 12 ? "Good Morning" : h < 17 ? "Good Afternoon" : "Good Evening";
+    const dateStr = d.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+    setTimeState({ greeting, dateStr, name: "" });
     fetchData();
-    const intervalId = setInterval(fetchData, 15000);
-    return () => clearInterval(intervalId);
-  }, []);
+    const id = setInterval(fetchData, 30000);
+    return () => clearInterval(id);
+  }, [fetchData]);
 
-  const totalToday = (summary?.byBucket.today ?? 0) + (summary?.completed ?? 0); // Approx total tasks today
-  const completionRate = totalToday > 0 ? Math.round(((summary?.completed ?? 0) / totalToday) * 100) : 0;
+  const handleCompleteTask = useCallback(async (task: Task) => {
+    setCompletingId(task.id);
+    // Optimistic update
+    setTodayTasks(prev => prev.filter(t => t.id !== task.id));
+    setSummary(prev => prev ? {
+      ...prev,
+      active: Math.max(0, prev.active - 1),
+      completed: prev.completed + 1,
+    } : prev);
+    try {
+      await fetch(`/api/tasks/${task.id}/complete`, { method: "PATCH" });
+      toast.success("Task completed! 🎉");
+    } catch {
+      toast.error("Failed to complete task");
+      fetchData(); // revert
+    } finally {
+      setCompletingId(null);
+    }
+  }, [fetchData]);
+
+  const completedCount = summary?.completed ?? 0;
+  const totalTasks = summary?.total ?? 0;
+  const completionRate = totalTasks > 0 ? Math.min(100, Math.round((completedCount / totalTasks) * 100)) : 0;
+  const meetingMins = todayEvents?.totalMeetingMinutes ?? 0;
 
   return (
-    <div className="relative min-h-screen pb-12 w-full overflow-hidden font-sans">
-      {/* ── Ambient Glows ── */}
-      <div className="fixed top-[-10%] left-[-10%] h-[600px] w-[600px] rounded-full bg-primary/10 blur-[150px] opacity-70 mix-blend-screen pointer-events-none" />
-      <div className="fixed bottom-[-10%] right-[-10%] h-[700px] w-[700px] rounded-full bg-blue-600/10 blur-[150px] opacity-60 mix-blend-screen pointer-events-none" />
+    <div className="relative min-h-full pb-8 page-enter">
+      {/* Ambient */}
+      <div className="fixed top-0 left-[260px] w-[500px] h-[500px] rounded-full bg-primary/8 blur-[160px] pointer-events-none -z-0" />
+      <div className="fixed bottom-0 right-0 w-[600px] h-[600px] rounded-full bg-blue-600/6 blur-[160px] pointer-events-none -z-0" />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 py-8">
-        
-        {/* ── Bento Grid ── */}
-        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 auto-rows-[minmax(140px,auto)] gap-4 sm:gap-6">
-          
-          {/* Welcome Card (Hero) */}
-          <div className="md:col-span-4 lg:col-span-4 row-span-1 flex flex-col justify-center rounded-[2.5rem] border border-white/10 bg-white/5 backdrop-blur-2xl p-8 sm:p-10 shadow-2xl relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:opacity-40 group-hover:scale-110 transition-all duration-700 pointer-events-none">
-              <Zap className="h-48 w-48 text-primary/50" />
-            </div>
-            <div className="relative z-10">
-              <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white mb-2">
-                {timeState.greeting}
-              </h1>
-              <p className="text-lg font-medium text-white/60 tracking-wide">{timeState.dateStr || "Loading..."}</p>
-            </div>
-          </div>
+      <div className="relative z-10 max-w-7xl mx-auto">
 
-          {/* Productivity Score / Ring */}
-          <div className="md:col-span-2 lg:col-span-2 row-span-2 flex flex-col items-center justify-center rounded-[2.5rem] border border-white/10 bg-gradient-to-br from-white/5 to-white/[0.02] backdrop-blur-2xl p-8 shadow-2xl relative overflow-hidden group hover:border-primary/30 transition-colors duration-500">
-            <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <h2 className="text-sm font-bold tracking-widest uppercase text-white/50 mb-6 w-full text-center relative z-10">Productivity Score</h2>
-            <div className="relative flex items-center justify-center mb-4 z-10">
+        {/* Hero Header */}
+        <div className="mb-6">
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+            {timeState.greeting || "Welcome back"} 👋
+          </h1>
+          <p className="text-white/50 mt-1 text-sm">{timeState.dateStr || "Loading..."}</p>
+        </div>
+
+        {/* Bento Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+
+          {/* ── Productivity Ring ── */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4 }}
+            className="sm:col-span-1 row-span-1 flex flex-col items-center justify-center rounded-3xl border border-white/8 bg-white/[0.03] backdrop-blur-xl p-6 shadow-xl gap-3"
+          >
+            <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-white/40">Completion</p>
+            <div className="relative flex items-center justify-center">
               {loading ? (
-                <div className="h-40 w-40 rounded-full border-8 border-white/10 border-t-primary animate-spin" />
+                <div className="h-28 w-28 rounded-full border-8 border-white/5 border-t-primary/50 animate-spin" />
               ) : (
                 <>
-                  <ProgressRing radius={90} stroke={12} progress={completionRate} colorClass="text-primary" />
-                  <div className="absolute flex flex-col items-center justify-center">
-                    <span className="text-5xl font-extrabold text-white">{completionRate}%</span>
-                    <span className="text-xs font-semibold text-white/50 uppercase tracking-widest mt-1">Completed</span>
+                  <ProgressRing radius={64} stroke={8} progress={completionRate} />
+                  <div className="absolute flex flex-col items-center">
+                    <span className="text-3xl font-black text-white">{completionRate}%</span>
                   </div>
                 </>
               )}
             </div>
-            <div className="flex gap-4 w-full justify-center text-center mt-2 relative z-10">
+            <div className="flex gap-5 text-center">
               <div>
-                <p className="text-2xl font-bold text-white">{summary?.completed ?? 0}</p>
-                <p className="text-xs text-white/50">Done</p>
+                <p className="text-xl font-bold text-white">{loading ? "–" : completedCount}</p>
+                <p className="text-[10px] text-white/40 uppercase tracking-wide">Done</p>
               </div>
-              <div className="w-px h-8 bg-white/10" />
+              <div className="w-px bg-white/8" />
               <div>
-                <p className="text-2xl font-bold text-white">{summary?.byBucket.today ?? 0}</p>
-                <p className="text-xs text-white/50">To Do</p>
+                <p className="text-xl font-bold text-white">{loading ? "–" : (summary?.active ?? 0)}</p>
+                <p className="text-[10px] text-white/40 uppercase tracking-wide">Active</p>
               </div>
             </div>
-          </div>
+          </motion.div>
 
-          {/* Quick Actions (Assistant) */}
-          <div className="md:col-span-2 lg:col-span-2 row-span-1 rounded-[2.5rem] border border-primary/20 bg-primary/10 backdrop-blur-2xl p-6 shadow-2xl shadow-primary/5 hover:-translate-y-1 transition-transform duration-300">
-            <Link href="/assistant" className="h-full flex flex-col justify-center">
-              <div className="flex items-center justify-between mb-3">
-                <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
-                  <Target className="h-6 w-6 text-white" />
+          {/* ── Today's Focus (Tasks) ── */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.05 }}
+            className="sm:col-span-1 lg:col-span-2 row-span-2 rounded-3xl border border-white/8 bg-white/[0.03] backdrop-blur-xl p-5 shadow-xl flex flex-col"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-xl bg-primary/15 flex items-center justify-center">
+                  <CheckSquare className="h-4 w-4 text-primary" />
                 </div>
-                <div className="h-8 w-8 rounded-full bg-white/10 flex items-center justify-center">
-                  <ArrowRight className="h-4 w-4 text-white" />
+                <div>
+                  <h2 className="text-sm font-bold text-white">Today's Focus</h2>
+                  <p className="text-[10px] text-white/40">{loading ? "..." : `${todayTasks.length} tasks remaining`}</p>
                 </div>
               </div>
-              <h2 className="text-xl font-bold text-white">AI Chief of Staff</h2>
-              <p className="text-sm text-white/70 mt-1">Chat to prioritize your day or batch add tasks.</p>
-            </Link>
-          </div>
-
-          {/* Quick Stats: Meetings */}
-          <div className="md:col-span-2 lg:col-span-2 row-span-1 rounded-[2.5rem] border border-white/10 bg-white/5 backdrop-blur-2xl p-6 shadow-2xl flex flex-col justify-center">
-            <div className="flex items-center gap-3 mb-2">
-              <Clock className="h-5 w-5 text-blue-400" />
-              <h3 className="text-sm font-bold uppercase tracking-widest text-white/50">Time in Meetings</h3>
-            </div>
-            <p className="text-3xl font-extrabold text-white">
-              {loading ? "-" : `${Math.round((todayEvents?.totalMeetingMinutes ?? 0) / 60)}h ${(todayEvents?.totalMeetingMinutes ?? 0) % 60}m`}
-            </p>
-          </div>
-
-          {/* Timeline */}
-          <div className="md:col-span-4 lg:col-span-4 row-span-2 rounded-[2.5rem] border border-white/10 bg-white/5 backdrop-blur-2xl p-8 shadow-2xl flex flex-col">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <Calendar className="h-6 w-6 text-primary" />
-                <h2 className="text-2xl font-bold text-white tracking-tight">Today's Timeline</h2>
+              <div className="flex items-center gap-2">
+                {(summary?.overdue ?? 0) > 0 && (
+                  <span className="flex items-center gap-1 text-[10px] font-bold text-red-400 bg-red-400/10 px-2 py-1 rounded-full border border-red-500/20">
+                    <AlertCircle className="h-3 w-3" /> {summary?.overdue} overdue
+                  </span>
+                )}
               </div>
-              <Link href="/calendar" className="text-sm font-bold text-primary/80 hover:text-primary transition-colors">View full →</Link>
             </div>
-            
-            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+
+            <div className="flex-1 flex flex-col gap-2 overflow-y-auto custom-scrollbar">
               {loading ? (
-                <div className="space-y-4">{Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-2xl" />)}</div>
-              ) : todayEvents?.events.length === 0 ? (
-                <div className="h-full flex items-center justify-center flex-col text-center opacity-50">
-                  <span className="text-4xl mb-3">✨</span>
-                  <p className="text-white font-medium">Your schedule is entirely clear today!</p>
-                </div>
-              ) : (
-                <div className="space-y-3 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-white/20 before:to-transparent">
-                  {todayEvents?.events.map((e: any, i: number) => {
-                    const st = new Date(e.startTime);
-                    const et = new Date(e.endTime);
-                    const now = new Date();
-                    const isNext = st > now && (i === 0 || new Date(todayEvents.events[i-1].startTime) < now);
-                    
-                    return (
-                      <div key={e.id} className={`relative flex items-center gap-6 p-4 rounded-3xl transition-colors ${isNext ? "bg-white/10 border border-white/20" : "hover:bg-white/5"}`}>
-                        <div className={`flex items-center justify-center w-4 h-4 rounded-full border-[3px] border-background z-10 shrink-0 ${isNext ? "bg-primary w-5 h-5 ml-[-2px] shadow-[0_0_15px_rgba(var(--primary),0.8)]" : "bg-white/40"}`} />
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-sm font-bold mb-0.5 ${isNext ? "text-primary" : "text-white/60"}`}>
-                            {st.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })} - {et.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
-                          </p>
-                          <h3 className="text-lg font-bold text-white truncate leading-tight">{e.title}</h3>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Action Items (Tasks) */}
-          <div className="md:col-span-2 lg:col-span-2 row-span-2 rounded-[2.5rem] border border-white/10 bg-white/5 backdrop-blur-2xl p-8 shadow-2xl flex flex-col">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <CheckSquare className="h-6 w-6 text-primary" />
-                <h2 className="text-2xl font-bold text-white tracking-tight">Focus</h2>
-              </div>
-              {(summary?.overdue ?? 0) > 0 && (
-                <span className="flex items-center gap-1 text-xs font-bold text-red-400 bg-red-400/10 px-2 py-1 rounded-full"><AlertCircle className="h-3 w-3" /> {summary?.overdue} Overdue</span>
-              )}
-            </div>
-
-            <div className="flex-1 flex flex-col gap-3">
-              {loading ? (
-                <div className="space-y-3">{Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-14 w-full rounded-2xl" />)}</div>
+                Array(4).fill(0).map((_, i) => <Skeleton key={i} className="h-12" />)
               ) : todayTasks.length === 0 ? (
-                <div className="h-full flex items-center justify-center flex-col text-center opacity-50">
-                  <span className="text-4xl mb-3">🎯</span>
-                  <p className="text-white font-medium">All tasks complete!</p>
+                <div className="flex-1 flex flex-col items-center justify-center py-8 text-center">
+                  <div className="h-14 w-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center mb-3">
+                    <Check className="h-7 w-7 text-emerald-400" />
+                  </div>
+                  <p className="text-sm font-semibold text-white/60">All caught up!</p>
+                  <p className="text-xs text-white/30 mt-1">No tasks due today</p>
                 </div>
               ) : (
-                todayTasks.slice(0, 5).map((task) => (
-                  <div key={task.id} className="group relative flex items-center gap-3 p-4 rounded-2xl bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.08] hover:border-white/10 transition-all duration-300">
-                    <div className={`shrink-0 w-1.5 h-full absolute left-0 top-0 bottom-0 opacity-50 ${PRIORITY_COLORS[task.priority]?.split(' ')[0]}`} />
-                    <div className="h-5 w-5 shrink-0 rounded-full border-2 border-white/30 group-hover:border-primary transition-colors ml-1" />
-                    <div className="flex-1 min-w-0 pl-1">
-                      <p className="text-sm font-bold text-white truncate">{task.title}</p>
+                <AnimatePresence mode="popLayout">
+                  {todayTasks.slice(0, 6).map((task, i) => (
+                    <motion.div
+                      key={task.id}
+                      layout
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 8, height: 0 }}
+                      transition={{ delay: i * 0.04 }}
+                      className={`group flex items-center gap-3 p-3 rounded-2xl border-l-2 bg-white/[0.03] border border-white/[0.05] hover:bg-white/[0.07] hover:border-white/10 transition-all cursor-default ${PRIORITY_LEFT_BORDER[task.priority] ?? "border-l-zinc-500"}`}
+                    >
+                      <button
+                        onClick={() => handleCompleteTask(task)}
+                        disabled={completingId === task.id}
+                        className="h-5 w-5 shrink-0 rounded-full border-2 border-white/20 hover:border-primary flex items-center justify-center transition-all hover:bg-primary/10 active:scale-90"
+                      >
+                        {completingId === task.id && (
+                          <div className="h-2.5 w-2.5 rounded-full bg-primary animate-pulse" />
+                        )}
+                      </button>
+                      <p className="flex-1 text-sm font-medium text-white truncate">{task.title}</p>
+                      {task.dueDate && (() => {
+                        const due = new Date(task.dueDate);
+                        const isOverdue = due < new Date();
+                        return (
+                          <span className={`text-[10px] font-medium shrink-0 ${isOverdue ? "text-red-400" : "text-white/30"}`}>
+                            {isOverdue ? "⚠ " : ""}{due.toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                          </span>
+                        );
+                      })()}
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              )}
+            </div>
+
+            <div className="flex gap-2 mt-4 pt-4 border-t border-white/5">
+              <Link
+                href="/tasks"
+                className="flex-1 py-2.5 rounded-xl bg-white/5 text-white/60 text-xs font-bold text-center hover:bg-white/10 hover:text-white transition-colors"
+              >
+                View All Tasks →
+              </Link>
+              <Link
+                href="/tasks"
+                className="py-2.5 px-4 rounded-xl bg-primary/15 text-primary text-xs font-bold hover:bg-primary/25 transition-colors flex items-center gap-1.5"
+              >
+                <Plus className="h-3.5 w-3.5" /> Add
+              </Link>
+            </div>
+          </motion.div>
+
+          {/* ── AI Assistant Card ── */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.08 }}
+            className="sm:col-span-1 rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/10 to-blue-600/5 backdrop-blur-xl p-5 shadow-xl hover:-translate-y-0.5 transition-transform duration-300"
+          >
+            <Link href="/assistant" className="h-full flex flex-col justify-between">
+              <div className="flex items-center justify-between mb-4">
+                <div className="h-10 w-10 rounded-2xl bg-primary/20 flex items-center justify-center shadow-lg shadow-primary/20">
+                  <Zap className="h-5 w-5 text-primary" />
+                </div>
+                <ArrowRight className="h-4 w-4 text-primary/50" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-white">AI Assistant</h2>
+                <p className="text-xs text-white/50 mt-1">Chat to add tasks, events, or get a briefing.</p>
+              </div>
+            </Link>
+          </motion.div>
+
+          {/* ── Meetings ── */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+            className="sm:col-span-1 rounded-3xl border border-white/8 bg-white/[0.03] backdrop-blur-xl p-5 shadow-xl flex flex-col justify-between"
+          >
+            <div className="flex items-center gap-2 mb-3">
+              <div className="h-8 w-8 rounded-xl bg-blue-500/15 flex items-center justify-center">
+                <Clock className="h-4 w-4 text-blue-400" />
+              </div>
+              <p className="text-xs font-bold text-white/50 uppercase tracking-widest">Meetings</p>
+            </div>
+            <div>
+              <p className="text-3xl font-black text-white">
+                {loading ? (
+                  <span className="h-8 w-20 rounded-xl bg-white/5 animate-pulse inline-block" />
+                ) : (
+                  `${Math.floor(meetingMins / 60)}h ${meetingMins % 60}m`
+                )}
+              </p>
+              <p className="text-xs text-white/30 mt-1">in {loading ? "–" : (todayEvents?.events.length ?? 0)} events today</p>
+            </div>
+          </motion.div>
+
+          {/* ── Weekly Review ── */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.12 }}
+            className="sm:col-span-1 rounded-3xl border border-emerald-500/15 bg-emerald-500/[0.04] backdrop-blur-xl p-5 shadow-xl hover:-translate-y-0.5 transition-transform duration-300"
+          >
+            <Link href="/review" className="h-full flex flex-col justify-between">
+              <div className="flex items-center justify-between mb-4">
+                <div className="h-10 w-10 rounded-2xl bg-emerald-500/20 flex items-center justify-center">
+                  <TrendingUp className="h-5 w-5 text-emerald-400" />
+                </div>
+                <ArrowRight className="h-4 w-4 text-emerald-400/50" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-white">Weekly Review</h2>
+                <p className="text-xs text-white/50 mt-1">AI-powered retrospective & analytics</p>
+              </div>
+            </Link>
+          </motion.div>
+
+          {/* ── Today's Timeline ── */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.14 }}
+            className="sm:col-span-2 lg:col-span-2 xl:col-span-2 rounded-3xl border border-white/8 bg-white/[0.03] backdrop-blur-xl p-5 shadow-xl flex flex-col"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-xl bg-blue-500/15 flex items-center justify-center">
+                  <Calendar className="h-4 w-4 text-blue-400" />
+                </div>
+                <h2 className="text-sm font-bold text-white">Today's Schedule</h2>
+              </div>
+              <Link href="/calendar" className="text-xs font-bold text-blue-400/70 hover:text-blue-400 transition-colors">
+                View full →
+              </Link>
+            </div>
+
+            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 max-h-60">
+              {loading ? (
+                Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-14" />)
+              ) : !todayEvents?.events.length ? (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <span className="text-3xl mb-2">✨</span>
+                  <p className="text-sm text-white/40">No events today — free day!</p>
+                </div>
+              ) : (
+                todayEvents.events.map((e: any, i: number) => {
+                  const st = new Date(e.startTime);
+                  const et = new Date(e.endTime);
+                  const now = new Date();
+                  const isNow = st <= now && et >= now;
+                  const isPast = et < now;
+                  return (
+                    <div
+                      key={e.id}
+                      className={`flex items-center gap-3 p-3 rounded-2xl transition-colors ${isNow ? "bg-primary/10 border border-primary/20" : isPast ? "opacity-40" : "hover:bg-white/5"}`}
+                    >
+                      <div className={`h-2 w-2 rounded-full shrink-0 ${isNow ? "bg-primary animate-pulse" : isPast ? "bg-white/20" : "bg-blue-400/50"}`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-white/50">
+                          {st.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })} – {et.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                        <p className={`text-sm font-semibold truncate ${isNow ? "text-primary" : "text-white"}`}>{e.title}</p>
+                      </div>
+                      {isNow && <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full shrink-0">NOW</span>}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </motion.div>
+
+          {/* ── Family Board / Habits ── */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.16 }}
+            className="sm:col-span-1 rounded-3xl border border-violet-500/15 bg-violet-500/[0.04] backdrop-blur-xl p-5 shadow-xl hover:-translate-y-0.5 transition-transform duration-300"
+          >
+            <Link href="/shared" className="flex flex-col justify-between h-full">
+              <div className="flex items-center justify-between mb-4">
+                <div className="h-10 w-10 rounded-2xl bg-violet-500/20 flex items-center justify-center">
+                  <Users className="h-5 w-5 text-violet-400" />
+                </div>
+                <ArrowRight className="h-4 w-4 text-violet-400/50" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-white">Family Board</h2>
+                <p className="text-xs text-white/50 mt-1">Shared household tasks & assignments</p>
+              </div>
+            </Link>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.18 }}
+            className="sm:col-span-1 rounded-3xl border border-orange-500/15 bg-orange-500/[0.04] backdrop-blur-xl p-5 shadow-xl hover:-translate-y-0.5 transition-transform duration-300"
+          >
+            <Link href="/habits" className="flex flex-col justify-between h-full">
+              <div className="flex items-center justify-between mb-4">
+                <div className="h-10 w-10 rounded-2xl bg-orange-500/20 flex items-center justify-center">
+                  <Flame className="h-5 w-5 text-orange-400" />
+                </div>
+                <ArrowRight className="h-4 w-4 text-orange-400/50" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-white">Habits</h2>
+                <p className="text-xs text-white/50 mt-1">Build daily routines & track streaks</p>
+              </div>
+            </Link>
+          </motion.div>
+
+          {/* ── Assigned to Me (Family) ── */}
+          <AnimatePresence>
+            {assignedTasks.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.4, delay: 0.2 }}
+                className="sm:col-span-2 lg:col-span-3 xl:col-span-4 rounded-3xl border border-violet-500/20 bg-violet-500/[0.04] backdrop-blur-xl p-5 shadow-xl"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-xl bg-violet-500/20 flex items-center justify-center">
+                      <Users className="h-4 w-4 text-violet-400" />
+                    </div>
+                    <div>
+                      <h2 className="text-sm font-bold text-white">Assigned to You</h2>
+                      <p className="text-[10px] text-white/40">{assignedTasks.length} task{assignedTasks.length !== 1 ? "s" : ""} from family</p>
                     </div>
                   </div>
-                ))
-              )}
-            </div>
-            <Link href="/tasks" className="mt-6 w-full py-3 rounded-2xl bg-white/5 text-white/70 text-sm font-bold text-center hover:bg-white/10 hover:text-white transition-colors">
-              View All Tasks
-            </Link>
-          </div>
+                  <Link href="/shared" className="text-xs font-bold text-violet-400/70 hover:text-violet-400 transition-colors flex items-center gap-1">
+                    Family Board <ArrowRight className="h-3 w-3" />
+                  </Link>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                  {assignedTasks.slice(0, 8).map((task, i) => (
+                    <motion.div
+                      key={task.id}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.04 }}
+                      className="flex flex-col gap-1.5 p-3 rounded-2xl bg-white/[0.04] border border-violet-500/10 hover:bg-violet-500/10 hover:border-violet-500/25 transition-all"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-xs font-semibold text-white leading-snug">{task.title}</p>
+                        {task.priority === "urgent" && <Flame className="h-3 w-3 text-red-400 shrink-0 mt-0.5" />}
+                        {task.priority === "high" && <AlertCircle className="h-3 w-3 text-orange-400 shrink-0 mt-0.5" />}
+                      </div>
+                      <p className="text-[10px] text-violet-400/70 font-medium">from @{task.assignedByUsername}</p>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
         </div>
       </div>

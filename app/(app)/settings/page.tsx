@@ -6,7 +6,7 @@ import { toast } from "sonner";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface AppSettings {
-  workdayStart: string;   // "HH:MM"
+  workdayStart: string;
   workdayEnd: string;
   quietHoursStart: string;
   quietHoursEnd: string;
@@ -18,6 +18,8 @@ interface AppSettings {
   telegramChatId: string;
   googleAccessToken?: string;
   googleRefreshToken?: string;
+  geminiApiKey: string;
+  username: string;
 }
 
 const DEFAULTS: AppSettings = {
@@ -31,6 +33,8 @@ const DEFAULTS: AppSettings = {
   discordWebhookUrl: "",
   telegramBotToken: "",
   telegramChatId: "",
+  geminiApiKey: "",
+  username: "",
 };
 
 // ─── Section ──────────────────────────────────────────────────────────────────
@@ -133,6 +137,8 @@ export default function SettingsPage() {
   const [testing, setTesting] = useState<"discord" | "telegram" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
+  const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
+  const [usernameInput, setUsernameInput] = useState("");
 
   async function fetchSettings() {
     setLoading(true);
@@ -141,6 +147,8 @@ export default function SettingsPage() {
       const res = await fetch("/api/settings");
       if (res.status === 404) {
         setSettings(DEFAULTS);
+        setUsernameInput("");
+        setLoading(false);
         return;
       }
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -148,7 +156,9 @@ export default function SettingsPage() {
       const sanitizedData = Object.fromEntries(
         Object.entries(data).map(([k, v]) => [k, v === null ? "" : v])
       ) as Partial<AppSettings>;
-      setSettings({ ...DEFAULTS, ...sanitizedData });
+      const merged = { ...DEFAULTS, ...sanitizedData };
+      setSettings(merged);
+      setUsernameInput(merged.username ?? "");
     } catch (e) {
       setError((e as Error).message);
       setSettings(DEFAULTS);
@@ -172,6 +182,27 @@ export default function SettingsPage() {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
+
+  // Check username availability with debounce
+  useEffect(() => {
+    if (!usernameInput || usernameInput === settings.username) {
+      setUsernameStatus("idle");
+      return;
+    }
+    const clean = usernameInput.toLowerCase().replace(/[^a-z0-9_]/g, "");
+    if (clean.length < 3) { setUsernameStatus("invalid"); return; }
+    setUsernameStatus("checking");
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/users/username?check=${encodeURIComponent(clean)}`);
+        const data = await res.json();
+        setUsernameStatus(data.available ? "available" : "taken");
+      } catch {
+        setUsernameStatus("idle");
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [usernameInput, settings.username]);
 
   function update<K extends keyof AppSettings>(key: K, value: AppSettings[K]) {
     setSettings(prev => ({ ...prev, [key]: value }));
@@ -336,7 +367,67 @@ export default function SettingsPage() {
         </div>
       ) : (
         <div className="space-y-6">
-          {/* ── Workday Hours ── */}
+          {/* ── Username / Profile ── */}
+          <Section
+            title="Your Profile"
+            description="Your @username is how family members assign tasks to you on the Family Board"
+          >
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Username</label>
+                <div className="flex items-center gap-2">
+                  <div className={`flex items-center gap-2 flex-1 rounded-xl border px-4 py-2.5 transition-colors ${
+                    usernameStatus === "available" ? "border-emerald-500/50 bg-emerald-500/5"
+                    : usernameStatus === "taken" ? "border-red-500/50 bg-red-500/5"
+                    : usernameStatus === "invalid" ? "border-yellow-500/50 bg-yellow-500/5"
+                    : "border-border bg-card/30"
+                  }`}>
+                    <span className="text-white/40 font-bold text-sm">@</span>
+                    <input
+                      value={usernameInput}
+                      onChange={e => setUsernameInput(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
+                      placeholder="your_username"
+                      maxLength={20}
+                      className="flex-1 bg-transparent text-sm text-white placeholder-white/20 outline-none"
+                    />
+                    {usernameStatus === "checking" && <span className="text-[10px] text-white/30">Checking...</span>}
+                    {usernameStatus === "available" && <span className="text-[10px] text-emerald-400 font-bold">✓ Available</span>}
+                    {usernameStatus === "taken" && <span className="text-[10px] text-red-400 font-bold">✗ Taken</span>}
+                    {usernameStatus === "invalid" && <span className="text-[10px] text-yellow-400">3+ chars</span>}
+                  </div>
+                  <button
+                    disabled={usernameStatus !== "available" || saving}
+                    onClick={async () => {
+                      setSaving(true);
+                      try {
+                        const res = await fetch("/api/settings", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ username: usernameInput }),
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error);
+                        setSettings(prev => ({ ...prev, username: usernameInput }));
+                        setUsernameStatus("idle");
+                        toast.success(`Username set to @${usernameInput}!`);
+                      } catch(e: any) {
+                        toast.error(e.message);
+                      } finally { setSaving(false); }
+                    }}
+                    className="px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold transition-colors shrink-0"
+                  >
+                    Set
+                  </button>
+                </div>
+                {settings.username && (
+                  <p className="mt-1.5 text-xs text-white/40">Current: <span className="text-violet-400 font-medium">@{settings.username}</span></p>
+                )}
+                <p className="mt-1 text-xs text-white/25">3-20 characters, letters, numbers, underscores only.</p>
+              </div>
+            </div>
+          </Section>
+
+          {/* ── Workday Hours ──*/}
           <Section
             title="Workday Hours"
             description="Define your working hours for scheduling and focus blocks"
@@ -455,6 +546,43 @@ export default function SettingsPage() {
             </div>
           </Section>
 
+          {/* ── AI Configuration ── */}
+          <Section
+            title="AI Configuration"
+            description="Your personal Gemini API key powers Restia, your AI Chief of Staff"
+          >
+            <div className="max-w-md">
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-xs font-medium text-muted-foreground">
+                  Gemini API Key
+                </label>
+                <a
+                  href="https://aistudio.google.com/apikey"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] text-primary hover:underline"
+                >
+                  Get your free key →
+                </a>
+              </div>
+              <input
+                type="password"
+                value={settings.geminiApiKey}
+                onChange={(e) => update("geminiApiKey", e.target.value)}
+                placeholder="AIzaSy..."
+                className="w-full rounded-xl border border-border bg-background/50 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
+              />
+              <p className="mt-1.5 text-[10px] text-muted-foreground/60">
+                Required for AI assistant, Telegram bot, hourly updates, and text-to-speech.
+              </p>
+              {!settings.geminiApiKey && (
+                <div className="mt-3 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-400">
+                  ⚠️ No API key set — AI features are currently disabled.
+                </div>
+              )}
+            </div>
+          </Section>
+
           {/* ── Integrations ── */}
           <Section
             title="Integrations & Notifications"
@@ -482,6 +610,7 @@ export default function SettingsPage() {
                   className="w-full rounded-xl border border-border bg-background/50 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
                 />
               </div>
+
               <div className="pt-2 border-t border-border/50">
                 <div className="flex items-center justify-between mb-1 mt-2">
                   <label className="block text-xs font-medium text-muted-foreground">

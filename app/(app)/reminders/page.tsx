@@ -340,98 +340,103 @@ export default function RemindersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background px-4 py-8 sm:px-8">
-      {/* ── Header ── */}
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Reminders</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {counts.pending} pending · {counts.snoozed} snoozed
-          </p>
-        </div>
-        <button
-          onClick={fetchReminders}
-          className="rounded-xl border border-border bg-card/50 px-4 py-2 text-sm text-muted-foreground backdrop-blur hover:text-foreground transition-colors"
-        >
-          ↻ Refresh
-        </button>
-      </div>
-
-      {/* ── Add Form ── */}
-      <div className="mb-6">
-        <AddReminderForm onSave={handleCreate} />
-      </div>
-
-      {/* ── Error ── */}
-      {error && (
-        <div className="mb-4 flex items-center justify-between rounded-2xl border border-red-500/30 bg-red-500/10 px-5 py-4 text-sm text-red-400">
-          <span>{error}</span>
-          <button
-            onClick={fetchReminders}
-            className="rounded-lg border border-red-500/30 px-3 py-1 text-xs hover:bg-red-500/20"
-          >
-            Retry
-          </button>
-        </div>
-      )}
-
-      {/* ── Filter Tabs ── */}
-      <div className="mb-4 flex rounded-xl border border-border bg-card/50 p-1 backdrop-blur-sm w-fit">
-        {(["all", "pending", "snoozed", "sent"] as const).map(s => (
-          <button
-            key={s}
-            onClick={() => setStatusFilter(s)}
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm capitalize font-medium transition-all ${
-              statusFilter === s
-                ? "bg-primary/20 text-primary"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {s}
-            <span
-              className={`rounded-full px-1.5 py-0.5 text-[10px] ${
-                statusFilter === s ? "bg-primary/20 text-primary" : "bg-white/5 text-muted-foreground"
-              }`}
-            >
-              {counts[s]}
-            </span>
-          </button>
-        ))}
-      </div>
-
-      {/* ── List ── */}
-      <div className="rounded-2xl border border-border bg-card/50 p-4 backdrop-blur-xl sm:p-6">
-        {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-16 text-center">
-            <span className="text-4xl">🔕</span>
-            <p className="text-sm text-muted-foreground">
-              {statusFilter === "all"
-                ? "No reminders yet — add one above."
-                : `No ${statusFilter} reminders.`}
+    <div className="relative min-h-screen pb-12 w-full font-sans">
+      {/* Ambient Glows */}
+      <div className="fixed top-[0%] right-[0%] h-[500px] w-[500px] rounded-full bg-cyan-500/10 blur-[150px] mix-blend-screen pointer-events-none" />
+      
+      <div className="relative z-10 max-w-4xl mx-auto px-4 py-8 sm:px-8">
+        {/* ── Header ── */}
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-extrabold tracking-tight text-white">Reminders</h1>
+            <p className="mt-1 text-sm text-white/50">
+              {counts.pending} pending · {counts.snoozed} snoozed
             </p>
           </div>
-        ) : (
-          <ul className="space-y-2">
-            {filtered.map(r => (
-              <ReminderCard
-                key={r.id}
-                reminder={r}
-                onSnooze={handleSnooze}
-                onDelete={handleDelete}
-              />
-            ))}
-          </ul>
+          <button
+            onClick={fetchReminders}
+            className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/50 backdrop-blur hover:text-white transition-colors"
+          >
+            ↻ Refresh
+          </button>
+        </div>
+
+        {/* ── Add Form ── */}
+        <div className="mb-6">
+          <AddReminderForm onSave={handleCreate} />
+        </div>
+
+        {/* ── Error ── */}
+        {error && (
+          <div className="mb-4 flex items-center justify-between rounded-2xl border border-red-500/30 bg-red-500/10 px-5 py-4 text-sm text-red-400">
+            <span>{error}</span>
+            <button
+              onClick={fetchReminders}
+              className="rounded-lg border border-red-500/30 px-3 py-1 text-xs hover:bg-red-500/20"
+            >
+              Retry
+            </button>
+          </div>
         )}
 
-        {!loading && filtered.length > 0 && (
-          <p className="mt-4 text-center text-xs text-muted-foreground/50">
-            {filtered.length} reminder{filtered.length !== 1 ? "s" : ""}
-          </p>
-        )}
+        {/* ── Filter Tabs ── */}
+        <div className="mb-4 flex rounded-xl border border-white/10 bg-white/5 p-1 backdrop-blur-sm w-fit">
+          {(["all", "pending", "snoozed", "sent"] as const).map(s => (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s)}
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm capitalize font-medium transition-all ${
+                statusFilter === s
+                  ? "bg-primary/20 text-primary"
+                  : "text-white/50 hover:text-white"
+              }`}
+            >
+              {s}
+              <span
+                className={`rounded-full px-1.5 py-0.5 text-[10px] ${
+                  statusFilter === s ? "bg-primary/20 text-primary" : "bg-white/5 text-white/50"
+                }`}
+              >
+                {counts[s]}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {/* ── List ── */}
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-xl sm:p-6">
+          {loading ? (
+            <div className="flex items-center justify-center py-16">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-16 text-center">
+              <span className="text-4xl">🔕</span>
+              <p className="text-sm text-white/50">
+                {statusFilter === "all"
+                  ? "No reminders yet — add one above."
+                  : `No ${statusFilter} reminders.`}
+              </p>
+            </div>
+          ) : (
+            <ul className="space-y-2">
+              {filtered.map(r => (
+                <ReminderCard
+                  key={r.id}
+                  reminder={r}
+                  onSnooze={handleSnooze}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </ul>
+          )}
+
+          {!loading && filtered.length > 0 && (
+            <p className="mt-4 text-center text-xs text-white/30">
+              {filtered.length} reminder{filtered.length !== 1 ? "s" : ""}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

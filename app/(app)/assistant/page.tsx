@@ -46,7 +46,7 @@ export default function AssistantPage() {
   }
 
   async function newConversation() {
-    const res = await fetch("/api/assistant", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: "New conversation" }) });
+    const res = await fetch("/api/assistant", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: "New conversation" }) });
     if (res.ok) {
       const conv = await res.json();
       setConversations((p) => [conv, ...p]);
@@ -66,7 +66,7 @@ export default function AssistantPage() {
     if (!content.trim() || streaming) return;
     let convId = activeId;
     if (!convId) {
-      const res = await fetch("/api/assistant", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: content.slice(0, 50) }) });
+      const res = await fetch("/api/assistant", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: content.slice(0, 50) }) });
       if (!res.ok) return;
       const conv = await res.json();
       setConversations((p) => [conv, ...p]);

@@ -3,7 +3,7 @@ import { waitUntil } from "@vercel/functions";
 import { db, settingsTable, tasksTable, eventsTable, remindersTable } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { pushTaskToGoogleCalendar } from "@/lib/google-calendar";
-import { GoogleGenAI } from "@google/genai";
+import { getAIClient } from "@/lib/gemini";
 
 // Helper: send a message to Telegram
 async function sendTelegram(token: string, chatId: string, text: string) {
@@ -21,6 +21,13 @@ async function sendTelegram(token: string, chatId: string, text: string) {
 async function processMessage(chatId: string, text: string, token: string, userId: string) {
   try {
     console.log(`[Telegram] Processing message from ${chatId}: "${text}"`);
+
+    const [settings] = await db.select().from(settingsTable).where(eq(settingsTable.userId, userId));
+
+    if (!settings?.geminiApiKey) {
+      await sendTelegram(token, chatId, "⚠️ **API Key Required**\n\nYou haven't set your Gemini API Key in the Productivity Nexus settings. Please go to the web app, navigate to Settings > Integrations, and add your API key so I can process your messages.");
+      return;
+    }
 
     // Fetch active tasks for context
     const allTasks = await db.select().from(tasksTable).where(eq(tasksTable.userId, userId));
@@ -62,7 +69,7 @@ INSTRUCTIONS:
 - Keep responses concise (1-4 sentences) and Telegram-friendly (plain text + emojis, no markdown).`;
 
     console.log("[Telegram] Calling Gemini...");
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+    const ai = getAIClient(settings.geminiApiKey);
     const response = await ai.models.generateContent({
       model: "gemini-3.1-flash-lite",
       contents: [{ role: "user", parts: [{ text }] }],

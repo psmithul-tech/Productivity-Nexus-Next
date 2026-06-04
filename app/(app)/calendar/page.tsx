@@ -354,10 +354,15 @@ export default function CalendarPage() {
         onSave={handleCreate}
       />
 
-      <div className="min-h-screen bg-background px-4 py-8 sm:px-8">
-        {/* ── Header ── */}
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Calendar</h1>
+      <div className="relative min-h-screen pb-12">
+        {/* Ambient Glows */}
+        <div className="fixed top-[-10%] right-[-10%] h-[600px] w-[600px] rounded-full bg-blue-500/10 blur-[150px] mix-blend-screen pointer-events-none" />
+        <div className="fixed bottom-[-10%] left-[-10%] h-[700px] w-[700px] rounded-full bg-primary/10 blur-[150px] mix-blend-screen pointer-events-none" />
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 py-8 sm:px-8">
+          {/* ── Header ── */}
+          <div className="mb-6 flex items-center justify-between">
+            <h1 className="text-3xl font-extrabold tracking-tight text-white">Calendar</h1>
           <button
             onClick={() => setShowModal(true)}
             className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm font-medium text-primary hover:bg-primary/20 transition-all"
@@ -594,6 +599,7 @@ export default function CalendarPage() {
             )}
           </div>
         </div>
+      </div>
       </div>
     </>
   );

@@ -9,12 +9,12 @@ export async function GET() {
       db.execute(sql`SELECT status, COUNT(*) as count FROM tasks GROUP BY status`),
       db.execute(sql`SELECT COUNT(*) as count FROM events`),
       db.execute(sql`SELECT status, COUNT(*) as count FROM reminders GROUP BY status`),
-      db.execute(sql`SELECT telegram_chat_id, discord_webhook_url, telegram_bot_token, hourly_updates_enabled FROM settings LIMIT 1`),
+      db.execute(sql`SELECT telegram_chat_id, discord_webhook_url, telegram_bot_token, hourly_updates_enabled FROM settings`),
     ]);
 
     const taskRows = taskRes.rows as any[];
     const reminderRows = reminderRes.rows as any[];
-    const settings = (settingsRes.rows as any[])[0] || {};
+    const settingsRows = settingsRes.rows as any[];
 
     const activeTasks = taskRows.find(r => r.status === 'active')?.count ?? 0;
     const completedTasks = taskRows.find(r => r.status === 'completed')?.count ?? 0;
@@ -33,9 +33,9 @@ export async function GET() {
         pendingReminders: Number(pendingReminders),
       },
       integrations: {
-        telegram: !!settings.telegram_chat_id && !!settings.telegram_bot_token,
-        discord: !!settings.discord_webhook_url,
-        hourlyUpdates: !!settings.hourly_updates_enabled,
+        telegram: settingsRows.some(s => s.telegram_chat_id && s.telegram_bot_token),
+        discord: settingsRows.some(s => s.discord_webhook_url),
+        hourlyUpdates: settingsRows.some(s => s.hourly_updates_enabled),
       },
       timestamp: new Date().toISOString(),
     });

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import { ai } from "@/lib/gemini";
+import { getAIClient } from "@/lib/gemini";
 import { db, settingsTable } from "@/lib/db";
 import { eq } from "drizzle-orm";
 
@@ -10,6 +10,11 @@ export async function POST(req: NextRequest) {
   
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const [settings] = await db.select().from(settingsTable).where(eq(settingsTable.userId, user.id));
+  if (!settings?.geminiApiKey) {
+    return NextResponse.json({ error: "Please save your Gemini API Key before testing integrations." }, { status: 400 });
   }
 
   const body = await req.json();
@@ -22,6 +27,7 @@ export async function POST(req: NextRequest) {
       let textMsg = "👋 Hello, I'm Restia! Your Discord integration is working perfectly.";
       try {
         const prompt = `You are Restia, an AI Chief of Staff. Write a very brief (1-2 sentences), cheerful, and human-like welcome message to test a Discord integration. Introduce yourself. Use emojis.`;
+        const ai = getAIClient(settings.geminiApiKey);
         const aiRes = await ai.models.generateContent({ model: "gemini-3.1-flash-lite", contents: prompt });
         if (aiRes.text) textMsg = aiRes.text;
       } catch (err) {
@@ -72,6 +78,7 @@ export async function POST(req: NextRequest) {
       let textMsg = "👋 Hello, I'm Restia! Your Telegram integration is working perfectly. You can now reply to me to add tasks or check your schedule!";
       try {
         const prompt = `You are Restia, an AI Chief of Staff. Write a very brief (1-2 sentences), cheerful, and human-like welcome message to test a Telegram integration. Introduce yourself. Tell them they can reply to add tasks. Use emojis.`;
+        const ai = getAIClient(settings.geminiApiKey);
         const aiRes = await ai.models.generateContent({ model: "gemini-3.1-flash-lite", contents: prompt });
         if (aiRes.text) textMsg = aiRes.text;
       } catch (err) {

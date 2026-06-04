@@ -1,6 +1,9 @@
 import { GoogleGenAI, Type, FunctionDeclaration } from "@google/genai";
 
-export const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+export function getAIClient(apiKey: string | null) {
+  if (!apiKey) throw new Error("Gemini API Key is required but was not provided. Please add it in your Settings.");
+  return new GoogleGenAI({ apiKey });
+}
 
 export function buildSystemPrompt(): string {
   const now = new Date();
