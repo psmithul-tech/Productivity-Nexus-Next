@@ -12,7 +12,7 @@
 
 const BASE_URL = process.env.CRON_BASE_URL || "http://localhost:3000";
 const CRON_SECRET = process.env.CRON_SECRET || "dev-cron-secret";
-const INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
+const INTERVAL_MS = 60 * 1000; // 1 minute
 
 async function ping() {
   const now = new Date();
@@ -27,15 +27,19 @@ async function ping() {
     });
     
     const data = await res.json();
-    console.log(`[${timeStr}] ✅ Ping sent — processed ${data.processed ?? 0} users`);
+    
+    // Only log if we actually processed users or if there's an error, to avoid spamming the logs every minute.
+    if (data.processed > 0 || data.tasksNotified > 0) {
+      console.log(`[${timeStr}] ✅ Ping sent — processed ${data.processed ?? 0} users, sent ${data.tasksNotified ?? 0} task alerts`);
+    }
   } catch (err) {
     console.error(`[${timeStr}] ❌ Ping failed:`, err.message);
   }
 }
 
 // Run immediately on start
-console.log(`🔔 Cron started — pinging ${BASE_URL}/api/cron/ping every 30 minutes`);
+console.log(`🔔 Cron started — pinging ${BASE_URL}/api/cron/ping every 1 minute`);
 ping();
 
-// Then every 30 minutes
+// Then every 1 minute
 setInterval(ping, INTERVAL_MS);

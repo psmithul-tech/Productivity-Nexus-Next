@@ -7,7 +7,7 @@ const pool = new Pool({
 });
 
 async function main() {
-  const { rows } = await pool.query('SELECT user_id, gemini_api_key, hourly_updates_enabled FROM settings');
+  const { rows } = await pool.query('SELECT user_id, timezone, quiet_hours_start, quiet_hours_end FROM settings');
   console.log(rows);
   
   process.exit(0);
