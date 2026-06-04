@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, settingsTable } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { createClient } from "@/utils/supabase/server";
+import { isValidTimeZone } from "@/lib/timezone";
 
 export async function GET() {
   const supabase = await createClient();
@@ -41,6 +42,10 @@ export async function POST(req: NextRequest) {
     if (key in body && body[key] !== undefined) {
       allowedFields[schemaKey] = body[key];
     }
+  }
+
+  if ("timezone" in allowedFields && !isValidTimeZone(String(allowedFields.timezone))) {
+    return NextResponse.json({ error: "Please enter a valid IANA timezone, e.g. Asia/Kolkata." }, { status: 400 });
   }
 
   // Handle username separately with validation

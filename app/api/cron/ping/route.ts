@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, settingsTable, tasksTable, eventsTable } from "@/lib/db";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, gte, lte, or, sql } from "drizzle-orm";
 import { getAIClient } from "@/lib/gemini";
+import {
+  endOfDayInTimeZone,
+  formatDateInTimeZone,
+  formatDateTimeInTimeZone,
+  formatTimeInTimeZone,
+  getMinutesInTimeZone,
+  normalizeTimeZone,
+  startOfDayInTimeZone,
+} from "@/lib/timezone";
 
 export const dynamic = "force-dynamic";
 
@@ -60,12 +69,6 @@ export async function GET(req: NextRequest) {
     const endOfMinute = new Date(now);
     endOfMinute.setSeconds(59, 999);
 
-    // For today events
-    const startOfDay = new Date(now);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(now);
-    endOfDay.setHours(23, 59, 59, 999);
-
     let processed = 0;
     let skipped = 0;
     let tasksNotified = 0;
@@ -75,11 +78,11 @@ export async function GET(req: NextRequest) {
       const quietStart = config.quietHoursStart || "22:00";
       const quietEnd = config.quietHoursEnd || "08:00";
       
-      const userTz = config.timezone || "UTC";
-      const userNow = new Date(now.toLocaleString("en-US", { timeZone: userTz }));
-      const currentHour = userNow.getHours();
-      const currentMinute = userNow.getMinutes();
-      const currentTime = currentHour * 60 + currentMinute;
+      const userTz = normalizeTimeZone(config.timezone);
+      const currentTime = getMinutesInTimeZone(now, userTz);
+      const currentMinute = currentTime % 60;
+      const startOfDay = startOfDayInTimeZone(now, userTz);
+      const endOfDay = endOfDayInTimeZone(now, userTz);
       
       const [qsH, qsM] = quietStart.split(":").map(Number);
       const [qeH, qeM] = quietEnd.split(":").map(Number);
@@ -103,8 +106,8 @@ export async function GET(req: NextRequest) {
         and(
           eq(tasksTable.userId, config.userId),
           eq(tasksTable.status, "active"),
-          sql`${tasksTable.dueDate} >= ${startOfMinute.toISOString()}::timestamp`,
-          sql`${tasksTable.dueDate} <= ${endOfMinute.toISOString()}::timestamp`
+          gte(tasksTable.dueDate, startOfMinute),
+          lte(tasksTable.dueDate, endOfMinute)
         )
       );
 
@@ -126,21 +129,26 @@ export async function GET(req: NextRequest) {
           const tasks = await db.select().from(tasksTable).where(
             and(
               eq(tasksTable.userId, config.userId),
-              sql`(${tasksTable.bucket} = 'today' OR (${tasksTable.dueDate} <= ${endOfDay.toISOString()}::timestamp AND ${tasksTable.status} = 'active'))`
+              eq(tasksTable.status, "active"),
+              or(
+                eq(tasksTable.bucket, "today"),
+                lte(tasksTable.dueDate, endOfDay)
+              )
             )
           );
 
           const events = await db.select().from(eventsTable).where(
             and(
               eq(eventsTable.userId, config.userId),
-              sql`${eventsTable.startTime} >= ${startOfDay.toISOString()}::timestamp AND ${eventsTable.startTime} <= ${endOfDay.toISOString()}::timestamp`
+              gte(eventsTable.startTime, startOfDay),
+              lte(eventsTable.startTime, endOfDay)
             )
           );
 
           const allEvents = events.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-          const formatTime = (d: Date) => d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", timeZone: userTz });
+          const formatTime = (d: Date) => formatTimeInTimeZone(d, userTz);
           const activeTasks = tasks.filter(t => t.status === "active");
-          const userTimeStr = userNow.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+          const userTimeStr = formatTimeInTimeZone(now, userTz);
 
           const upcoming = allEvents.filter(e => {
             const start = new Date(e.startTime).getTime();
@@ -155,19 +163,25 @@ export async function GET(req: NextRequest) {
             return diffHours <= 2;
           });
 
+          const localDateStr = formatDateInTimeZone(now, userTz);
           const prompt = `You are Restia, the user's AI Chief of Staff.
-It is currently ${userTimeStr} in their timezone (${userTz}).
-Write a personalized, warm half-hourly check-in for the user.
+
+## CURRENT TIME (AUTHORITATIVE — DO NOT OVERRIDE)
+current_time: "${userTimeStr}"
+current_date: "${localDateStr}"
+timezone: "${userTz}"
+
+Write a personalized, warm check-in for the user. Use the current_time above as ground truth.
 Keep it human-like, encouraging, and concise. Use markdown (use single asterisks *bold* instead of double).
 
 Here is their current status:
 Upcoming Events (next 60 min): ${upcoming.length === 0 ? 'None' : JSON.stringify(upcoming.map(e => ({ title: e.title, time: formatTime(new Date(e.startTime)) })))}
 All Today's Events: ${allEvents.length === 0 ? 'None' : JSON.stringify(allEvents.map(e => ({ title: e.title, time: formatTime(new Date(e.startTime)) })))}
-Active Tasks: ${activeTasks.length === 0 ? 'None' : JSON.stringify(activeTasks.map(t => ({ title: t.title, priority: t.priority, due: t.dueDate })))}
+Active Tasks: ${activeTasks.length === 0 ? 'None' : JSON.stringify(activeTasks.map(t => ({ title: t.title, priority: t.priority, due: t.dueDate ? formatDateTimeInTimeZone(new Date(t.dueDate), userTz) : null })))}
 Tasks Due Soon/Overdue: ${endingSoon.length === 0 ? 'None' : JSON.stringify(endingSoon.map(t => ({ title: t.title })))}
 
 Rules:
-- Start with a time-appropriate greeting
+- Start with a time-appropriate greeting using current_time "${userTimeStr}" — do NOT compute a different time
 - If there's an upcoming meeting in the next 30 min, STRONGLY warn about it
 - If there are overdue/due-soon tasks, emphasize them with urgency
 - Keep it under 200 words

@@ -3,54 +3,78 @@ import { getAIClient } from "@/lib/gemini";
 import { createClient } from "@/utils/supabase/server";
 import { db, settingsTable } from "@/lib/db";
 import { eq } from "drizzle-orm";
+import {
+  formatDateInTimeZone,
+  formatLocalIsoInTimeZone,
+  formatTimeInTimeZone,
+  normalizeTimeZone,
+  parseDateTimeInTimeZone,
+} from "@/lib/timezone";
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { query, timezone = "UTC" } = await req.json();
+  const { query, timezone: requestedTimezone } = await req.json();
   if (!query) return NextResponse.json({ error: "Missing query" }, { status: 400 });
 
   const [settings] = await db.select().from(settingsTable).where(eq(settingsTable.userId, user.id));
+  const timezone = normalizeTimeZone(settings?.timezone || requestedTimezone);
   const ai = getAIClient(settings?.geminiApiKey || null);
   if (!ai) return NextResponse.json({ error: "Gemini API key not configured" }, { status: 400 });
 
   const now = new Date();
+  const localIso = formatLocalIsoInTimeZone(now, timezone);
+  const dateDisplay = formatDateInTimeZone(now, timezone);
+  const timeDisplay = formatTimeInTimeZone(now, timezone);
   
   const systemInstruction = `You are a natural language parser for a productivity app.
-CRITICAL TIMEZONE RULES:
-- The CURRENT LOCAL TIME for the user is ${now.toLocaleString("en-US", { timeZone: timezone })}.
-- You MUST use this exact time as your current reference for "today", "tomorrow", etc.
-- Do NOT convert this time to UTC or any other timezone.
-- For dates, output LOCAL time ISO 8601 strings WITHOUT the 'Z' (e.g. "2024-05-10T15:00:00"). Do NOT append Z or UTC offsets.
 
-Your job is to parse the user's input and determine if they want to create a TASK or an EVENT, and extract the relevant structured data.
+## CURRENT TIME (AUTHORITATIVE — DO NOT OVERRIDE)
+current_datetime: "${localIso}"
+current_time_display: "${timeDisplay}"
+current_date_display: "${dateDisplay}"
+timezone: "${timezone}"
 
-Output ONLY a raw JSON object with the following schema, and no markdown blocks.
+YOU MUST TREAT THE ABOVE AS GROUND TRUTH. Use current_datetime to determine what "today", "tomorrow", "next week" etc. mean.
+
+## YOUR TASK
+Parse the user's input and determine if they want to create a TASK or an EVENT. Extract structured data.
+
+Output ONLY a raw JSON object (no markdown fences):
 
 {
   "type": "task" | "event" | "unknown",
   "data": {
     // For TASK:
     "title": "string",
-    "dueDate": "ISO 8601 string (optional)",
+    "dueDate": "YYYY-MM-DDTHH:mm:00 or null",
     "priority": "urgent" | "high" | "medium" | "low",
     "bucket": "today" | "this_week" | "upcoming" | "someday"
     
     // For EVENT:
     "title": "string",
-    "startTime": "ISO 8601 string",
-    "endTime": "ISO 8601 string" (default to 1 hour after startTime if not specified)
+    "startTime": "YYYY-MM-DDTHH:mm:00",
+    "endTime": "YYYY-MM-DDTHH:mm:00"
   }
 }
 
-Examples:
-Input: "Meeting with John tomorrow at 3pm"
-Output: {"type": "event", "data": {"title": "Meeting with John", "startTime": "2024-05-10T15:00:00", "endTime": "2024-05-10T16:00:00"}}
+## CRITICAL DATE RULES
+- Use LOCAL time from current_datetime. Today's date is ${localIso.substring(0, 10)}.
+- Output times exactly as the user states them (e.g. "3pm" → "T15:00:00", "10:20 AM" → "T10:20:00").
+- NEVER append "Z" or any timezone offset to dates.
+- NEVER convert to UTC. Output local time only.
+
+## EXAMPLES
+Input: "Meeting with John tomorrow at 3pm" (current_datetime: "2026-06-04T10:00:00")
+Output: {"type":"event","data":{"title":"Meeting with John","startTime":"2026-06-05T15:00:00","endTime":"2026-06-05T16:00:00"}}
 
 Input: "Buy milk urgent"
-Output: {"type": "task", "data": {"title": "Buy milk", "priority": "urgent", "bucket": "today"}}
+Output: {"type":"task","data":{"title":"Buy milk","priority":"urgent","bucket":"today","dueDate":null}}
+
+Input: "Dentist appointment at 2:30pm"
+Output: {"type":"event","data":{"title":"Dentist appointment","startTime":"2026-06-04T14:30:00","endTime":"2026-06-04T15:30:00"}}
 `;
 
   try {
@@ -69,15 +93,16 @@ Output: {"type": "task", "data": {"title": "Buy milk", "priority": "urgent", "bu
 
     // Convert local time strings to UTC based on user timezone
     if (parsed.data) {
-      const { fromZonedTime } = require("date-fns-tz");
-      if (parsed.data.dueDate && parsed.data.dueDate !== "null") {
-        parsed.data.dueDate = fromZonedTime(parsed.data.dueDate.substring(0, 19), timezone).toISOString();
+      if (parsed.data.dueDate && parsed.data.dueDate !== "null" && parsed.data.dueDate !== null) {
+        const utc = parseDateTimeInTimeZone(parsed.data.dueDate, timezone);
+        console.log(`[nl-parse] dueDate: raw="${parsed.data.dueDate}" → UTC=${utc.toISOString()}`);
+        parsed.data.dueDate = utc.toISOString();
       }
-      if (parsed.data.startTime && parsed.data.startTime !== "null") {
-        parsed.data.startTime = fromZonedTime(parsed.data.startTime.substring(0, 19), timezone).toISOString();
+      if (parsed.data.startTime && parsed.data.startTime !== "null" && parsed.data.startTime !== null) {
+        parsed.data.startTime = parseDateTimeInTimeZone(parsed.data.startTime, timezone).toISOString();
       }
-      if (parsed.data.endTime && parsed.data.endTime !== "null") {
-        parsed.data.endTime = fromZonedTime(parsed.data.endTime.substring(0, 19), timezone).toISOString();
+      if (parsed.data.endTime && parsed.data.endTime !== "null" && parsed.data.endTime !== null) {
+        parsed.data.endTime = parseDateTimeInTimeZone(parsed.data.endTime, timezone).toISOString();
       }
     }
 

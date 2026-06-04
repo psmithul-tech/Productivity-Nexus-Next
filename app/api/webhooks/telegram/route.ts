@@ -4,6 +4,14 @@ import { db, settingsTable, tasksTable, eventsTable, remindersTable } from "@/li
 import { eq } from "drizzle-orm";
 import { pushTaskToGoogleCalendar } from "@/lib/google-calendar";
 import { getAIClient } from "@/lib/gemini";
+import {
+  formatDateInTimeZone,
+  formatLocalIsoInTimeZone,
+  formatTimeInTimeZone,
+  normalizeTimeZone,
+  parseDateTimeInTimeZone,
+  timeOnDateInTimeZone,
+} from "@/lib/timezone";
 
 // Helper: send a message to Telegram
 async function sendTelegram(token: string, chatId: string, text: string) {
@@ -17,12 +25,45 @@ async function sendTelegram(token: string, chatId: string, text: string) {
   }
 }
 
+// Detect simple time/date queries that don't need AI
+function isTimeQuery(text: string): boolean {
+  const lower = text.toLowerCase().trim();
+  const patterns = [
+    /^what('?s| is) (the |my )?(current )?(time|date|day)/,
+    /^(time|date|day)\??$/,
+    /^what time/,
+    /^what date/,
+    /^what day/,
+    /^tell me the (time|date)/,
+    /^(current|my) (time|date)/,
+  ];
+  return patterns.some((p) => p.test(lower));
+}
+
+function buildTimeResponse(userTz: string): string {
+  const now = new Date();
+  const timeStr = formatTimeInTimeZone(now, userTz);
+  const dateStr = formatDateInTimeZone(now, userTz);
+  return `It's ${timeStr} on ${dateStr} ☀️`;
+}
+
 // The real processing logic — runs via waitUntil so function stays alive
 async function processMessage(chatId: string, text: string, token: string, userId: string) {
   try {
     console.log(`[Telegram] Processing message from ${chatId}: "${text}"`);
 
     const [settings] = await db.select().from(settingsTable).where(eq(settingsTable.userId, userId));
+    const userTz = normalizeTimeZone(settings?.timezone);
+    const now = new Date();
+    const timeStr = formatTimeInTimeZone(now, userTz);
+    const dateStr = formatDateInTimeZone(now, userTz);
+    const localIso = formatLocalIsoInTimeZone(now, userTz);
+
+    // ── Handle simple time/date queries without AI ──
+    if (isTimeQuery(text)) {
+      await sendTelegram(token, chatId, buildTimeResponse(userTz));
+      return;
+    }
 
     if (!settings?.geminiApiKey) {
       await sendTelegram(token, chatId, "⚠️ **API Key Required**\n\nYou haven't set your Gemini API Key in the Productivity Nexus settings. Please go to the web app, navigate to Settings > Integrations, and add your API key so I can process your messages.");
@@ -33,15 +74,6 @@ async function processMessage(chatId: string, text: string, token: string, userI
     const allTasks = await db.select().from(tasksTable).where(eq(tasksTable.userId, userId));
     const activeTasks = allTasks.filter((t) => t.status === "active");
 
-    const userTz = settings?.timezone || "UTC";
-    const now = new Date();
-    const dateStr = now.toLocaleDateString("en-US", {
-      timeZone: userTz, weekday: "long", year: "numeric", month: "long", day: "numeric",
-    });
-    const timeStr = now.toLocaleTimeString("en-US", {
-      timeZone: userTz, hour: "2-digit", minute: "2-digit", hour12: true,
-    });
-
     const taskList =
       activeTasks.length === 0
         ? "No active tasks currently."
@@ -49,43 +81,49 @@ async function processMessage(chatId: string, text: string, token: string, userI
             .map(
               (t) =>
                 `• ${t.title} [${t.priority} priority, ${t.bucket}${
-                  t.dueDate ? `, due ${new Date(t.dueDate).toLocaleTimeString("en-US", {timeZone: userTz, hour: "2-digit", minute: "2-digit"})}` : ""
+                  t.dueDate ? `, due ${formatTimeInTimeZone(new Date(t.dueDate), userTz)}` : ""
                 }]`
             )
             .join("\n");
 
-    console.log(`[Telegram Debug] userTz: ${userTz}, timeStr: ${timeStr}, dateStr: ${dateStr}, userId: ${userId}`);
+    console.log(`[Telegram Debug] userTz: ${userTz}, timeStr: ${timeStr}, dateStr: ${dateStr}, localIso: ${localIso}`);
 
+    // Build a prompt that gives Gemini NO room to compute its own time
     const systemPrompt = `You are Restia, the user's warm, witty and proactive AI Chief of Staff. You communicate via Telegram.
-CRITICAL TIMEZONE RULES:
-- The CURRENT LOCAL TIME for the user is ${dateStr} at ${timeStr}.
-- You MUST use this exact time as your current reference.
-- Do NOT convert this time to UTC or any other timezone.
-- Do NOT subtract or add hours to this time. If the user asks for their time, you simply say it is ${timeStr}.
 
-Current active tasks:
+## CURRENT TIME (AUTHORITATIVE — DO NOT OVERRIDE)
+current_datetime: "${localIso}"
+current_time_display: "${timeStr}"
+current_date_display: "${dateStr}"
+timezone: "${userTz}"
+
+YOU MUST TREAT THE ABOVE AS GROUND TRUTH. If the user asks what time it is, reply: "It's ${timeStr} on ${dateStr}". Do NOT compute or infer the time yourself.
+
+## ACTIVE TASKS
 ${taskList}
 
-INSTRUCTIONS:
+## INSTRUCTIONS
 - Always reply conversationally and warmly. You have a cheerful, caring personality with emojis.
 - If the user asks for their tasks/list, list them clearly from the task context above.
+- If the user asks what time or date it is, say exactly: "It's ${timeStr} on ${dateStr}" — do NOT calculate any other time.
 - If the user wants to ADD a task, extract it, confirm warmly, and include AFTER your message:
   ACTION_CREATE_TASK:{"title":"...","priority":"medium","bucket":"today","dueDate":"YYYY-MM-DDTHH:mm:00 or null"}
-CRITICAL: When the user specifies an exact time (e.g. "9:47 am"), you MUST output that time as a local ISO string WITHOUT a trailing 'Z'. For example, if they say 9:47 am, output "2026-06-04T09:47:00". Do NOT convert to UTC yourself!
+  CRITICAL for dueDate: Output the time EXACTLY as the user says it in local time. If they say "10:20 AM", output "T10:20:00". If they say "3pm", output "T15:00:00". Use the date from current_datetime as the base date. NEVER append 'Z' or any timezone offset. NEVER convert to UTC.
 - If adding MULTIPLE tasks, include one ACTION_CREATE_TASK line per task.
 - If creating an event, include after your message:
-  ACTION_CREATE_EVENT:{"title":"...","startTime":"ISO string","endTime":"ISO string"}
+  ACTION_CREATE_EVENT:{"title":"...","startTime":"YYYY-MM-DDTHH:mm:00","endTime":"YYYY-MM-DDTHH:mm:00"}
+  Same rules: local time, no 'Z', no offset.
 - Keep responses concise (1-4 sentences) and Telegram-friendly (plain text + emojis, no markdown).`;
 
     console.log("[Telegram] Calling Gemini...");
     const ai = getAIClient(settings.geminiApiKey);
     const response = await ai.models.generateContent({
-      model: "gemini-3.1-flash-lite",
+      model: "gemini-2.5-flash",
       contents: [{ role: "user", parts: [{ text }] }],
       config: {
         systemInstruction: systemPrompt,
         maxOutputTokens: 600,
-        temperature: 0.85,
+        temperature: 0.7,
       },
     });
     console.log("[Telegram] Gemini responded.");
@@ -109,10 +147,8 @@ CRITICAL: When the user specifies an exact time (e.g. "9:47 am"), you MUST outpu
         const data = JSON.parse(line.replace("ACTION_CREATE_TASK:", ""));
         let dueDate = null;
         if (data.dueDate && data.dueDate !== "null") {
-          const { fromZonedTime } = require("date-fns-tz");
-          // Ensure we strictly take the local time portion (YYYY-MM-DDTHH:mm:ss)
-          const cleanDate = data.dueDate.substring(0, 19);
-          dueDate = fromZonedTime(cleanDate, userTz);
+          dueDate = parseDateTimeInTimeZone(data.dueDate, userTz);
+          console.log(`[Telegram] Task dueDate: raw="${data.dueDate}" → UTC=${dueDate.toISOString()}`);
         }
 
         const [newTask] = await db
@@ -127,8 +163,7 @@ CRITICAL: When the user specifies an exact time (e.g. "9:47 am"), you MUST outpu
           .returning({ id: tasksTable.id });
 
         if (dueDate && newTask) {
-          const reminderDate = new Date(dueDate);
-          reminderDate.setHours(9, 0, 0, 0);
+          const reminderDate = timeOnDateInTimeZone(dueDate, userTz, "09:00");
           if (reminderDate > new Date()) {
             await db.insert(remindersTable).values({
               userId, taskId: newTask.id, channel: "telegram", scheduledAt: reminderDate,
@@ -137,7 +172,8 @@ CRITICAL: When the user specifies an exact time (e.g. "9:47 am"), you MUST outpu
           pushTaskToGoogleCalendar(userId, data.title, dueDate).catch(console.error);
         }
 
-        confirmations.push(`✅ Added: ${data.title}`);
+        const dueStr = dueDate ? ` (due ${formatTimeInTimeZone(dueDate, userTz)})` : "";
+        confirmations.push(`✅ Added: ${data.title}${dueStr}`);
         console.log("[Telegram] Created task:", data.title);
       } catch (e) {
         console.error("[Telegram] Failed to parse task action:", e);
@@ -147,15 +183,16 @@ CRITICAL: When the user specifies an exact time (e.g. "9:47 am"), you MUST outpu
     for (const line of eventActions) {
       try {
         const data = JSON.parse(line.replace("ACTION_CREATE_EVENT:", ""));
-        const { fromZonedTime } = require("date-fns-tz");
+        const startTime = parseDateTimeInTimeZone(data.startTime, userTz);
+        const endTime = parseDateTimeInTimeZone(data.endTime, userTz);
         await db.insert(eventsTable).values({
           userId,
           title: data.title,
-          startTime: fromZonedTime(data.startTime.substring(0, 19), userTz),
-          endTime: fromZonedTime(data.endTime.substring(0, 19), userTz),
+          startTime,
+          endTime,
           source: "telegram",
         });
-        confirmations.push(`📅 Scheduled: ${data.title}`);
+        confirmations.push(`📅 Scheduled: ${data.title} (${formatTimeInTimeZone(startTime, userTz)} - ${formatTimeInTimeZone(endTime, userTz)})`);
       } catch (e) {
         console.error("[Telegram] Failed to parse event action:", e);
       }

@@ -4,6 +4,7 @@ import { eq, and } from "drizzle-orm";
 import { createClient } from "@/utils/supabase/server";
 import { getAIClient, buildSystemPrompt, tools } from "@/lib/gemini";
 import { pushTaskToGoogleCalendar } from "@/lib/google-calendar";
+import { normalizeTimeZone, parseDateTimeInTimeZone, timeOnDateInTimeZone } from "@/lib/timezone";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
@@ -22,8 +23,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const history = await db.select().from(messages).where(eq(messages.conversationId, convId));
   
   const [settings] = await db.select().from(settingsTable).where(eq(settingsTable.userId, user.id));
+  const userTz = normalizeTimeZone(settings?.timezone);
   
-  const systemPrompt = buildSystemPrompt();
+  const systemPrompt = buildSystemPrompt(userTz);
 
   const contents = history.map((m) => ({
     role: m.role === "assistant" ? "model" as const : "user" as const,
@@ -66,7 +68,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         for (const call of functionCalls) {
           const args = call.args as any;
           if (call.name === "createTask") {
-            const dueDate = args.dueDate ? new Date(args.dueDate) : null;
+            const dueDate = args.dueDate ? parseDateTimeInTimeZone(args.dueDate, userTz) : null;
             const [newTask] = await db.insert(tasksTable).values({
               userId: user.id,
               title: args.title,
@@ -77,8 +79,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             
             // Automatic reminder at 09:00 on due date if specified
             if (dueDate) {
-              const reminderDate = new Date(dueDate);
-              reminderDate.setHours(9, 0, 0, 0);
+              const reminderDate = timeOnDateInTimeZone(dueDate, userTz, "09:00");
               if (reminderDate > new Date()) {
                 await db.insert(remindersTable).values({
                   userId: user.id,
@@ -94,7 +95,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           } else if (call.name === "createTasksBatch") {
             const batchArgs = args.tasks || [];
             for (const t of batchArgs) {
-              const dueDate = t.dueDate ? new Date(t.dueDate) : null;
+              const dueDate = t.dueDate ? parseDateTimeInTimeZone(t.dueDate, userTz) : null;
               const [newTask] = await db.insert(tasksTable).values({
                 userId: user.id,
                 title: t.title,
@@ -104,8 +105,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
               }).returning({ id: tasksTable.id });
               
               if (dueDate) {
-                const reminderDate = new Date(dueDate);
-                reminderDate.setHours(9, 0, 0, 0);
+                const reminderDate = timeOnDateInTimeZone(dueDate, userTz, "09:00");
                 if (reminderDate > new Date()) {
                   await db.insert(remindersTable).values({
                     userId: user.id,
@@ -123,8 +123,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             await db.insert(eventsTable).values({
               userId: user.id,
               title: args.title,
-              startTime: new Date(args.startTime),
-              endTime: new Date(args.endTime),
+              startTime: parseDateTimeInTimeZone(args.startTime, userTz),
+              endTime: parseDateTimeInTimeZone(args.endTime, userTz),
               location: args.location || null,
               source: "ai"
             });
@@ -134,7 +134,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
               userId: user.id,
               taskId: args.taskId,
               channel: args.channel,
-              scheduledAt: new Date(args.scheduledAt)
+              scheduledAt: parseDateTimeInTimeZone(args.scheduledAt, userTz)
             });
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ reminder: args })}\n\n`));
           }

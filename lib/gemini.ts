@@ -1,25 +1,30 @@
 import { GoogleGenAI, Type, FunctionDeclaration } from "@google/genai";
+import { formatDateInTimeZone, formatLocalIsoInTimeZone, formatTimeInTimeZone, normalizeTimeZone } from "@/lib/timezone";
 
 export function getAIClient(apiKey: string | null) {
   if (!apiKey) throw new Error("Gemini API Key is required but was not provided. Please add it in your Settings.");
   return new GoogleGenAI({ apiKey });
 }
 
-export function buildSystemPrompt(): string {
+export function buildSystemPrompt(timeZone?: string | null): string {
+  const userTimeZone = normalizeTimeZone(timeZone);
   const now = new Date();
-  const dateStr = now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-  const timeStr = now.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
+  const dateStr = formatDateInTimeZone(now, userTimeZone);
+  const timeStr = formatTimeInTimeZone(now, userTimeZone);
+  const localIso = formatLocalIsoInTimeZone(now, userTimeZone);
 
   return `You are the user's AI Chief of Staff — a proactive personal executive assistant, scheduler, and accountability partner.
 
-Today is ${dateStr} and the current time is ${timeStr}.
+The user's configured timezone is ${userTimeZone}.
+Today is ${dateStr} and the current local time is ${timeStr}.
+The current local datetime is ${localIso}.
 
 You have access to tools to create tasks, schedule events, and set reminders.
 
 Rules:
 - CLARIFY BEFORE CREATING: If the user asks you to add tasks but does not provide details like priority or deadlines, ASK THEM clarifying questions first instead of guessing (e.g. "What priority should these be? When are they due?").
 - BATCHING: If the user provides a list of tasks or asks to create multiple tasks, ALWAYS use the 'createTasksBatch' tool to add them simultaneously in one action.
-- DATES: Resolve relative expressions (like "tomorrow at 5pm") into absolute ISO 8601 datetime strings.
+- DATES: Resolve relative expressions (like "tomorrow at 5pm") in ${userTimeZone}. For tool date arguments, output local ISO 8601 strings without "Z" or an offset, e.g. "2026-06-04T17:00:00".
 - Be concise, direct, and action-oriented.`;
 }
 
@@ -30,7 +35,7 @@ export const createTaskTool: FunctionDeclaration = {
     type: Type.OBJECT,
     properties: {
       title: { type: Type.STRING, description: "Clean, action-oriented task title" },
-      dueDate: { type: Type.STRING, description: "Absolute ISO 8601 datetime if specified, else omit" },
+      dueDate: { type: Type.STRING, description: "Local ISO 8601 datetime in the user's timezone, without Z/offset, if specified; else omit" },
       priority: { type: Type.STRING, enum: ["low", "medium", "high", "urgent"], description: "Default is medium" },
       bucket: { type: Type.STRING, enum: ["today", "this_week", "upcoming", "someday"], description: "Which bucket it belongs to" }
     },
@@ -51,7 +56,7 @@ export const createTasksBatchTool: FunctionDeclaration = {
           type: Type.OBJECT,
           properties: {
             title: { type: Type.STRING, description: "Task title" },
-            dueDate: { type: Type.STRING, description: "Absolute ISO 8601 datetime if specified, else omit" },
+            dueDate: { type: Type.STRING, description: "Local ISO 8601 datetime in the user's timezone, without Z/offset, if specified; else omit" },
             priority: { type: Type.STRING, enum: ["low", "medium", "high", "urgent"] },
             bucket: { type: Type.STRING, enum: ["today", "this_week", "upcoming", "someday"] }
           },
@@ -70,8 +75,8 @@ export const createEventTool: FunctionDeclaration = {
     type: Type.OBJECT,
     properties: {
       title: { type: Type.STRING, description: "Event title" },
-      startTime: { type: Type.STRING, description: "Absolute ISO 8601 datetime for the start" },
-      endTime: { type: Type.STRING, description: "Absolute ISO 8601 datetime for the end" },
+      startTime: { type: Type.STRING, description: "Local ISO 8601 datetime in the user's timezone for the start, without Z/offset" },
+      endTime: { type: Type.STRING, description: "Local ISO 8601 datetime in the user's timezone for the end, without Z/offset" },
       location: { type: Type.STRING, description: "Location if any" }
     },
     required: ["title", "startTime", "endTime"]
@@ -86,7 +91,7 @@ export const createReminderTool: FunctionDeclaration = {
     properties: {
       taskId: { type: Type.INTEGER, description: "ID of the task this reminder is for" },
       channel: { type: Type.STRING, enum: ["email", "push", "telegram"], description: "Channel to send reminder" },
-      scheduledAt: { type: Type.STRING, description: "Absolute ISO 8601 datetime to trigger reminder" }
+      scheduledAt: { type: Type.STRING, description: "Local ISO 8601 datetime in the user's timezone to trigger reminder, without Z/offset" }
     },
     required: ["taskId", "channel", "scheduledAt"]
   }
