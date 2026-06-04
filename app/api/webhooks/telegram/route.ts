@@ -33,12 +33,13 @@ async function processMessage(chatId: string, text: string, token: string, userI
     const allTasks = await db.select().from(tasksTable).where(eq(tasksTable.userId, userId));
     const activeTasks = allTasks.filter((t) => t.status === "active");
 
+    const userTz = settings?.timezone || "UTC";
     const now = new Date();
     const dateStr = now.toLocaleDateString("en-US", {
-      weekday: "long", year: "numeric", month: "long", day: "numeric",
+      timeZone: userTz, weekday: "long", year: "numeric", month: "long", day: "numeric",
     });
     const timeStr = now.toLocaleTimeString("en-US", {
-      hour: "2-digit", minute: "2-digit", hour12: true,
+      timeZone: userTz, hour: "2-digit", minute: "2-digit", hour12: true,
     });
 
     const taskList =
@@ -48,12 +49,12 @@ async function processMessage(chatId: string, text: string, token: string, userI
             .map(
               (t) =>
                 `• ${t.title} [${t.priority} priority, ${t.bucket}${
-                  t.dueDate ? `, due ${new Date(t.dueDate).toLocaleDateString()}` : ""
+                  t.dueDate ? `, due ${new Date(t.dueDate).toLocaleTimeString("en-US", {timeZone: userTz, hour: "2-digit", minute: "2-digit"})}` : ""
                 }]`
             )
             .join("\n");
 
-    const systemPrompt = `You are Restia, the user's warm, witty and proactive AI Chief of Staff. You communicate via Telegram. Today is ${dateStr} at ${timeStr}.
+    const systemPrompt = `You are Restia, the user's warm, witty and proactive AI Chief of Staff. You communicate via Telegram. Today is ${dateStr} at ${timeStr} in the user's timezone (${userTz}).
 
 Current active tasks:
 ${taskList}
@@ -63,6 +64,7 @@ INSTRUCTIONS:
 - If the user asks for their tasks/list, list them clearly from the task context above.
 - If the user wants to ADD a task, extract it, confirm warmly, and include AFTER your message:
   ACTION_CREATE_TASK:{"title":"...","priority":"medium","bucket":"today","dueDate":"ISO string or null"}
+CRITICAL: When the user specifies an exact time (e.g. "9:47 am"), you MUST convert that time in their timezone (${userTz}) to a UTC ISO 8601 datetime string. Do not just put the date, put the exact time in UTC!
 - If adding MULTIPLE tasks, include one ACTION_CREATE_TASK line per task.
 - If creating an event, include after your message:
   ACTION_CREATE_EVENT:{"title":"...","startTime":"ISO string","endTime":"ISO string"}
