@@ -71,11 +71,6 @@ export default function DashboardPage() {
   const [completingId, setCompletingId] = useState<number | null>(null);
   const [timeState, setTimeState] = useState({ greeting: "", dateStr: "", name: "" });
 
-  const [briefing, setBriefing] = useState<string | null>(null);
-  const [briefingLoading, setBriefingLoading] = useState(true);
-  const [quickAddText, setQuickAddText] = useState("");
-  const [isAdding, setIsAdding] = useState(false);
-
   const fetchData = useCallback(async () => {
     try {
       const [s, e, t, a, h] = await Promise.all([
@@ -111,14 +106,6 @@ export default function DashboardPage() {
     const id = setInterval(fetchData, 30000);
     return () => clearInterval(id);
   }, [fetchData]);
-
-  useEffect(() => {
-    fetch("/api/briefing")
-      .then(r => r.json())
-      .then(d => setBriefing(d.briefing))
-      .catch(() => setBriefing("Unable to load daily briefing."))
-      .finally(() => setBriefingLoading(false));
-  }, []);
 
   const handleCompleteTask = useCallback(async (task: Task) => {
     setCompletingId(task.id);
@@ -163,48 +150,6 @@ export default function DashboardPage() {
     }
   }
 
-  async function handleQuickAdd(e: React.FormEvent) {
-    e.preventDefault();
-    if (!quickAddText.trim() || isAdding) return;
-    setIsAdding(true);
-    try {
-      const res = await fetch("/api/nl-parse", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: quickAddText }),
-      });
-      if (!res.ok) throw new Error("Failed to parse");
-      const parsed = await res.json();
-      
-      if (parsed.type === "task") {
-        const taskRes = await fetch("/api/tasks", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(parsed.data)
-        });
-        if (!taskRes.ok) throw new Error("Failed to create task");
-        toast.success("Added task via AI");
-      } else if (parsed.type === "event") {
-        const eventRes = await fetch("/api/events", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(parsed.data)
-        });
-        if (!eventRes.ok) throw new Error("Failed to create event");
-        toast.success("Added event via AI");
-      } else {
-        toast.error("Could not understand input");
-      }
-      
-      setQuickAddText("");
-      fetchData();
-    } catch {
-      toast.error("Failed to add task/event");
-    } finally {
-      setIsAdding(false);
-    }
-  }
-
   const completedCount = summary?.completed ?? 0;
   const totalTasks = summary?.total ?? 0;
   const completionRate = totalTasks > 0 ? Math.min(100, Math.round((completedCount / totalTasks) * 100)) : 0;
@@ -234,71 +179,6 @@ export default function DashboardPage() {
               <Play className="h-4 w-4" /> Focus Mode
             </Link>
           </div>
-        </div>
-
-        {/* AI Briefing & Quick Add */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-          {/* Daily Briefing */}
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="lg:col-span-2 rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/10 to-blue-600/5 backdrop-blur-xl p-5 shadow-xl relative overflow-hidden"
-          >
-            <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
-              <Sparkles className="h-24 w-24 text-primary" />
-            </div>
-            <div className="relative z-10">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="h-8 w-8 rounded-xl bg-primary/20 flex items-center justify-center">
-                  <Sparkles className="h-4 w-4 text-primary" />
-                </div>
-                <h2 className="text-sm font-bold text-white">Daily Briefing</h2>
-              </div>
-              <div className="min-h-[60px]">
-                {briefingLoading ? (
-                  <div className="space-y-2 mt-2">
-                    <Skeleton className="h-4 w-full max-w-md" />
-                    <Skeleton className="h-4 w-full max-w-sm" />
-                  </div>
-                ) : (
-                  <p className="text-[15px] leading-relaxed text-white/80">{briefing}</p>
-                )}
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Quick Add */}
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.05 }}
-            className="lg:col-span-1 rounded-3xl border border-white/8 bg-white/[0.03] backdrop-blur-xl p-5 shadow-xl flex flex-col justify-center"
-          >
-            <div className="flex items-center gap-2 mb-4">
-              <div className="h-8 w-8 rounded-xl bg-emerald-500/15 flex items-center justify-center">
-                <MessageSquarePlus className="h-4 w-4 text-emerald-400" />
-              </div>
-              <h2 className="text-sm font-bold text-white">Quick Add</h2>
-            </div>
-            <form onSubmit={handleQuickAdd} className="relative">
-              <input
-                type="text"
-                value={quickAddText}
-                onChange={e => setQuickAddText(e.target.value)}
-                placeholder="Remind me to call John at 5pm..."
-                disabled={isAdding}
-                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-4 pr-12 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-emerald-500/50 transition-colors disabled:opacity-50"
-              />
-              <button
-                type="submit"
-                disabled={isAdding || !quickAddText.trim()}
-                className="absolute right-2 top-2 bottom-2 aspect-square rounded-lg bg-emerald-500 text-white flex items-center justify-center disabled:opacity-50 hover:bg-emerald-600 transition-colors"
-              >
-                {isAdding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
-              </button>
-            </form>
-          </motion.div>
         </div>
 
         {/* Bento Grid */}

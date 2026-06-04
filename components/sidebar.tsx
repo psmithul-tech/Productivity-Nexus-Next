@@ -20,7 +20,6 @@ const navigationGroups = [
     title: "Chief of Staff",
     items: [
       { href: "/chiefofstaff/dashboard", icon: LayoutDashboard, label: "Overview" },
-      { href: "/chiefofstaff/assistant", icon: Sparkles, label: "AI Assistant", badge: "AI" },
     ]
   },
   {

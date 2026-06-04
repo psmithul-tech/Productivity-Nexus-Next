@@ -12,6 +12,8 @@ import { NotificationCenter } from "@/components/notification-center";
 
 import { SidebarProvider } from "@/components/sidebar-context";
 import { MobileToggle } from "@/components/mobile-toggle";
+import { RestiaProvider } from "@/components/restia-context";
+import { RestiaCompanion } from "@/components/restia-companion";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -30,11 +32,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <SidebarProvider>
-      <div className="flex h-screen overflow-hidden bg-[#0a0a0f] text-white selection:bg-primary/30">
-        <AutoReloader />
-        <ClientProviders />
-        <CommandPalette />
-        <Sidebar />
+      <RestiaProvider>
+        <div className="flex h-screen overflow-hidden bg-[#0a0a0f] text-white selection:bg-primary/30">
+          <AutoReloader />
+          <ClientProviders />
+          <CommandPalette />
+          <Sidebar />
+          <RestiaCompanion />
 
         {/* Main content area — sidebar is 260px wide */}
         <main className="flex-1 ml-0 md:ml-[260px] flex flex-col overflow-hidden">
@@ -57,8 +61,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             {children}
           </div>
         </div>
-      </main>
-    </div>
+        </main>
+      </div>
+      </RestiaProvider>
     </SidebarProvider>
   );
 }
