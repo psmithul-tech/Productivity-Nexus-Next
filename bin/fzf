@@ -1,0 +1,2 @@
+#!/bin/bash
+cat > /tmp/fzf_in && cat /tmp/fzf_in && exit 1

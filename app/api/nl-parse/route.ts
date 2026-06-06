@@ -1,3 +1,4 @@
+import { AGENTS } from "@/lib/agents";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { db, settingsTable } from "@/lib/db";
@@ -38,12 +39,12 @@ timezone: "${timezone}"
 YOU MUST TREAT THE ABOVE AS GROUND TRUTH. Use current_datetime to determine what "today", "tomorrow", "next week" etc. mean.
 
 ## YOUR TASK
-Parse the user's input and determine if they want to create a TASK or an EVENT. Extract structured data.
+Parse the user's input and determine if they want to create a TASK, an EVENT, or WATCH ANIME. Extract structured data.
 
 Output ONLY a raw JSON object (no markdown fences):
 
 {
-  "type": "task" | "event" | "unknown",
+  "type": "task" | "event" | "watch_anime" | "unknown",
   "data": {
     // For TASK:
     "title": "string",
@@ -54,7 +55,10 @@ Output ONLY a raw JSON object (no markdown fences):
     // For EVENT:
     "title": "string",
     "startTime": "YYYY-MM-DDTHH:mm:00",
-    "endTime": "YYYY-MM-DDTHH:mm:00"
+    "endTime": "YYYY-MM-DDTHH:mm:00",
+
+    // For WATCH_ANIME:
+    "query": "string" // The name of the anime they want to watch or search
   }
 }
 
@@ -71,6 +75,9 @@ Output: {"type":"event","data":{"title":"Meeting with John","startTime":"2026-06
 Input: "Buy milk urgent"
 Output: {"type":"task","data":{"title":"Buy milk","priority":"urgent","bucket":"today","dueDate":null}}
 
+Input: "Watch Solo Leveling"
+Output: {"type":"watch_anime","data":{"query":"Solo Leveling"}}
+
 Input: "Dentist appointment at 2:30pm"
 Output: {"type":"event","data":{"title":"Dentist appointment","startTime":"2026-06-04T14:30:00","endTime":"2026-06-04T15:30:00"}}
 `;
@@ -79,7 +86,7 @@ Output: {"type":"event","data":{"title":"Dentist appointment","startTime":"2026-
     
     try {
       text = await callOpenRouter(query, systemInstruction, {
-        model: "openrouter/owl-alpha",
+        model: AGENTS.CALENDAR_MANAGER,
         temperature: 0.1,
         jsonMode: true,
       });

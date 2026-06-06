@@ -4,13 +4,18 @@ import { eq, and, gte, lte } from "drizzle-orm";
 import { createClient } from "@/utils/supabase/server";
 import { fetchGoogleEvents } from "@/lib/google-calendar";
 
-function serializeEvent(e: typeof eventsTable.$inferSelect) {
-  const safeDate = (d: any) => (d instanceof Date && !isNaN(d.getTime()) ? d : new Date());
+function serializeEvent(e: any) {
+  const safeDate = (d: any) => {
+    if (d instanceof Date && !isNaN(d.getTime())) return d;
+    const nd = new Date(d);
+    if (!isNaN(nd.getTime())) return nd;
+    return new Date();
+  };
   return { 
     ...e, 
     startTime: safeDate(e.startTime).toISOString(), 
     endTime: safeDate(e.endTime).toISOString(), 
-    createdAt: safeDate(e.createdAt).toISOString() 
+    createdAt: e.createdAt ? safeDate(e.createdAt).toISOString() : new Date().toISOString()
   };
 }
 
@@ -27,11 +32,20 @@ export async function GET(req: NextRequest) {
   if (from) conditions.push(gte(eventsTable.startTime, new Date(from)));
   if (to) conditions.push(lte(eventsTable.endTime, new Date(to)));
 
-  const events = await db.select().from(eventsTable).where(and(...conditions));
+  let events: any[] = [];
+  try {
+    events = await db.select().from(eventsTable).where(and(...conditions));
+  } catch (err) {
+    console.error("Failed to fetch local events:", err);
+  }
   
   let gcalEvents: any[] = [];
   if (from && to) {
-    gcalEvents = await fetchGoogleEvents(user.id, new Date(from), new Date(to));
+    try {
+      gcalEvents = await fetchGoogleEvents(user.id, new Date(from), new Date(to));
+    } catch (err) {
+      console.warn("Failed to fetch Google events:", err);
+    }
   }
   
   const allEvents = [

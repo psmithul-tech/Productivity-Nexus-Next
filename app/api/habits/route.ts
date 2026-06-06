@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, habitsTable } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { db, habitsTable, habitLogsTable } from "@/lib/db";
+import { eq, inArray } from "drizzle-orm";
 import { createClient } from "@/utils/supabase/server";
 
 export async function GET(req: NextRequest) {
@@ -9,7 +9,13 @@ export async function GET(req: NextRequest) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const habits = await db.select().from(habitsTable).where(eq(habitsTable.userId, user.id));
-  return NextResponse.json(habits);
+  let logs: any[] = [];
+  if (habits.length > 0) {
+    logs = await db.select().from(habitLogsTable).where(
+      inArray(habitLogsTable.habitId, habits.map(h => h.id))
+    );
+  }
+  return NextResponse.json({ habits, logs });
 }
 
 export async function POST(req: NextRequest) {

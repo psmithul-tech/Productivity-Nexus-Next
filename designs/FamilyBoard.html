@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Family Board | Restia OS</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        /* Custom Scrollbar for high-tech feel */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(19, 19, 21, 0.5); /* surface-dim */
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(132, 148, 149, 0.3); /* outline variant */
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(125, 244, 255, 0.5); /* primary-fixed */
+        }
+        
+        /* Masked Global Leaderboard Effect */
+        .masked-content {
+            mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 20%, rgba(0,0,0,0.1) 80%);
+            -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 20%, rgba(0,0,0,0.1) 80%);
+        }
+    </style>
+<!-- Tailwind Config -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary": "#f8f5f6",
+                        "primary-fixed": "#7df4ff",
+                        "on-primary-fixed-variant": "#004f54",
+                        "tertiary-fixed": "#e5e2e3",
+                        "on-background": "#e4e2e4",
+                        "on-error": "#690005",
+                        "primary-fixed-dim": "#00dbe9",
+                        "on-primary": "#00363a",
+                        "on-surface-variant": "#b9cacb",
+                        "on-tertiary": "#313031",
+                        "on-secondary-fixed": "#320047",
+                        "on-tertiary-fixed": "#1c1b1c",
+                        "primary": "#dbfcff",
+                        "tertiary-fixed-dim": "#c8c6c7",
+                        "error-container": "#93000a",
+                        "inverse-on-surface": "#303032",
+                        "on-tertiary-fixed-variant": "#474647",
+                        "secondary-fixed": "#f8d8ff",
+                        "on-primary-fixed": "#002022",
+                        "surface-container": "#1f1f21",
+                        "on-surface": "#e4e2e4",
+                        "on-tertiary-container": "#5f5e5f",
+                        "surface-container-high": "#2a2a2c",
+                        "error": "#ffb4ab",
+                        "tertiary-container": "#dbd8d9",
+                        "on-secondary-container": "#fff6fc",
+                        "primary-container": "#00f0ff",
+                        "surface-variant": "#353437",
+                        "on-primary-container": "#006970",
+                        "on-secondary": "#520072",
+                        "secondary-fixed-dim": "#ebb2ff",
+                        "inverse-primary": "#006970",
+                        "surface": "#131315",
+                        "outline": "#849495",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-fixed-variant": "#74009f",
+                        "secondary-container": "#b600f8",
+                        "surface-container-low": "#1b1b1d",
+                        "surface-container-lowest": "#0e0e10",
+                        "surface-tint": "#00dbe9",
+                        "outline-variant": "#3b494b",
+                        "surface-container-highest": "#353437",
+                        "surface-dim": "#131315",
+                        "surface-bright": "#39393b",
+                        "inverse-surface": "#e4e2e4",
+                        "secondary": "#ebb2ff",
+                        "background": "#131315"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "sm": "8px",
+                        "gutter": "16px",
+                        "unit": "4px",
+                        "container-max": "1440px",
+                        "xs": "4px",
+                        "xl": "48px",
+                        "md": "16px",
+                        "lg": "24px"
+                    },
+                    "fontFamily": {
+                        "data-metric": ["JetBrains Mono", "monospace"],
+                        "mono-label": ["JetBrains Mono", "monospace"],
+                        "headline-md": ["Inter", "sans-serif"],
+                        "headline-sm": ["Inter", "sans-serif"],
+                        "display-lg": ["Inter", "sans-serif"],
+                        "body-sm": ["Inter", "sans-serif"],
+                        "body-lg": ["Inter", "sans-serif"]
+                    },
+                    "fontSize": {
+                        "data-metric": ["14px", { "lineHeight": "1", "fontWeight": "600" }],
+                        "mono-label": ["12px", { "lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "headline-sm": ["18px", { "lineHeight": "1.4", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-sm": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background min-h-screen font-body-sm overflow-hidden flex">
+<!-- JSON Component: SideNavBar -->
+<nav class="bg-surface/70 dark:bg-surface/70 h-full w-20 hover:w-64 transition-all duration-300 ease-in-out border-r border-outline-variant/30 backdrop-blur-xl fixed left-0 top-0 flex flex-col z-50 group overflow-hidden">
+<!-- Header -->
+<div class="h-16 flex items-center px-lg border-b border-outline-variant/20 shrink-0">
+<div class="w-8 h-8 rounded bg-surface-container-high border border-outline-variant flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary-fixed text-[20px]" style="font-variation-settings: 'FILL' 1;">terminal</span>
+</div>
+<div class="ml-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap flex flex-col">
+<span class="font-headline-sm text-headline-sm text-primary-fixed-dim tracking-tight">Restia OS</span>
+<span class="font-mono-label text-mono-label text-on-surface-variant">v2.4.0</span>
+</div>
+</div>
+<!-- Navigation Links -->
+<div class="flex-1 py-lg flex flex-col gap-sm overflow-y-auto overflow-x-hidden">
+<!-- Dashboard (Inactive) -->
+<a class="flex items-center px-lg py-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors mx-sm rounded-lg relative overflow-hidden group/item" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="dashboard">dashboard</span>
+<span class="ml-md font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Dashboard</span>
+</a>
+<!-- Analytics (Inactive) -->
+<a class="flex items-center px-lg py-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors mx-sm rounded-lg relative overflow-hidden group/item" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="analytics">analytics</span>
+<span class="ml-md font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Analytics</span>
+</a>
+<!-- Modules (Inactive) -->
+<a class="flex items-center px-lg py-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors mx-sm rounded-lg relative overflow-hidden group/item" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="extension">extension</span>
+<span class="ml-md font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Modules</span>
+</a>
+<!-- Network (ACTIVE - Maps to Shared/Family Group) -->
+<a class="flex items-center px-lg py-sm border-l-2 border-primary-fixed shadow-[0_0_10px_rgba(0,240,255,0.4)] text-primary-fixed bg-primary-fixed/5 transition-colors mx-sm rounded-r-lg relative overflow-hidden group/item" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="lan" style="font-variation-settings: 'FILL' 1;">lan</span>
+<span class="ml-md font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Network</span>
+</a>
+<!-- Security (Inactive) -->
+<a class="flex items-center px-lg py-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors mx-sm rounded-lg relative overflow-hidden group/item" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="security">security</span>
+<span class="ml-md font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Security</span>
+</a>
+<!-- Settings (Inactive) -->
+<a class="flex items-center px-lg py-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors mx-sm rounded-lg relative overflow-hidden group/item" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="settings">settings</span>
+<span class="ml-md font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Settings</span>
+</a>
+</div>
+<!-- Footer Links -->
+<div class="pb-lg flex flex-col gap-sm border-t border-outline-variant/20 pt-sm mt-auto">
+<a class="flex items-center px-lg py-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors mx-sm rounded-lg relative overflow-hidden group/item" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="help">help</span>
+<span class="ml-md font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Help</span>
+</a>
+<a class="flex items-center px-lg py-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors mx-sm rounded-lg relative overflow-hidden group/item" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="power_settings_new">power_settings_new</span>
+<span class="ml-md font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Power</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<div class="flex-1 flex flex-col h-screen min-w-0 bg-background relative z-0">
+<!-- Ambient Background Glow -->
+<div class="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-primary-fixed/5 blur-[120px] rounded-full pointer-events-none"></div>
+<!-- JSON Component: TopAppBar -->
+<header class="bg-surface/40 dark:bg-surface/40 border-b border-outline-variant/20 backdrop-blur-md flex justify-between items-center w-full px-lg h-16 ml-20 w-[calc(100%-80px)] shrink-0 z-40 fixed top-0">
+<!-- Brand text as anchor -->
+<div class="font-headline-md text-headline-md text-primary-fixed font-bold tracking-tight">
+                Restia OS
+            </div>
+<!-- Trailing Actions -->
+<div class="flex items-center gap-sm">
+<!-- Notifications -->
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high/50 transition-colors relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-primary-fixed rounded-full shadow-[0_0_5px_rgba(0,240,255,0.8)]"></span>
+</button>
+<!-- Apps -->
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high/50 transition-colors">
+<span class="material-symbols-outlined" data-icon="apps">apps</span>
+</button>
+<!-- Account Profile Image -->
+<button class="w-10 h-10 ml-sm rounded-full border border-outline-variant/50 overflow-hidden hover:border-primary-fixed transition-colors focus:outline-none focus:ring-2 focus:ring-primary-fixed">
+<img alt="Administrator Profile Avatar" class="w-full h-full object-cover" data-alt="A futuristic digital portrait of an administrator profile avatar. The subject is styled with minimalist cyberpunk aesthetics, featuring a dark background and sharp, high-contrast cyan lighting on one side of the face. The overall mood is serious, professional, and technologically advanced, fitting a high-end operating system interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLpFOyykyB54swyTrAendmt663VIrvhDJffOnMPeUftUmQvBhdH7oeFf4KVHAKVp5jGxj1m7Nsvt7oDQx-0WkAUnOZ5fzfURWh-SeRimyfmZNwd5uZNC8E6yxlWrYn9ZG4PzSfq8niJZ-6DoSmksZ9jtbpnYQBxlHtorsAWgSCuf7iJJ9MldSQTQB7DRYblsT0h0ozFoSaYMkj04cdjn991vRNO5E04FARTjhCiOW2_USdlfmx6XsBgyOPQh0hLZ9tu0XMPxY2P4E"/>
+</button>
+</div>
+</header>
+<!-- Page Content -->
+<main class="flex-1 overflow-y-auto mt-16 ml-20 p-lg lg:p-[32px] w-[calc(100%-80px)]">
+<div class="max-w-container-max mx-auto grid grid-cols-1 xl:grid-cols-12 gap-lg items-start">
+<!-- Main Content Column (Left) -->
+<div class="xl:col-span-8 flex flex-col gap-lg">
+<!-- Hero Section: Network Uplink (Join/Create) -->
+<section class="bg-surface/70 backdrop-blur-xl border border-outline-variant/30 rounded-xl p-lg relative overflow-hidden">
+<!-- Decorative Top Border Line -->
+<div class="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-primary-fixed/50 to-transparent"></div>
+<div class="flex flex-col md:flex-row items-center gap-lg justify-between">
+<div class="flex-1">
+<h1 class="font-headline-md text-headline-md text-on-surface mb-xs flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary-fixed">hub</span>
+                                    Initialize Network Cluster
+                                </h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant max-w-md">
+                                    Establish a secure connection with your designated unit. Input an authorization sequence or broadcast a new cluster beacon to synchronize operational parameters.
+                                </p>
+</div>
+<div class="w-full md:w-auto bg-surface-container-low border border-outline-variant/40 rounded-lg p-sm flex items-center shadow-inner">
+<span class="material-symbols-outlined text-on-surface-variant mx-sm text-[20px]">key</span>
+<input class="bg-transparent border-none text-on-surface font-mono-label text-mono-label focus:ring-0 w-32 md:w-48 placeholder-on-surface-variant/50 uppercase tracking-widest" placeholder="AUTH_SEQ_CODE" type="text"/>
+<button class="ml-sm bg-surface-container-highest hover:bg-surface-bright border border-outline-variant hover:border-primary-fixed text-primary-fixed font-mono-label text-mono-label px-md py-sm rounded-md transition-all duration-200 shadow-[inset_0_0_0_rgba(0,240,255,0)] hover:shadow-[inset_0_0_10px_rgba(0,240,255,0.2)]">
+                                    UPLINK
+                                </button>
+</div>
+</div>
+</section>
+<!-- Active Nodes (Members) -->
+<section class="flex flex-col gap-md">
+<div class="flex items-center justify-between border-b border-outline-variant/20 pb-xs">
+<h2 class="font-mono-label text-mono-label text-on-surface-variant uppercase tracking-widest flex items-center gap-xs">
+<div class="w-2 h-2 rounded-full bg-primary-fixed shadow-[0_0_8px_rgba(0,240,255,0.8)] animate-pulse"></div>
+                                Active Nodes
+                            </h2>
+<span class="font-data-metric text-data-metric text-on-surface">3/5 ONLINE</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-md">
+<!-- Node Card 1 -->
+<div class="bg-surface-container-low border border-outline-variant/30 rounded-lg p-md hover:bg-surface-container hover:border-primary-fixed/50 transition-colors group relative overflow-hidden">
+<div class="absolute left-0 top-0 w-1 h-full bg-primary-fixed opacity-0 group-hover:opacity-100 transition-opacity shadow-[0_0_10px_rgba(0,240,255,0.4)]"></div>
+<div class="flex items-center gap-md">
+<img alt="Node Alpha Avatar" class="w-12 h-12 rounded bg-surface border border-outline-variant object-cover" data-alt="A high-contrast profile picture of a young man, stylized to look like a digital identification badge. The background is pure black, and his face is subtly illuminated by a cool cyan light source from below, emphasizing sharp jawline features. The image feels sterile, technological, and corporate." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnT9rVbaqYR7Pt23d41K4bOEGW7cIvvTSw9dTZOiy4U2s1GjpRB1f07GxoI0jO-ih6e_m6OvvlcfCj9dVEy7KXOmoJy7qYpi4Ha8bz0GIuiaztuF6CZkDe98EpC1b7C1QUJKLE8Bm6ljlqUkzvGnSZA-bgITH2njRL-S2AmkhH6rhG4saETohHHdA2clex9cDT58Nv8tzxG1GVa8xbSkdfy_WLRlruakU1ZhTO4RpQU585TefX8ZbLWV6vRjA1XP_xB3dgvzE4MlE"/>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">Unit_01</span>
+<span class="font-mono-label text-mono-label text-primary-fixed-dim">CMD_AUTHOR</span>
+</div>
+</div>
+<div class="mt-md pt-sm border-t border-outline-variant/20 flex justify-between items-center">
+<div class="flex flex-col">
+<span class="font-mono-label text-mono-label text-on-surface-variant text-[10px]">XP YIELD</span>
+<span class="font-data-metric text-data-metric text-on-surface">14,209</span>
+</div>
+<div class="flex flex-col text-right">
+<span class="font-mono-label text-mono-label text-on-surface-variant text-[10px]">TASKS</span>
+<span class="font-data-metric text-data-metric text-on-surface">12</span>
+</div>
+</div>
+</div>
+<!-- Node Card 2 -->
+<div class="bg-surface-container-low border border-outline-variant/30 rounded-lg p-md hover:bg-surface-container hover:border-primary-fixed/50 transition-colors group relative overflow-hidden">
+<div class="absolute left-0 top-0 w-1 h-full bg-primary-fixed opacity-0 group-hover:opacity-100 transition-opacity shadow-[0_0_10px_rgba(0,240,255,0.4)]"></div>
+<div class="flex items-center gap-md">
+<img alt="Node Beta Avatar" class="w-12 h-12 rounded bg-surface border border-outline-variant object-cover grayscale" data-alt="A black and white profile photograph of a woman looking directly at the camera. The image has a low-fi, grainy surveillance camera aesthetic. Her expression is neutral and focused. The background is a flat, dark grey to seamlessly blend into a dark mode interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDPHJtMBEUaWoSp2lb4qX3JNyNbH1On7uPZwE9jR8v3zZMNBIiT0XBm24miQ2YDdnjnLL_E5y_AFCR2ydDFWFmvWA1MGI09CtYfNcQN5EW5A6EgS0yiW7dgvN7jtkz-eNCTV-1Q6fQBkc-rWLyP7iwLNE6oc6Ctqv58BsWcF2D_zQdmdepPY0XEXz3aTd3jUjkGuB70X4tOJ157KywEntZtKdI3fJtb8CBWgJw4J_UGQZJ4O8OEH7TIVedGjqBJCAGB4ejM_-eM1Ec"/>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">Unit_02</span>
+<span class="font-mono-label text-mono-label text-on-surface-variant">OP_SPECIALIST</span>
+</div>
+</div>
+<div class="mt-md pt-sm border-t border-outline-variant/20 flex justify-between items-center">
+<div class="flex flex-col">
+<span class="font-mono-label text-mono-label text-on-surface-variant text-[10px]">XP YIELD</span>
+<span class="font-data-metric text-data-metric text-on-surface">8,450</span>
+</div>
+<div class="flex flex-col text-right">
+<span class="font-mono-label text-mono-label text-on-surface-variant text-[10px]">TASKS</span>
+<span class="font-data-metric text-data-metric text-on-surface">05</span>
+</div>
+</div>
+</div>
+<!-- Node Card 3 (Offline) -->
+<div class="bg-surface-container-lowest border border-outline-variant/20 rounded-lg p-md opacity-60">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded bg-surface border border-outline-variant border-dashed flex items-center justify-center">
+<span class="material-symbols-outlined text-outline-variant">person_off</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface-variant">Unit_03</span>
+<span class="font-mono-label text-mono-label text-outline-variant">OFFLINE</span>
+</div>
+</div>
+<div class="mt-md pt-sm border-t border-outline-variant/10 flex justify-between items-center">
+<div class="flex flex-col">
+<span class="font-mono-label text-mono-label text-outline-variant text-[10px]">LAST SEEN</span>
+</div>
+<div class="flex flex-col text-right">
+<span class="font-mono-label text-mono-label text-outline-variant">T-48:00</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Shared Operations (Tasks) -->
+<section class="flex flex-col gap-md">
+<div class="flex items-center justify-between border-b border-outline-variant/20 pb-xs">
+<h2 class="font-mono-label text-mono-label text-on-surface-variant uppercase tracking-widest">
+                                Active Operations Log
+                            </h2>
+<div class="flex gap-sm">
+<button class="font-mono-label text-mono-label text-primary-fixed hover:text-primary-fixed-dim">FILTER</button>
+<button class="font-mono-label text-mono-label text-primary-fixed hover:text-primary-fixed-dim">NEW_OP</button>
+</div>
+</div>
+<div class="bg-surface-container-low border border-outline-variant/30 rounded-lg flex flex-col overflow-hidden">
+<!-- Header Row -->
+<div class="grid grid-cols-[auto_1fr_auto_auto] gap-sm p-sm border-b border-outline-variant/20 bg-surface-container-high/50 font-mono-label text-mono-label text-on-surface-variant text-[10px] uppercase">
+<div class="w-8 text-center">STS</div>
+<div>Directive</div>
+<div class="w-24 text-right">Assignee</div>
+<div class="w-20 text-right">Bounty</div>
+</div>
+<!-- Task Item 1 -->
+<div class="grid grid-cols-[auto_1fr_auto_auto] gap-sm p-sm items-center border-b border-outline-variant/10 hover:bg-surface-variant/50 transition-colors group cursor-pointer border-l-2 border-transparent hover:border-primary-fixed">
+<div class="w-8 flex justify-center">
+<div class="w-3 h-3 rounded-sm border border-outline-variant group-hover:border-primary-fixed transition-colors"></div>
+</div>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm text-on-surface">Procure weekly nutritional provisions</span>
+<span class="font-mono-label text-mono-label text-outline-variant text-[10px]">LOC: SECTOR_7_MARKET</span>
+</div>
+<div class="w-24 text-right font-mono-label text-mono-label text-on-surface-variant">
+                                    Unit_01
+                                </div>
+<div class="w-20 text-right font-data-metric text-data-metric text-primary-fixed">
+                                    +500 XP
+                                </div>
+</div>
+<!-- Task Item 2 -->
+<div class="grid grid-cols-[auto_1fr_auto_auto] gap-sm p-sm items-center border-b border-outline-variant/10 hover:bg-surface-variant/50 transition-colors group cursor-pointer border-l-2 border-transparent hover:border-primary-fixed">
+<div class="w-8 flex justify-center">
+<span class="material-symbols-outlined text-[16px] text-primary-fixed">sync</span>
+</div>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm text-on-surface">Synchronize shared orbital calendar</span>
+<span class="font-mono-label text-mono-label text-outline-variant text-[10px]">PRIORITY: HIGH</span>
+</div>
+<div class="w-24 text-right font-mono-label text-mono-label text-on-surface-variant">
+                                    ANY
+                                </div>
+<div class="w-20 text-right font-data-metric text-data-metric text-primary-fixed">
+                                    +150 XP
+                                </div>
+</div>
+<!-- Task Item 3 (Completed) -->
+<div class="grid grid-cols-[auto_1fr_auto_auto] gap-sm p-sm items-center hover:bg-surface-variant/50 transition-colors group cursor-pointer border-l-2 border-transparent opacity-50">
+<div class="w-8 flex justify-center">
+<span class="material-symbols-outlined text-[16px] text-outline-variant">check_box</span>
+</div>
+<div class="flex flex-col">
+<span class="font-body-sm text-body-sm text-outline-variant line-through">Run diagnostics on internal router</span>
+</div>
+<div class="w-24 text-right font-mono-label text-mono-label text-outline-variant">
+                                    Unit_02
+                                </div>
+<div class="w-20 text-right font-data-metric text-data-metric text-outline-variant">
+                                    DONE
+                                </div>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Sidebar Column (Leaderboards) -->
+<div class="xl:col-span-4 flex flex-col gap-lg">
+<!-- Local Leaderboard Panel -->
+<div class="bg-surface-container border border-outline-variant/30 rounded-xl overflow-hidden flex flex-col">
+<div class="p-md border-b border-outline-variant/20 bg-surface-container-high/30 flex items-center justify-between">
+<h3 class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary-fixed text-[20px]">leaderboard</span>
+                                Local Rankings
+                            </h3>
+<span class="font-mono-label text-mono-label text-on-surface-variant px-sm py-xs border border-outline-variant/30 rounded bg-surface/50">W34</span>
+</div>
+<div class="p-sm flex flex-col gap-xs">
+<!-- Rank 1 -->
+<div class="flex items-center gap-sm p-sm rounded bg-surface-variant/30 border border-primary-fixed/20 shadow-[inset_0_0_10px_rgba(0,240,255,0.05)]">
+<span class="font-data-metric text-data-metric text-primary-fixed w-6 text-center">01</span>
+<div class="w-8 h-8 rounded bg-surface overflow-hidden shrink-0">
+<img alt="Avatar" class="w-full h-full object-cover" data-alt="A high-contrast profile picture of a young man, stylized to look like a digital identification badge. The background is pure black, and his face is subtly illuminated by a cool cyan light source from below, emphasizing sharp jawline features." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB2ECWEm9QfM4nI41HxrDMteDsMdp1Wv4rJ0h5YYDYr_svUyUy_si1UFPGc3scDt8XGHLXdoJT90zfXxoyYR3BWaPpJFaIKGlpdcYAWRx1SH3WQ0xjW4QZyw46xRZlVQXHByzk0bOnLHwU_Ss6U1jTRdZckY7ybTcnAoBioieqb8hfoGs5NSlMoFTniiNkH3i9ky0VoFt_CRUMthjsLSTJkU8axHGmd9Z1etT7otNsRkDLzmBsekVZpOvsTCobiY7jUB4MqvHqacHI"/>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface flex-1 truncate">Unit_01</span>
+<span class="font-data-metric text-data-metric text-on-surface">14.2k</span>
+</div>
+<!-- Rank 2 -->
+<div class="flex items-center gap-sm p-sm rounded hover:bg-surface-variant/30 transition-colors">
+<span class="font-data-metric text-data-metric text-on-surface-variant w-6 text-center">02</span>
+<div class="w-8 h-8 rounded bg-surface overflow-hidden shrink-0">
+<img alt="Avatar" class="w-full h-full object-cover grayscale" data-alt="A black and white profile photograph of a woman looking directly at the camera. The image has a low-fi, grainy surveillance camera aesthetic. Her expression is neutral and focused." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMdZ_Fo56DaCnbZTak2pWt_ruNvFzEW9XAd-sGS_sMC1l5VVfDPuGn7V4cf68s1Dw5A1-HSdGH5QSP5Gargj-h0G6mgCrra0C8TqdYr_eoJUy1u4fVZ_XHBqLsgOG_UiMw45xzXAT6tF_cwFsh3y_8mtofxWszivhOwJoyc2BB7bJs3EPbi9pJmGVJU6YN7hOTrtWoE28mD3Z21KRDMbGhN36wbIeVt2-hdgxqYxg3OWaadAZ90ggclcN6F-3epGmXZfI1YnrbBF0"/>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface flex-1 truncate">Unit_02</span>
+<span class="font-data-metric text-data-metric text-on-surface-variant">8.4k</span>
+</div>
+<!-- Rank 3 -->
+<div class="flex items-center gap-sm p-sm rounded hover:bg-surface-variant/30 transition-colors opacity-60">
+<span class="font-data-metric text-data-metric text-outline-variant w-6 text-center">03</span>
+<div class="w-8 h-8 rounded border border-outline-variant border-dashed flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[16px] text-outline-variant">person</span>
+</div>
+<span class="font-body-sm text-body-sm text-outline-variant flex-1 truncate">Unit_03</span>
+<span class="font-data-metric text-data-metric text-outline-variant">2.1k</span>
+</div>
+</div>
+</div>
+<!-- Global Leaderboard (Masked) -->
+<div class="bg-surface-container border border-outline-variant/30 rounded-xl overflow-hidden flex flex-col relative">
+<!-- Top Header -->
+<div class="p-md border-b border-outline-variant/20 bg-surface-container-high/30 flex items-center justify-between relative z-10">
+<h3 class="font-headline-sm text-headline-sm text-on-surface-variant flex items-center gap-xs">
+<span class="material-symbols-outlined text-[20px]">public</span>
+                                Global Network
+                            </h3>
+</div>
+<!-- Masked List -->
+<div class="p-sm flex flex-col gap-xs masked-content pointer-events-none opacity-50 relative z-0">
+<div class="flex items-center gap-sm p-sm border-b border-outline-variant/10">
+<div class="w-24 h-4 bg-outline-variant/30 rounded"></div>
+<div class="flex-1 h-4 bg-outline-variant/20 rounded"></div>
+<div class="w-12 h-4 bg-outline-variant/30 rounded"></div>
+</div>
+<div class="flex items-center gap-sm p-sm border-b border-outline-variant/10">
+<div class="w-24 h-4 bg-outline-variant/30 rounded"></div>
+<div class="flex-1 h-4 bg-outline-variant/20 rounded"></div>
+<div class="w-12 h-4 bg-outline-variant/30 rounded"></div>
+</div>
+<div class="flex items-center gap-sm p-sm border-b border-outline-variant/10">
+<div class="w-24 h-4 bg-outline-variant/30 rounded"></div>
+<div class="flex-1 h-4 bg-outline-variant/20 rounded"></div>
+<div class="w-12 h-4 bg-outline-variant/30 rounded"></div>
+</div>
+<div class="flex items-center gap-sm p-sm">
+<div class="w-24 h-4 bg-outline-variant/30 rounded"></div>
+<div class="flex-1 h-4 bg-outline-variant/20 rounded"></div>
+<div class="w-12 h-4 bg-outline-variant/30 rounded"></div>
+</div>
+</div>
+<!-- Overlay Lock -->
+<div class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-surface/40 backdrop-blur-[2px] mt-12">
+<span class="material-symbols-outlined text-[32px] text-on-surface-variant mb-sm">lock</span>
+<span class="font-mono-label text-mono-label text-on-surface uppercase tracking-widest text-center px-lg">
+                                Insufficient Clearance
+                            </span>
+<span class="font-body-sm text-body-sm text-on-surface-variant text-center px-lg mt-xs text-[12px]">
+                                Establish higher cluster reputation to access global telemetry.
+                            </span>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

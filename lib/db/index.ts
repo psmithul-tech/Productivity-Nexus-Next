@@ -35,4 +35,34 @@ try {
 
 export { pool };
 export const db = drizzle(pool, { schema });
-export * from "./schema";
+export {
+  usersTable,
+  eventsTable,
+  tasksTable,
+  remindersTable,
+  conversations,
+  messages,
+  settingsTable,
+  focusSessionsTable,
+  notificationsTable,
+  watchProgressTable,
+  habitsTable,
+  habitLogsTable,
+  reviewsTable,
+  mediaRatingsTable,
+  searchActivityTable,
+  userProfilesTable,
+  mediaCatalogTable,
+  goalsTable,
+  roadmapsTable,
+  milestonesTable,
+  subjectsTable,
+  attendanceLogsTable,
+  familiesTable,
+  familyMembersTable,
+  dietGoalsTable,
+  mealLogsTable,
+  contactsTable,
+  researchTable,
+  draftsTable
+} from "./schema";

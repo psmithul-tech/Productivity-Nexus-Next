@@ -88,10 +88,10 @@ export function NLQuickAdd() {
   return (
     <form onSubmit={handleSubmit} className="relative w-full group">
       {/* Glow */}
-      <div className="absolute inset-0 bg-gradient-to-r from-primary/15 via-blue-500/10 to-primary/15 rounded-2xl blur-md opacity-0 group-focus-within:opacity-100 transition-opacity duration-300 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-r from-primary/15 via-blue-500/10 to-primary/15 rounded-2xl blur-md opacity-0 group-focus-within:opacity-100 dark:group-focus-within:opacity-50 transition-opacity duration-300 pointer-events-none" />
 
-      <div className="relative flex items-center bg-white/[0.05] border border-white/10 group-focus-within:border-primary/30 rounded-2xl px-3 py-2 transition-all duration-200 gap-2">
-        <div className="shrink-0 text-primary/60 group-focus-within:text-primary transition-colors">
+      <div className="relative flex items-center bg-white dark:bg-surface-container-high border-[2px] border-black dark:border-transparent group-focus-within:shadow-[0_3px_0_0_#000] dark:group-focus-within:shadow-none dark:group-focus-within:border-primary/50 rounded-2xl px-3 py-2 transition-all duration-200 gap-2">
+        <div className="shrink-0 text-black/40 dark:text-primary/60 group-focus-within:text-black dark:group-focus-within:text-primary transition-colors">
           {loading
             ? <Loader2 className="h-4 w-4 animate-spin" />
             : <Sparkles className="h-4 w-4" />
@@ -104,8 +104,8 @@ export function NLQuickAdd() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder='Add task or event — "Buy milk", "Meeting tomorrow at 3pm"'
-          className="flex-1 bg-transparent text-sm text-white placeholder:text-white/30 focus:outline-none"
+          placeholder='Quick add task or event...'
+          className="flex-1 min-w-0 bg-transparent text-sm text-black dark:text-white placeholder:text-gray-400 dark:placeholder:text-white/30 focus:outline-none"
           disabled={loading}
         />
 
@@ -113,7 +113,7 @@ export function NLQuickAdd() {
           <button
             type="button"
             onClick={() => setInput("")}
-            className="shrink-0 p-1 rounded-lg text-white/30 hover:text-white transition-colors"
+            className="shrink-0 p-1 rounded-lg text-gray-400 dark:text-white/30 hover:text-black dark:hover:text-white transition-colors"
           >
             <X className="h-3.5 w-3.5" />
           </button>
@@ -122,7 +122,7 @@ export function NLQuickAdd() {
         <button
           type="submit"
           disabled={!input.trim() || loading}
-          className="shrink-0 bg-primary/15 hover:bg-primary/25 disabled:opacity-40 text-primary p-1.5 rounded-xl transition-colors"
+          className="shrink-0 bg-gray-100 hover:bg-gray-200 dark:bg-primary/15 dark:hover:bg-primary/25 disabled:opacity-40 text-black dark:text-primary p-1.5 rounded-xl transition-colors border-[2px] border-black dark:border-transparent"
         >
           <Send className="h-3.5 w-3.5" />
         </button>

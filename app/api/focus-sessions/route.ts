@@ -61,6 +61,15 @@ export async function PATCH(req: NextRequest) {
 
   if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  if (status === "completed") {
+    // Award 2 XP per minute of focus time
+    const { awardXP } = await import("@/lib/gamification");
+    const earnedXP = Math.floor((completedMinutes || 0) * 2);
+    if (earnedXP > 0) {
+      await awardXP(user.id, earnedXP);
+    }
+  }
+
   return NextResponse.json({
     ...updated,
     startedAt: updated.startedAt.toISOString(),

@@ -16,11 +16,25 @@ export async function GET(req: NextRequest) {
   const status = searchParams.get("status");
   const priority = searchParams.get("priority");
   const bucket = searchParams.get("bucket");
+  // Get current user's username
+  const [settings] = await db
+    .select({ username: sql`username` })
+    .from(sql`settings`)
+    .where(eq(sql`user_id`, user.id));
+
+  const myUsername = settings?.username ?? null;
+
   const conditions = [
     or(
       eq(tasksTable.userId, user.id),
-      arrayContains(tasksTable.sharedWith, ["*"]),
-      eq(tasksTable.assignedTo, user.id)
+      and(
+        arrayContains(tasksTable.sharedWith, ["*"]),
+        or(
+          sql`${tasksTable.assignedTo} IS NULL OR ${tasksTable.assignedTo} = ''`,
+          ...(myUsername ? [eq(tasksTable.assignedTo, myUsername as string)] : [])
+        )
+      ),
+      ...(myUsername ? [eq(tasksTable.assignedTo, myUsername as string)] : [])
     )
   ];
   if (status && status !== "all") conditions.push(eq(tasksTable.status, status));

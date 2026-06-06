@@ -1,3 +1,4 @@
+import { AGENTS } from "@/lib/agents";
 import { NextRequest, NextResponse } from "next/server";
 import { db, tasksTable, focusSessionsTable, habitLogsTable, settingsTable, reviewsTable } from "@/lib/db";
 import { eq, and, gte, desc } from "drizzle-orm";
@@ -69,7 +70,7 @@ Keep the tone encouraging, premium, and concise. Don't use markdown headers (##)
   try {
     const { callOpenRouter } = await import("@/lib/openrouter");
     // Only use openrouter, limit tokens
-    const text = await callOpenRouter(prompt, undefined, { model: "google/gemini-2.5-flash", temperature: 0.7, maxTokens: 2000 });
+    const text = await callOpenRouter(prompt, undefined, { model: AGENTS.STRATEGIC_PLANNER, temperature: 0.7, maxTokens: 2000 });
     
     if (!text) {
       throw new Error("Empty response from OpenRouter");

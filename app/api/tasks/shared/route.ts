@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, tasksTable, settingsTable } from "@/lib/db";
-import { eq, or, arrayContains, and, isNotNull } from "drizzle-orm";
+import { eq, or, arrayContains, and, isNotNull, sql } from "drizzle-orm";
 import { createClient } from "@/utils/supabase/server";
 
 export async function GET(req: NextRequest) {
@@ -18,15 +18,16 @@ export async function GET(req: NextRequest) {
 
   // Shared tasks = tasks owned by current user that are shared (have sharedWith or are assigned)
   // OR tasks from other users where the assignedTo is current user's username
+  // OR tasks from other users that are shared and unassigned
   let sharedTasks = await db
     .select()
     .from(tasksTable)
     .where(
       or(
-        // Tasks I created that are marked as shared
-        and(eq(tasksTable.userId, user.id), arrayContains(tasksTable.sharedWith, ["*"])),
         // Tasks assigned to me by my username
         ...(myUsername ? [eq(tasksTable.assignedTo, myUsername)] : []),
+        // Shared tasks that are completely unassigned
+        and(arrayContains(tasksTable.sharedWith, ["*"]), sql`${tasksTable.assignedTo} IS NULL OR ${tasksTable.assignedTo} = ''`)
       )
     );
 

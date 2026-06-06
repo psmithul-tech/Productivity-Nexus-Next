@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Restia OS - Settings</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary": "#f8f5f6",
+                      "primary-fixed": "#7df4ff",
+                      "on-primary-fixed-variant": "#004f54",
+                      "tertiary-fixed": "#e5e2e3",
+                      "on-background": "#e4e2e4",
+                      "on-error": "#690005",
+                      "primary-fixed-dim": "#00dbe9",
+                      "on-primary": "#00363a",
+                      "on-surface-variant": "#b9cacb",
+                      "on-tertiary": "#313031",
+                      "on-secondary-fixed": "#320047",
+                      "on-tertiary-fixed": "#1c1b1c",
+                      "primary": "#dbfcff",
+                      "tertiary-fixed-dim": "#c8c6c7",
+                      "error-container": "#93000a",
+                      "inverse-on-surface": "#303032",
+                      "on-tertiary-fixed-variant": "#474647",
+                      "secondary-fixed": "#f8d8ff",
+                      "on-primary-fixed": "#002022",
+                      "surface-container": "#1f1f21",
+                      "on-surface": "#e4e2e4",
+                      "on-tertiary-container": "#5f5e5f",
+                      "surface-container-high": "#2a2a2c",
+                      "error": "#ffb4ab",
+                      "tertiary-container": "#dbd8d9",
+                      "on-secondary-container": "#fff6fc",
+                      "primary-container": "#00f0ff",
+                      "surface-variant": "#353437",
+                      "on-primary-container": "#006970",
+                      "on-secondary": "#520072",
+                      "secondary-fixed-dim": "#ebb2ff",
+                      "inverse-primary": "#006970",
+                      "surface": "#131315",
+                      "outline": "#849495",
+                      "on-error-container": "#ffdad6",
+                      "on-secondary-fixed-variant": "#74009f",
+                      "secondary-container": "#b600f8",
+                      "surface-container-low": "#1b1b1d",
+                      "surface-container-lowest": "#0e0e10",
+                      "surface-tint": "#00dbe9",
+                      "outline-variant": "#3b494b",
+                      "surface-container-highest": "#353437",
+                      "surface-dim": "#131315",
+                      "surface-bright": "#39393b",
+                      "inverse-surface": "#e4e2e4",
+                      "secondary": "#ebb2ff",
+                      "background": "#131315"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "sm": "8px",
+                      "gutter": "16px",
+                      "unit": "4px",
+                      "container-max": "1440px",
+                      "xs": "4px",
+                      "xl": "48px",
+                      "md": "16px",
+                      "lg": "24px"
+              },
+              "fontFamily": {
+                      "data-metric": ["JetBrains Mono"],
+                      "mono-label": ["JetBrains Mono"],
+                      "headline-md": ["Inter"],
+                      "headline-sm": ["Inter"],
+                      "display-lg": ["Inter"],
+                      "body-sm": ["Inter"],
+                      "body-lg": ["Inter"]
+              },
+              "fontSize": {
+                      "data-metric": ["14px", { "lineHeight": "1", "fontWeight": "600" }],
+                      "mono-label": ["12px", { "lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                      "headline-md": ["24px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                      "headline-sm": ["18px", { "lineHeight": "1.4", "fontWeight": "600" }],
+                      "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                      "body-sm": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                      "body-lg": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        /* Custom Toggle Switch for Dark Minimalism */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #7df4ff;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #004f54;
+        }
+        .toggle-checkbox:checked + .toggle-label:after {
+            transform: translateX(100%);
+            border-color: white;
+            background-color: #7df4ff;
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
+        }
+        
+        /* Custom Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #7df4ff;
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #3b494b;
+            border-radius: 2px;
+        }
+        input[type=range]:focus::-webkit-slider-runnable-track {
+            background: #849495;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-lg antialiased overflow-x-hidden selection:bg-primary-fixed/30 selection:text-primary-fixed flex h-screen">
+<!-- SideNavBar (Shared Component) -->
+<nav class="fixed left-0 top-0 h-full flex flex-col z-50 bg-surface/70 dark:bg-surface/70 h-full w-20 hover:w-64 transition-all duration-300 ease-in-out border-r border-outline-variant/30 backdrop-blur-xl group overflow-hidden">
+<div class="p-4 flex items-center gap-4 border-b border-outline-variant/30 shrink-0">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high border border-outline-variant/50 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary-fixed" data-icon="terminal">terminal</span>
+</div>
+<div class="flex flex-col opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
+<span class="font-headline-sm text-headline-sm text-primary-fixed-dim tracking-tight">Restia OS</span>
+<span class="font-mono-label text-mono-label text-on-surface-variant">v2.4.0</span>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto py-4 flex flex-col gap-2 px-2">
+<!-- Inactive Tabs -->
+<a class="flex items-center gap-4 p-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="dashboard">dashboard</span>
+<span class="font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Dashboard</span>
+</a>
+<a class="flex items-center gap-4 p-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="analytics">analytics</span>
+<span class="font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Analytics</span>
+</a>
+<a class="flex items-center gap-4 p-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="extension">extension</span>
+<span class="font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Modules</span>
+</a>
+<a class="flex items-center gap-4 p-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="lan">lan</span>
+<span class="font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Network</span>
+</a>
+<a class="flex items-center gap-4 p-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="security">security</span>
+<span class="font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Security</span>
+</a>
+<!-- Active Tab: Settings -->
+<a class="flex items-center gap-4 p-3 rounded-lg border-l-2 border-primary-fixed shadow-[0_0_10px_rgba(0,240,255,0.4)] text-primary-fixed bg-primary-fixed/5 scale-95 duration-150" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="settings">settings</span>
+<span class="font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Settings</span>
+</a>
+</div>
+<div class="mt-auto border-t border-outline-variant/30 py-4 flex flex-col gap-2 px-2 shrink-0">
+<a class="flex items-center gap-4 p-3 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="help">help</span>
+<span class="font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Help</span>
+</a>
+<a class="flex items-center gap-4 p-3 rounded-lg text-error hover:bg-error-container/20 transition-colors" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="power_settings_new">power_settings_new</span>
+<span class="font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Power</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col min-w-0 ml-20">
+<!-- TopAppBar (Shared Component) -->
+<header class="flex justify-between items-center w-full px-lg h-16 bg-surface/40 dark:bg-surface/40 docked full-width top-0 border-b border-outline-variant/20 backdrop-blur-md sticky z-40">
+<div class="flex items-center gap-4">
+<span class="font-headline-md text-headline-md text-primary-fixed font-bold">Restia OS</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden md:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm" data-icon="search">search</span>
+<input class="bg-surface-container-high border border-outline-variant/50 text-on-surface font-mono-label text-mono-label rounded-full pl-9 pr-4 py-1.5 focus:outline-none focus:border-primary-fixed focus:ring-1 focus:ring-primary-fixed/50 w-64 transition-all" placeholder="Command..." type="text"/>
+</div>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-high/50 rounded-full transition-colors relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-primary-fixed rounded-full shadow-[0_0_5px_rgba(0,240,255,0.8)]"></span>
+</button>
+<button class="p-2 text-on-surface-variant hover:bg-surface-container-high/50 rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="apps">apps</span>
+</button>
+<button class="w-8 h-8 rounded-full bg-surface-variant border border-outline-variant/50 flex items-center justify-center overflow-hidden hover:opacity-80 transition-opacity ml-2">
+<img alt="Administrator" class="w-full h-full object-cover" data-alt="A macro shot of a sleek, dark metallic user avatar placeholder with an electric cyan border glowing softly in a dim, futuristic command center environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBP313I6CpKVh54ZmdwVyYr-67KQOhp5CTiiw3p4maRQN9LmMGOQTRVH2qv1wIv8w6wEgS48HkncqpBZD5NCnJppyle3Vb6hWWuLl0JVwz266zTCrFGQlt15_EOuSqeUdON_40zyBjU1ZnagGny6AOM3iwB8iEhoGioMbRum3Xw080nbWwRwMNOIzpOyBueljOiM8-8rnkTK7-zS6lKF7uDNqfPScbMHq2ULpwZERhn75_xXlGf7IWioZB5cQ0R5Bg4q-n2Xuz-CaA"/>
+</button>
+</div>
+</header>
+<!-- Page Content -->
+<div class="p-lg md:p-xl max-w-container-max mx-auto w-full overflow-y-auto">
+<div class="mb-lg">
+<h1 class="font-display-lg text-display-lg text-on-surface mb-2">System Configuration</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Manage global integrations, synchronization parameters, and ambient environment settings.</p>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-lg">
+<!-- Integrations (Spans full width on mobile, 8 cols on desktop) -->
+<div class="lg:col-span-8 space-y-lg">
+<div class="bg-surface-container-low/70 backdrop-blur-xl border-t border-t-primary-fixed border-l border-r border-b border-outline-variant/30 rounded-xl p-lg relative overflow-hidden">
+<!-- Decorative background glow -->
+<div class="absolute top-0 right-0 w-64 h-64 bg-primary-fixed/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+<h2 class="font-headline-sm text-headline-sm text-on-surface mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-fixed text-lg" data-icon="cable">cable</span>
+                            External Integrations
+                        </h2>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Discord -->
+<div class="bg-surface border border-outline-variant/50 rounded-lg p-4 flex flex-col justify-between h-full group hover:border-outline transition-colors">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-[#5865F2]/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-[#5865F2]" data-icon="forum">forum</span>
+</div>
+<div>
+<h3 class="font-body-lg text-body-lg font-semibold text-on-surface">Discord Webhook</h3>
+<p class="font-mono-label text-mono-label text-on-surface-variant">Alerts &amp; Logging</p>
+</div>
+</div>
+<div class="flex items-center gap-1.5 px-2 py-1 rounded-full border border-primary-fixed/30 bg-primary-fixed/5">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-fixed animate-pulse"></span>
+<span class="font-mono-label text-mono-label text-primary-fixed">Connected</span>
+</div>
+</div>
+<div class="flex items-center justify-between mt-auto pt-4 border-t border-outline-variant/30">
+<span class="font-mono-label text-mono-label text-on-surface-variant truncate pr-2">Channel: #sys-alerts</span>
+<button class="font-mono-label text-mono-label text-on-surface hover:text-error transition-colors px-3 py-1.5 rounded border border-outline-variant/50 hover:border-error/50 bg-surface-container-high">Disconnect</button>
+</div>
+</div>
+<!-- Telegram -->
+<div class="bg-surface border border-outline-variant/50 rounded-lg p-4 flex flex-col justify-between h-full group hover:border-outline transition-colors">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-[#2AABEE]/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-[#2AABEE]" data-icon="send">send</span>
+</div>
+<div>
+<h3 class="font-body-lg text-body-lg font-semibold text-on-surface text-opacity-60">Telegram Bot</h3>
+<p class="font-mono-label text-mono-label text-on-surface-variant">Direct Commands</p>
+</div>
+</div>
+<div class="flex items-center gap-1.5 px-2 py-1 rounded-full border border-outline-variant/50 bg-surface-container">
+<span class="w-1.5 h-1.5 rounded-full bg-outline"></span>
+<span class="font-mono-label text-mono-label text-outline">Offline</span>
+</div>
+</div>
+<div class="flex items-center justify-end mt-auto pt-4 border-t border-outline-variant/30">
+<button class="font-mono-label text-mono-label text-primary-fixed hover:bg-primary-fixed/10 transition-colors px-4 py-1.5 rounded border border-primary-fixed bg-surface-container-high shadow-[0_0_10px_rgba(0,240,255,0.1)] hover:shadow-[0_0_15px_rgba(0,240,255,0.2)]">Initialize</button>
+</div>
+</div>
+<!-- Google Calendar -->
+<div class="bg-surface border border-outline-variant/50 rounded-lg p-4 flex flex-col justify-between h-full group hover:border-outline transition-colors md:col-span-2">
+<div class="flex justify-between items-start mb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-[#4285F4]/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-[#4285F4]" data-icon="calendar_month">calendar_month</span>
+</div>
+<div>
+<h3 class="font-body-lg text-body-lg font-semibold text-on-surface">Google Calendar</h3>
+<p class="font-mono-label text-mono-label text-on-surface-variant">Schedule Sync</p>
+</div>
+</div>
+<div class="flex items-center gap-1.5 px-2 py-1 rounded-full border border-primary-fixed/30 bg-primary-fixed/5">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-fixed"></span>
+<span class="font-mono-label text-mono-label text-primary-fixed">Syncing</span>
+</div>
+</div>
+<div class="flex flex-col gap-2 mt-auto pt-4 border-t border-outline-variant/30">
+<div class="flex items-center justify-between">
+<span class="font-mono-label text-mono-label text-on-surface-variant">Last sync: 2 mins ago</span>
+<button class="font-mono-label text-mono-label text-on-surface hover:text-on-surface-variant transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="sync">sync</span> Force Sync
+                                        </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Notifications & Background Sync (4 cols on desktop) -->
+<div class="lg:col-span-4 space-y-lg">
+<!-- Notifications -->
+<div class="bg-surface-container-low/70 backdrop-blur-xl border border-outline-variant/30 rounded-xl p-lg">
+<h2 class="font-headline-sm text-headline-sm text-on-surface mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-lg" data-icon="notifications_active">notifications_active</span>
+                            Alert Routing
+                        </h2>
+<div class="space-y-4">
+<!-- Toggle Item -->
+<div class="flex items-center justify-between">
+<div>
+<p class="font-body-sm text-body-sm font-semibold text-on-surface">Critical Errors</p>
+<p class="font-mono-label text-mono-label text-on-surface-variant">Push &amp; SMS</p>
+</div>
+<div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-surface border-2 border-outline-variant appearance-none cursor-pointer z-10" id="toggle1" name="toggle1" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-surface-container-high cursor-pointer border border-outline-variant/50" for="toggle1"></label>
+</div>
+</div>
+<!-- Toggle Item -->
+<div class="flex items-center justify-between">
+<div>
+<p class="font-body-sm text-body-sm font-semibold text-on-surface">System Updates</p>
+<p class="font-mono-label text-mono-label text-on-surface-variant">In-App Only</p>
+</div>
+<div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+<input class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-surface border-2 border-outline-variant appearance-none cursor-pointer z-10" id="toggle2" name="toggle2" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-surface-container-high cursor-pointer border border-outline-variant/50" for="toggle2"></label>
+</div>
+</div>
+<!-- Toggle Item -->
+<div class="flex items-center justify-between">
+<div>
+<p class="font-body-sm text-body-sm font-semibold text-on-surface">Weekly Reports</p>
+<p class="font-mono-label text-mono-label text-on-surface-variant">Email (Admin)</p>
+</div>
+<div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-surface border-2 border-outline-variant appearance-none cursor-pointer z-10" id="toggle3" name="toggle3" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-surface-container-high cursor-pointer border border-outline-variant/50" for="toggle3"></label>
+</div>
+</div>
+</div>
+</div>
+<!-- Background Sync -->
+<div class="bg-surface-container-low/70 backdrop-blur-xl border border-outline-variant/30 rounded-xl p-lg">
+<h2 class="font-headline-sm text-headline-sm text-on-surface mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-outline text-lg" data-icon="cloud_sync">cloud_sync</span>
+                            Daemon Polling
+                        </h2>
+<div class="mb-6">
+<div class="flex justify-between items-end mb-2">
+<label class="font-mono-label text-mono-label text-on-surface-variant">Interval Frequency</label>
+<span class="font-data-metric text-data-metric text-primary-fixed">15 min</span>
+</div>
+<input class="w-full" max="60" min="1" type="range" value="15"/>
+<div class="flex justify-between mt-1 px-1">
+<span class="font-mono-label text-mono-label text-outline text-[10px]">1m</span>
+<span class="font-mono-label text-mono-label text-outline text-[10px]">60m</span>
+</div>
+</div>
+<div class="p-3 bg-surface border border-outline-variant/30 rounded-lg flex items-start gap-3">
+<span class="material-symbols-outlined text-outline text-sm mt-0.5" data-icon="info">info</span>
+<p class="font-mono-label text-mono-label text-on-surface-variant leading-relaxed">Lower intervals increase API consumption. Current rate limits allow for a minimum of 5m safely.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

@@ -1,6 +1,6 @@
+import { AGENTS } from "@/lib/agents";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import { getAIClient } from "@/lib/gemini";
 import { db, settingsTable } from "@/lib/db";
 import { eq } from "drizzle-orm";
 
@@ -13,9 +13,7 @@ export async function POST(req: NextRequest) {
   }
 
   const [settings] = await db.select().from(settingsTable).where(eq(settingsTable.userId, user.id));
-  if (!settings?.geminiApiKey) {
-    return NextResponse.json({ error: "Please save your Gemini API Key before testing integrations." }, { status: 400 });
-  }
+
 
   const body = await req.json();
   const { type, url, token, chatId, origin } = body;
@@ -27,9 +25,9 @@ export async function POST(req: NextRequest) {
       let textMsg = "👋 Hello, I'm Restia! Your Discord integration is working perfectly.";
       try {
         const prompt = `You are Restia, an AI Chief of Staff. Write a very brief (1-2 sentences), cheerful, and human-like welcome message to test a Discord integration. Introduce yourself. Use emojis.`;
-        const ai = getAIClient(settings.geminiApiKey);
-        const aiRes = await ai.models.generateContent({ model: "gemini-3.1-flash-lite", contents: prompt });
-        if (aiRes.text) textMsg = aiRes.text;
+        const { callOpenRouter } = await import("@/lib/openrouter");
+        const aiRes = await callOpenRouter(prompt, undefined, { model: AGENTS.COMMUNICATIONS_MANAGER });
+        if (aiRes) textMsg = aiRes;
       } catch (err) {
         console.error("AI Discord Test Error:", err);
       }
@@ -78,9 +76,9 @@ export async function POST(req: NextRequest) {
       let textMsg = "👋 Hello, I'm Restia! Your Telegram integration is working perfectly. You can now reply to me to add tasks or check your schedule!";
       try {
         const prompt = `You are Restia, an AI Chief of Staff. Write a very brief (1-2 sentences), cheerful, and human-like welcome message to test a Telegram integration. Introduce yourself. Tell them they can reply to add tasks. Use emojis.`;
-        const ai = getAIClient(settings.geminiApiKey);
-        const aiRes = await ai.models.generateContent({ model: "gemini-3.1-flash-lite", contents: prompt });
-        if (aiRes.text) textMsg = aiRes.text;
+        const { callOpenRouter } = await import("@/lib/openrouter");
+        const aiRes = await callOpenRouter(prompt, undefined, { model: AGENTS.COMMUNICATIONS_MANAGER });
+        if (aiRes) textMsg = aiRes;
       } catch (err) {
         console.error("AI Telegram Test Error:", err);
       }

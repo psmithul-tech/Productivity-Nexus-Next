@@ -18,6 +18,7 @@ interface RestiaContextType {
   streaming: boolean;
   isRoaming: boolean;
   setIsRoaming: (v: boolean) => void;
+  isSpeaking: boolean;
 }
 
 const RestiaContext = createContext<RestiaContextType | null>(null);
@@ -29,6 +30,7 @@ export function RestiaProvider({ children }: { children: React.ReactNode }) {
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [isRoaming, setIsRoaming] = useState(true);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   
   const [activeId, setActiveId] = useState<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -87,6 +89,7 @@ export function RestiaProvider({ children }: { children: React.ReactNode }) {
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let fullText = "";
+      let ttsBuffer = "";
       
       while (true) {
         const { done, value } = await reader.read();
@@ -99,6 +102,22 @@ export function RestiaProvider({ children }: { children: React.ReactNode }) {
             const json = JSON.parse(line.slice(6));
             if (json.content) {
               fullText += json.content;
+              ttsBuffer += json.content;
+              
+              // Flush buffer to TTS on punctuation or when it gets long enough
+              if (/[.!?\n]/.test(json.content) || ttsBuffer.length > 30) {
+                const textToSend = ttsBuffer.replace(/[\*\_\`\~]/g, '');
+                if (textToSend.trim()) {
+                  setIsSpeaking(true);
+                  fetch('http://127.0.0.1:8000/tts/speak', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: textToSend })
+                  }).catch(console.error);
+                }
+                ttsBuffer = "";
+              }
+              
               setMessages((p) => { 
                 const n = [...p]; 
                 n[n.length - 1] = { role: "assistant", content: fullText, streaming: true }; 
@@ -132,9 +151,30 @@ export function RestiaProvider({ children }: { children: React.ReactNode }) {
                 return n; 
               });
             }
+            if (json.error) {
+              toast.error(json.error);
+              setMessages((p) => p.slice(0, -1));
+            }
           } catch {}
         }
       }
+      
+      // Flush any remaining text in the buffer
+      if (ttsBuffer.trim()) {
+        const textToSend = ttsBuffer.replace(/[\*\_\`\~]/g, '');
+        if (textToSend.trim()) {
+          setIsSpeaking(true);
+          fetch('http://127.0.0.1:8000/tts/speak', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: textToSend })
+          }).catch(console.error);
+        }
+      }
+      setTimeout(() => setIsSpeaking(false), Math.max(3000, fullText.length * 50));
+
+      // TTS handled inline during streaming
+
     } catch (err: any) {
       if (err.name !== "AbortError") {
         toast.error("Failed to get response");
@@ -154,7 +194,7 @@ export function RestiaProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <RestiaContext.Provider value={{ isOpen, setIsOpen, animState, messages, sendMessage, input, setInput, streaming, isRoaming, setIsRoaming }}>
+    <RestiaContext.Provider value={{ isOpen, setIsOpen, animState, messages, sendMessage, input, setInput, streaming, isRoaming, setIsRoaming, isSpeaking }}>
       {children}
     </RestiaContext.Provider>
   );

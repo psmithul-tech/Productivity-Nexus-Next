@@ -15,7 +15,7 @@ export function AutoReloader() {
         const data = await res.json();
         
         if (data.stats) {
-          const currentHash = `${data.stats.activeTasks}-${data.stats.completedTasks}-${data.stats.totalEvents}-${data.stats.pendingReminders}`;
+          const currentHash = `${data.stats.activeTasks}-${data.stats.completedTasks}-${data.stats.totalEvents}-${data.stats.pendingReminders}-${data.stats.processingResearch}-${data.stats.completedResearch}`;
           if (lastStateHash.current !== null && lastStateHash.current !== currentHash) {
             console.log("[AutoReloader] State changed, refreshing UI...");
             router.refresh();

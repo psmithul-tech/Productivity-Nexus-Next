@@ -1,0 +1,23 @@
+export const AGENTS = {
+  CHIEF_OF_STAFF: "nvidia/nemotron-3-ultra-550b-a55b:free",
+  STRATEGIC_PLANNER: "nvidia/nemotron-3-ultra-550b-a55b:free",
+  RESEARCH_DIRECTOR: "nvidia/nemotron-3-ultra-550b-a55b:free",
+  FINANCE_ADVISOR: "nvidia/nemotron-3-ultra-550b-a55b:free",
+  RELATIONSHIP_MANAGER: "openrouter/owl-alpha",
+  COMMUNICATIONS_MANAGER: "openrouter/owl-alpha",
+  WHATSAPP_MANAGER: "openrouter/owl-alpha",
+  EMAIL_MANAGER: "openrouter/owl-alpha",
+  MEMORY_MANAGER: "openrouter/owl-alpha",
+  CALENDAR_MANAGER: "openrouter/owl-alpha",
+  SOFTWARE_ARCHITECT: "moonshotai/kimi-k2.6:free",
+  FULL_STACK_ENGINEER: "moonshotai/kimi-k2.6:free",
+  SWIFT_ENGINEER: "moonshotai/kimi-k2.6:free",
+  QA_ENGINEER: "moonshotai/kimi-k2.6:free",
+  PRODUCT_MANAGER: "moonshotai/kimi-k2.6:free",
+  DESIGNER: "sourceful/riverflow-v2.5-pro:free",
+  MARKETING_MANAGER: "sourceful/riverflow-v2.5-pro:free",
+  SOCIAL_MEDIA_CREATOR: "sourceful/riverflow-v2.5-pro:free",
+  // Aliases for legacy system roles
+  VISION_AGENT: "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+  PARSER: "openrouter/owl-alpha",
+} as const;

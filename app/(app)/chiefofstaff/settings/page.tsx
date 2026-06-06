@@ -16,6 +16,7 @@ interface AppSettings {
   discordWebhookUrl: string;
   telegramBotToken: string;
   telegramChatId: string;
+  telegramUsername: string;
   googleAccessToken?: string;
   googleRefreshToken?: string;
   geminiApiKey: string;
@@ -35,100 +36,29 @@ const DEFAULTS: AppSettings = {
   discordWebhookUrl: "",
   telegramBotToken: "",
   telegramChatId: "",
+  telegramUsername: "",
   geminiApiKey: "",
   openrouterApiKey: "",
   username: "",
   pingFrequency: 30,
 };
 
-// ─── Section ──────────────────────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function Section({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description?: string;
-  children: React.ReactNode;
-}) {
+function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <div className="rounded-2xl border border-border bg-card/50 p-5 backdrop-blur-xl sm:p-6">
-      <div className="mb-4 border-b border-border pb-4">
-        <h2 className="text-base font-semibold text-foreground">{title}</h2>
-        {description && (
-          <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
-        )}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-function TimeField({
-  label,
-  value,
-  onChange,
-  hint,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  hint?: string;
-}) {
-  return (
-    <div>
-      <label className="mb-1 block text-xs font-medium text-muted-foreground">
-        {label}
-      </label>
-      <input
-        type="time"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="rounded-xl border border-border bg-background/50 px-4 py-2.5 text-sm text-foreground focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
+    <div className="relative inline-block w-12 align-middle select-none transition duration-200 ease-in">
+      <input 
+        type="checkbox" 
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className={"absolute block w-6 h-6 rounded bg-white dark:bg-surface border-[3px] border-black dark:border-outline-variant/50 appearance-none cursor-pointer z-10 transition-all top-[2px] shadow-[0_2px_0_0_#000] dark:shadow-none " + (checked ? "right-[2px]" : "right-[26px]")}
       />
-      {hint && <p className="mt-1 text-[10px] text-muted-foreground/60">{hint}</p>}
-    </div>
-  );
-}
-
-function Toggle({
-  label,
-  description,
-  checked,
-  onChange,
-}: {
-  label: string;
-  description?: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}) {
-  return (
-    <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl border border-border/50 bg-background/20 px-4 py-3.5 transition-colors hover:bg-background/30">
-      <div>
-        <p className="text-sm font-medium text-foreground">{label}</p>
-        {description && (
-          <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
-        )}
-      </div>
-      {/* Toggle switch */}
-      <div
-        className={`relative flex-shrink-0 h-6 w-11 rounded-full border transition-all duration-200 ${
-          checked
-            ? "border-primary/40 bg-primary/30"
-            : "border-border bg-background/50"
-        }`}
+      <div 
+        className={"block overflow-hidden h-7 rounded border-[3px] border-black dark:border-outline-variant/50 cursor-pointer transition-colors shadow-[0_2px_0_0_#000] dark:shadow-none " + (checked ? "bg-[#06D6A0] dark:bg-primary" : "bg-gray-300 dark:bg-surface-container-high")}
         onClick={() => onChange(!checked)}
-      >
-        <div
-          className={`absolute top-0.5 h-5 w-5 rounded-full border shadow transition-all duration-200 ${
-            checked
-              ? "left-[22px] border-primary bg-primary"
-              : "left-0.5 border-border bg-muted-foreground/40"
-          }`}
-        />
-      </div>
-    </label>
+      ></div>
+    </div>
   );
 }
 
@@ -141,6 +71,7 @@ export default function SettingsPage() {
   const [testing, setTesting] = useState<"discord" | "telegram" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
+  
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken" | "invalid">("idle");
   const [usernameInput, setUsernameInput] = useState("");
 
@@ -173,21 +104,14 @@ export default function SettingsPage() {
 
   useEffect(() => {
     fetchSettings();
-    
-    // Handle redirect errors from OAuth
     const params = new URLSearchParams(window.location.search);
     const err = params.get("error");
     const success = params.get("success");
     if (err) toast.error("Google Auth Failed", { description: err.replace(/_/g, " ") });
     if (success === "google_connected") toast.success("Google Calendar connected successfully!");
-    
-    // Clean up URL
-    if (err || success) {
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
+    if (err || success) window.history.replaceState({}, document.title, window.location.pathname);
   }, []);
 
-  // Check username availability with debounce
   useEffect(() => {
     if (!usernameInput || usernameInput === settings.username) {
       setUsernameStatus("idle");
@@ -221,22 +145,14 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(settings),
       });
-
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: "Unknown error" }));
         throw new Error(err.error ?? `HTTP ${res.status}`);
       }
-
       setIsDirty(false);
-      toast.success("Settings saved successfully", {
-        description: "Your preferences have been updated.",
-        duration: 3000,
-      });
+      toast.success("Settings saved successfully");
     } catch (e) {
-      toast.error("Failed to save settings", {
-        description: (e as Error).message,
-        duration: 5000,
-      });
+      toast.error("Failed to save settings", { description: (e as Error).message });
     } finally {
       setSaving(false);
     }
@@ -251,28 +167,19 @@ export default function SettingsPage() {
         payload.token = settings.telegramBotToken;
         payload.chatId = settings.telegramChatId;
       }
-      
       const res = await fetch("/api/settings/test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
-      
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to test integration");
-      
       toast.success("Test Successful", { description: data.message });
     } catch (e: any) {
       toast.error("Test Failed", { description: e.message });
     } finally {
       setTesting(null);
     }
-  }
-
-  function handleReset() {
-    setSettings(DEFAULTS);
-    setIsDirty(true);
-    toast.info("Settings reset to defaults", { duration: 2000 });
   }
 
   async function handleDisconnectGoogle() {
@@ -294,485 +201,359 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background px-4 py-8 sm:px-8">
-      {/* ── Header ── */}
-      <div className="mb-8 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Settings</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Customize your Productivity Nexus experience
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleReset}
-            className="rounded-xl border border-border bg-transparent px-4 py-2 text-sm text-muted-foreground hover:bg-white/5 hover:text-foreground transition-colors"
-          >
-            Reset
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving || !isDirty}
-            className={`relative flex items-center gap-2 rounded-xl border px-5 py-2 text-sm font-medium transition-all ${
-              isDirty
-                ? "border-primary/40 bg-primary/15 text-primary hover:bg-primary/25"
-                : "border-border bg-transparent text-muted-foreground opacity-60 cursor-not-allowed"
-            } disabled:opacity-50`}
-          >
-            {saving ? (
-              <>
-                <span className="h-3.5 w-3.5 animate-spin rounded-full border border-primary border-t-transparent" />
-                Saving…
-              </>
-            ) : (
-              <>
-                {isDirty && (
-                  <span className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-primary" />
-                )}
-                Save Settings
-              </>
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* ── Error ── */}
-      {error && (
-        <div className="mb-6 flex items-center justify-between rounded-2xl border border-amber-500/20 bg-amber-500/10 px-5 py-4 text-amber-400">
-          <span className="text-sm">⚠️ Could not load settings — showing defaults. {error}</span>
-          <button
-            onClick={fetchSettings}
-            className="rounded-lg border border-amber-500/20 px-3 py-1 text-xs hover:bg-amber-500/20"
-          >
-            Retry
-          </button>
-        </div>
-      )}
-
-      {/* ── Loading ── */}
-      {loading ? (
-        <div className="space-y-6">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="rounded-2xl border border-border bg-card/50 p-6 animate-pulse">
-              <div className="mb-4 border-b border-border pb-4">
-                <div className="h-4 w-32 rounded bg-white/10" />
+    <div className="flex-1 overflow-y-auto page-enter px-4 md:px-8 py-8 custom-scrollbar">
+      <div className="max-w-container-max mx-auto flex flex-col gap-8 md:gap-12">
+        
+        {/* Header Area */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-2">
+          <header className="flex flex-col gap-3">
+            <h1 className="text-[28px] font-heading font-black text-black dark:text-on-surface uppercase tracking-widest flex items-center gap-3 drop-shadow-[0_2px_0_rgba(0,0,0,0.1)] dark:drop-shadow-none">
+              <div className="w-10 h-10 rounded-xl bg-[#FFD166] dark:bg-surface-container flex items-center justify-center border-[2px] border-black dark:border-outline-variant/30 shadow-[0_2px_0_0_#000] dark:shadow-none shrink-0">
+                <span className="material-symbols-outlined text-black dark:text-primary text-[20px]">settings</span>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                {[...Array(2)].map((_, j) => (
-                  <div key={j} className="space-y-1.5">
-                    <div className="h-3 w-20 rounded bg-white/10" />
-                    <div className="h-9 w-32 rounded-xl bg-white/10" />
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {/* ── Username / Profile ── */}
-          <Section
-            title="Your Profile"
-            description="Your @username is how family members assign tasks to you on the Family Board"
-          >
-            <div className="space-y-3">
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Username</label>
-                <div className="flex items-center gap-2">
-                  <div className={`flex items-center gap-2 flex-1 rounded-xl border px-4 py-2.5 transition-colors ${
-                    usernameStatus === "available" ? "border-emerald-500/50 bg-emerald-500/5"
-                    : usernameStatus === "taken" ? "border-red-500/50 bg-red-500/5"
-                    : usernameStatus === "invalid" ? "border-yellow-500/50 bg-yellow-500/5"
-                    : "border-border bg-card/30"
-                  }`}>
-                    <span className="text-white/40 font-bold text-sm">@</span>
-                    <input
-                      value={usernameInput}
-                      onChange={e => setUsernameInput(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
-                      placeholder="your_username"
-                      maxLength={20}
-                      className="flex-1 bg-transparent text-sm text-white placeholder-white/20 outline-none"
-                    />
-                    {usernameStatus === "checking" && <span className="text-[10px] text-white/30">Checking...</span>}
-                    {usernameStatus === "available" && <span className="text-[10px] text-emerald-400 font-bold">✓ Available</span>}
-                    {usernameStatus === "taken" && <span className="text-[10px] text-red-400 font-bold">✗ Taken</span>}
-                    {usernameStatus === "invalid" && <span className="text-[10px] text-yellow-400">3+ chars</span>}
-                  </div>
-                  <button
-                    disabled={usernameStatus !== "available" || saving}
-                    onClick={async () => {
-                      setSaving(true);
-                      try {
-                        const res = await fetch("/api/settings", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ username: usernameInput }),
-                        });
-                        const data = await res.json();
-                        if (!res.ok) throw new Error(data.error);
-                        setSettings(prev => ({ ...prev, username: usernameInput }));
-                        setUsernameStatus("idle");
-                        toast.success(`Username set to @${usernameInput}!`);
-                      } catch(e: any) {
-                        toast.error(e.message);
-                      } finally { setSaving(false); }
-                    }}
-                    className="px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold transition-colors shrink-0"
-                  >
-                    Set
-                  </button>
-                </div>
-                {settings.username && (
-                  <p className="mt-1.5 text-xs text-white/40">Current: <span className="text-violet-400 font-medium">@{settings.username}</span></p>
-                )}
-                <p className="mt-1 text-xs text-white/25">3-20 characters, letters, numbers, underscores only.</p>
-              </div>
-            </div>
-          </Section>
-
-          {/* ── Workday Hours ──*/}
-          <Section
-            title="Workday Hours"
-            description="Define your working hours for scheduling and focus blocks"
-          >
-            <div className="flex flex-wrap gap-6">
-              <TimeField
-                label="Start Time"
-                value={settings.workdayStart}
-                onChange={(v) => update("workdayStart", v)}
-                hint="When your workday begins"
-              />
-              <TimeField
-                label="End Time"
-                value={settings.workdayEnd}
-                onChange={(v) => update("workdayEnd", v)}
-                hint="When your workday ends"
-              />
-            </div>
-          </Section>
-
-          {/* ── Quiet Hours ── */}
-          <Section
-            title="Quiet Hours"
-            description="Suppress notifications during these hours"
-          >
-            <div className="flex flex-wrap gap-6">
-              <TimeField
-                label="Quiet Hours Start"
-                value={settings.quietHoursStart}
-                onChange={(v) => update("quietHoursStart", v)}
-                hint="Notifications pause at this time"
-              />
-              <TimeField
-                label="Quiet Hours End"
-                value={settings.quietHoursEnd}
-                onChange={(v) => update("quietHoursEnd", v)}
-                hint="Notifications resume at this time"
-              />
-            </div>
-
-            {/* Visual preview */}
-            <div className="mt-4 rounded-xl border border-border/50 bg-background/20 px-4 py-3">
-              <p className="text-xs text-muted-foreground">
-                🔕 Notifications will be silenced from{" "}
-                <span className="font-medium text-foreground">{settings.quietHoursStart}</span> to{" "}
-                <span className="font-medium text-foreground">{settings.quietHoursEnd}</span>
-              </p>
-            </div>
-          </Section>
-
-          {/* ── Preferences ── */}
-          <Section
-            title="Preferences"
-            description="Toggle features and notification behaviors"
-          >
-            <div className="space-y-3">
-              <Toggle
-                label="Focus Mode"
-                description="Block distracting notifications during focus sessions"
-                checked={settings.focusModeEnabled}
-                onChange={(v) => update("focusModeEnabled", v)}
-              />
-              <Toggle
-                label="Scheduled Updates"
-                description="Receive a brief digest of your schedule regularly"
-                checked={settings.hourlyUpdatesEnabled}
-                onChange={(v) => update("hourlyUpdatesEnabled", v)}
-              />
-              
-              {settings.hourlyUpdatesEnabled && (
-                <div className="rounded-xl border border-border/50 bg-background/20 px-4 py-3.5 mt-2 transition-all">
-                  <label className="mb-2 block text-sm font-medium text-foreground">
-                    Update Frequency
-                  </label>
-                  <select
-                    value={settings.pingFrequency}
-                    onChange={(e) => update("pingFrequency", parseInt(e.target.value))}
-                    className="w-full rounded-lg border border-border bg-background/50 px-3 py-2 text-sm text-foreground focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
-                  >
-                    <option value={15}>Every 15 minutes</option>
-                    <option value={30}>Every 30 minutes</option>
-                    <option value={60}>Every 1 hour</option>
-                    <option value={120}>Every 2 hours</option>
-                    <option value={240}>Every 4 hours</option>
-                  </select>
-                </div>
-              )}
-            </div>
-          </Section>
-
-          {/* ── Timezone ── */}
-          <Section
-            title="Timezone"
-            description="Affects how events and tasks are displayed and scheduled"
-          >
-            <div className="max-w-sm">
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
-                Timezone
-              </label>
-              <input
-                type="text"
-                value={settings.timezone}
-                onChange={(e) => update("timezone", e.target.value)}
-                placeholder="e.g. America/New_York"
-                className="w-full rounded-xl border border-border bg-background/50 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
-              />
-              <p className="mt-1.5 text-[10px] text-muted-foreground/60">
-                Detected: {Intl.DateTimeFormat().resolvedOptions().timeZone}
-              </p>
-            </div>
-
-            {/* Common timezones */}
-            <div className="mt-3 flex flex-wrap gap-2">
-              {[
-                "UTC",
-                "America/New_York",
-                "America/Los_Angeles",
-                "Europe/London",
-                "Europe/Berlin",
-                "Asia/Tokyo",
-                "Asia/Kolkata",
-              ].map((tz) => (
-                <button
-                  key={tz}
-                  onClick={() => update("timezone", tz)}
-                  className={`rounded-lg border px-2.5 py-1 text-xs transition-colors ${
-                    settings.timezone === tz
-                      ? "border-primary/30 bg-primary/15 text-primary"
-                      : "border-border bg-transparent text-muted-foreground hover:text-foreground hover:bg-white/5"
-                  }`}
-                >
-                  {tz}
-                </button>
-              ))}
-            </div>
-          </Section>
-
-          {/* ── AI Configuration ── */}
-          <Section
-            title="AI Configuration"
-            description="Your personal Gemini API key powers Restia, your AI Chief of Staff"
-          >
-            <div className="max-w-md">
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-xs font-medium text-muted-foreground">
-                  Gemini API Key
-                </label>
-                <a
-                  href="https://aistudio.google.com/apikey"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[10px] text-primary hover:underline"
-                >
-                  Get your free key →
-                </a>
-              </div>
-              <input
-                type="password"
-                value={settings.geminiApiKey}
-                onChange={(e) => update("geminiApiKey", e.target.value)}
-                placeholder="AIzaSy..."
-                className="w-full rounded-xl border border-border bg-background/50 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
-              />
-              <p className="mt-1.5 text-[10px] text-muted-foreground/60">
-                Required for AI assistant, Telegram bot, hourly updates, and text-to-speech.
-              </p>
-              {!settings.geminiApiKey && (
-                <div className="mt-3 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-400">
-                  ⚠️ No API key set — AI features are currently disabled.
-                </div>
-              )}
-            </div>
-            
-            <div className="mt-6 pt-4 border-t border-border/50 max-w-md">
-              <div className="mb-2 flex items-center justify-between">
-                <label className="block text-xs font-medium text-muted-foreground">
-                  OpenRouter API Key
-                </label>
-                <a
-                  href="https://openrouter.ai/keys"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[10px] text-primary hover:underline"
-                >
-                  Get your key &rarr;
-                </a>
-              </div>
-              <input
-                type="password"
-                value={settings.openrouterApiKey}
-                onChange={(e) => update("openrouterApiKey", e.target.value)}
-                placeholder="sk-or-v1-..."
-                className="w-full rounded-xl border border-border bg-background/50 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
-              />
-              <p className="mt-1.5 text-[10px] text-muted-foreground/60">
-                Powers tasks parsing and telegram conversational features.
-              </p>
-            </div>
-          </Section>
-
-          {/* ── Integrations ── */}
-          <Section
-            title="Integrations & Notifications"
-            description="Configure external services to receive scheduled pings"
-          >
-            <div className="space-y-4 max-w-md">
-              <div className="mb-4">
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-xs font-medium text-muted-foreground">
-                    Discord Webhook URL
-                  </label>
-                  <button 
-                    onClick={() => handleTest("discord")}
-                    disabled={testing === "discord" || !settings.discordWebhookUrl}
-                    className="text-[10px] text-primary hover:underline disabled:opacity-50 disabled:no-underline"
-                  >
-                    {testing === "discord" ? "Testing..." : "Test Connection"}
-                  </button>
-                </div>
-                <input
-                  type="text"
-                  value={settings.discordWebhookUrl}
-                  onChange={(e) => update("discordWebhookUrl", e.target.value)}
-                  placeholder="https://discord.com/api/webhooks/..."
-                  className="w-full rounded-xl border border-border bg-background/50 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
-                />
-              </div>
-
-              <div className="pt-2 border-t border-border/50">
-                <div className="flex items-center justify-between mb-1 mt-2">
-                  <label className="block text-xs font-medium text-muted-foreground">
-                    Telegram Bot Token
-                  </label>
-                  <button 
-                    onClick={() => handleTest("telegram")}
-                    disabled={testing === "telegram" || !settings.telegramBotToken}
-                    className="text-[10px] text-primary hover:underline disabled:opacity-50 disabled:no-underline"
-                  >
-                    {testing === "telegram" ? "Registering & Testing..." : "Set Webhook & Test"}
-                  </button>
-                </div>
-                <input
-                  type="text"
-                  value={settings.telegramBotToken}
-                  onChange={(e) => update("telegramBotToken", e.target.value)}
-                  placeholder="123456789:ABCdef..."
-                  className="w-full rounded-xl border border-border bg-background/50 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30 mb-3"
-                />
-                <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                  Telegram Chat ID
-                </label>
-                <input
-                  type="text"
-                  value={settings.telegramChatId}
-                  onChange={(e) => update("telegramChatId", e.target.value)}
-                  placeholder="Your chat ID..."
-                  className="w-full rounded-xl border border-border bg-background/50 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
-                />
-              </div>
-            </div>
-          </Section>
-
-          {/* ── Google Calendar ── */}
-          <Section
-            title="Google Calendar"
-            description="Sync tasks and events with your Google account"
-          >
-            <div className="flex items-center justify-between p-4 rounded-xl border border-border/50 bg-background/20 max-w-md">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 p-2">
-                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M21 5.5H3V19C3 19.55 3.45 20 4 20H20C20.55 20 21 19.55 21 19V5.5Z" fill="#F4B400"/>
-                    <path d="M21 5.5H3V11H21V5.5Z" fill="#4285F4"/>
-                    <path d="M21 5.5H3V8.5H21V5.5Z" fill="#DB4437"/>
-                    <path d="M15 8.5H3V5.5C3 4.95 3.45 4.5 4 4.5H20C20.55 4.5 21 4.95 21 5.5V8.5H15Z" fill="#0F9D58"/>
-                  </svg>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">Google Calendar</p>
-                  <p className="text-xs text-muted-foreground">
-                    {settings.googleAccessToken ? "Connected and syncing" : "Not connected"}
-                  </p>
-                </div>
-              </div>
-              
-              {settings.googleAccessToken ? (
-                <button
-                  onClick={handleDisconnectGoogle}
-                  className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-500/20 transition-colors"
-                >
-                  Disconnect
-                </button>
-              ) : (
-                <a
-                  href="/api/auth/google"
-                  className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-                >
-                  Connect Google
-                </a>
-              )}
-            </div>
-          </Section>
-
-          {/* ── Summary card ── */}
-          <div className="rounded-2xl border border-border/30 bg-card/30 p-5 backdrop-blur">
-            <h3 className="mb-3 text-xs font-medium uppercase tracking-widest text-muted-foreground">
-              Current Configuration
-            </h3>
-            <div className="grid grid-cols-2 gap-x-8 gap-y-2.5 text-sm sm:grid-cols-3">
-              {[
-                { label: "Workday", value: `${settings.workdayStart} – ${settings.workdayEnd}` },
-                { label: "Quiet Hours", value: `${settings.quietHoursStart} – ${settings.quietHoursEnd}` },
-                { label: "Timezone", value: settings.timezone },
-                { label: "Focus Mode", value: settings.focusModeEnabled ? "On ✓" : "Off" },
-                { label: "Hourly Updates", value: settings.hourlyUpdatesEnabled ? "On ✓" : "Off" },
-              ].map(({ label, value }) => (
-                <div key={label}>
-                  <p className="text-xs text-muted-foreground">{label}</p>
-                  <p className="mt-0.5 text-sm font-medium text-foreground">{value}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Bottom save bar (sticky) ── */}
-      {isDirty && !loading && (
-        <div className="fixed bottom-6 left-1/2 z-40 -translate-x-1/2">
-          <div className="flex items-center gap-3 rounded-2xl border border-border bg-card/90 px-5 py-3 shadow-2xl backdrop-blur-xl">
-            <span className="text-sm text-muted-foreground">You have unsaved changes</span>
+              System Configuration
+            </h1>
+            <p className="text-black dark:text-on-surface-variant font-bold">
+              Manage global integrations, synchronization parameters, and ambient environment settings.
+            </p>
+          </header>
+          
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => { setSettings(DEFAULTS); setIsDirty(true); }}
+              className="text-black dark:text-on-surface font-black uppercase tracking-widest text-[10px] border-b-[2px] border-black dark:border-on-surface hover:bg-gray-100 dark:hover:bg-surface-container transition-colors pb-0.5 px-1"
+            >
+              Reset to Defaults
+            </button>
             <button
               onClick={handleSave}
-              disabled={saving}
-              className="rounded-xl border border-primary/40 bg-primary/20 px-4 py-1.5 text-sm font-medium text-primary hover:bg-primary/30 transition-colors disabled:opacity-50"
+              disabled={saving || !isDirty}
+              className={"h-[48px] px-6 rounded-xl font-black uppercase tracking-widest text-[12px] border-[2px] border-black dark:border-transparent transition-all flex items-center justify-center gap-2 min-w-[140px] " + (
+                isDirty
+                  ? "bg-[#3E85E4] dark:bg-primary text-white dark:text-on-primary shadow-[0_4px_0_0_#000] dark:shadow-sm hover:translate-y-1 hover:shadow-[0_2px_0_0_#000] dark:hover:shadow-md"
+                  : "bg-gray-300 dark:bg-surface-container-high text-gray-500 dark:text-on-surface-variant opacity-50 cursor-not-allowed shadow-[0_2px_0_0_#000] dark:shadow-none"
+              )}
             >
-              {saving ? "Saving…" : "Save now"}
+              {saving ? <span className="material-symbols-outlined animate-spin text-[16px]">sync</span> : <span className="material-symbols-outlined text-[16px]">save</span>}
+              Deploy Config
             </button>
           </div>
         </div>
-      )}
+
+        {error && (
+          <div className="bg-[#EF476F] dark:bg-error border-[3px] border-black dark:border-transparent rounded-xl p-4 flex items-center justify-between text-white dark:text-on-error font-black uppercase tracking-widest text-sm mb-4 shadow-[4px_4px_0_0_#000] dark:shadow-sm">
+            <span>{error}</span>
+            <button onClick={fetchSettings} className="border-[2px] border-black dark:border-transparent bg-white dark:bg-error-container text-black dark:text-on-error-container px-3 py-1 rounded-md hover:bg-gray-100 dark:hover:bg-error-container/80 transition-colors shadow-[0_2px_0_0_#000] dark:shadow-none hover:translate-y-1 hover:shadow-none">Retry</button>
+          </div>
+        )}
+
+        {loading ? (
+          <div className="p-12 flex justify-center text-primary">
+            <span className="material-symbols-outlined animate-spin text-[32px]">sync</span>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            {/* Left Column (8 cols) */}
+            <div className="lg:col-span-8 flex flex-col gap-8">
+              
+              {/* Integrations */}
+              <div className="bg-white dark:bg-surface border-[3px] border-black dark:border-outline-variant/20 rounded-[32px] p-6 lg:p-8 shadow-[8px_8px_0_0_#000] dark:shadow-sm">
+                <h2 className="font-heading text-xl font-black text-black dark:text-on-surface uppercase tracking-widest mb-6 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-black dark:text-primary text-xl">cable</span>
+                  External Integrations
+                </h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Discord */}
+                  <div className="bg-gray-100 dark:bg-surface-container border-[3px] border-black dark:border-transparent rounded-[24px] p-4 flex flex-col justify-between h-full group hover:-translate-y-1 transition-transform shadow-[0_4px_0_0_#000] dark:shadow-none hover:shadow-[0_2px_0_0_#000] dark:hover:shadow-sm">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-[#5865F2] border-[2px] border-black dark:border-transparent flex items-center justify-center shadow-[0_2px_0_0_#000] dark:shadow-none">
+                          <span className="material-symbols-outlined text-white">forum</span>
+                        </div>
+                        <div>
+                          <h3 className="font-heading text-sm font-black text-black dark:text-on-surface uppercase tracking-widest">Discord Webhook</h3>
+                          <p className="font-bold text-[10px] uppercase text-gray-500 dark:text-on-surface-variant">Alerts & Logging</p>
+                        </div>
+                      </div>
+                      <div className={"flex items-center gap-1.5 px-2 py-1 rounded-md border-[2px] border-black dark:border-transparent shadow-[0_2px_0_0_#000] dark:shadow-none " + (settings.discordWebhookUrl ? "bg-[#06D6A0] dark:bg-primary" : "bg-white dark:bg-surface")}>
+                        <span className={"w-2 h-2 rounded-full border-[1px] border-black dark:border-transparent " + (settings.discordWebhookUrl ? "bg-white dark:bg-on-primary animate-pulse" : "bg-gray-300 dark:bg-surface-container-highest")}></span>
+                        <span className={"font-bold text-[10px] uppercase tracking-widest " + (settings.discordWebhookUrl ? "text-black dark:text-on-primary" : "text-gray-400 dark:text-on-surface-variant")}>
+                          {settings.discordWebhookUrl ? 'Configured' : 'Offline'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-3 mt-auto pt-4 border-t-[3px] border-black dark:border-outline-variant/20">
+                      <input
+                        type="password"
+                        value={settings.discordWebhookUrl}
+                        onChange={e => update("discordWebhookUrl", e.target.value)}
+                        placeholder="Webhook URL..."
+                        className="bg-white dark:bg-surface border-[2px] border-black dark:border-outline-variant/30 rounded-xl px-4 h-[40px] text-[13px] w-full focus:outline-none shadow-inner dark:shadow-none dark:text-on-surface"
+                      />
+                      <div className="flex justify-end">
+                        <button 
+                          onClick={() => handleTest("discord")} 
+                          disabled={!settings.discordWebhookUrl || testing === "discord"}
+                          className="font-black uppercase tracking-widest text-black dark:text-primary hover:text-[#3E85E4] dark:hover:text-primary/80 transition-colors text-[10px] disabled:opacity-50"
+                        >
+                          {testing === "discord" ? "Testing..." : "Test Connection"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Telegram */}
+                  <div className="bg-gray-100 dark:bg-surface-container border-[3px] border-black dark:border-transparent rounded-[24px] p-4 flex flex-col justify-between h-full group hover:-translate-y-1 transition-transform shadow-[0_4px_0_0_#000] dark:shadow-none hover:shadow-[0_2px_0_0_#000] dark:hover:shadow-sm">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-[#2AABEE] border-[2px] border-black dark:border-transparent flex items-center justify-center shadow-[0_2px_0_0_#000] dark:shadow-none">
+                          <span className="material-symbols-outlined text-white">send</span>
+                        </div>
+                        <div>
+                          <h3 className="font-heading text-sm font-black text-black dark:text-on-surface uppercase tracking-widest">Telegram Bot</h3>
+                          <p className="font-bold text-[10px] uppercase text-gray-500 dark:text-on-surface-variant">Direct Commands</p>
+                        </div>
+                      </div>
+                      <div className={"flex items-center gap-1.5 px-2 py-1 rounded-md border-[2px] border-black dark:border-transparent shadow-[0_2px_0_0_#000] dark:shadow-none " + (settings.telegramBotToken ? "bg-[#06D6A0] dark:bg-primary" : "bg-white dark:bg-surface")}>
+                        <span className={"w-2 h-2 rounded-full border-[1px] border-black dark:border-transparent " + (settings.telegramBotToken ? "bg-white dark:bg-on-primary animate-pulse" : "bg-gray-300 dark:bg-surface-container-highest")}></span>
+                        <span className={"font-bold text-[10px] uppercase tracking-widest " + (settings.telegramBotToken ? "text-black dark:text-on-primary" : "text-gray-400 dark:text-on-surface-variant")}>
+                          {settings.telegramBotToken ? 'Configured' : 'Offline'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-3 mt-auto pt-4 border-t-[3px] border-black dark:border-outline-variant/20">
+                      <input
+                        type="password"
+                        value={settings.telegramBotToken}
+                        onChange={e => update("telegramBotToken", e.target.value)}
+                        placeholder="Bot Token..."
+                        className="bg-white dark:bg-surface border-[2px] border-black dark:border-outline-variant/30 rounded-xl px-4 h-[40px] text-[13px] w-full focus:outline-none shadow-inner dark:shadow-none dark:text-on-surface"
+                      />
+                      <input
+                        type="text"
+                        value={settings.telegramChatId}
+                        onChange={e => update("telegramChatId", e.target.value)}
+                        placeholder="Chat ID..."
+                        className="bg-white dark:bg-surface border-[2px] border-black dark:border-outline-variant/30 rounded-xl px-4 h-[40px] text-[13px] w-full focus:outline-none shadow-inner dark:shadow-none dark:text-on-surface"
+                      />
+                      <input
+                        type="text"
+                        value={settings.telegramUsername}
+                        onChange={e => update("telegramUsername", e.target.value)}
+                        placeholder="Username (optional)..."
+                        className="bg-white dark:bg-surface border-[2px] border-black dark:border-outline-variant/30 rounded-xl px-4 h-[40px] text-[13px] w-full focus:outline-none shadow-inner dark:shadow-none dark:text-on-surface"
+                      />
+                      <div className="flex justify-end mt-1">
+                        <button 
+                          onClick={() => handleTest("telegram")} 
+                          disabled={!settings.telegramBotToken || testing === "telegram"}
+                          className="font-black uppercase tracking-widest text-black dark:text-primary hover:text-[#3E85E4] dark:hover:text-primary/80 transition-colors text-[10px] disabled:opacity-50"
+                        >
+                          {testing === "telegram" ? "Testing..." : "Test Connection"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Google Calendar */}
+                  <div className="bg-gray-100 dark:bg-surface-container border-[3px] border-black dark:border-transparent rounded-[24px] p-4 flex flex-col justify-between h-full group hover:-translate-y-1 transition-transform md:col-span-2 shadow-[0_4px_0_0_#000] dark:shadow-none hover:shadow-[0_2px_0_0_#000] dark:hover:shadow-sm">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-[#4285F4] border-[2px] border-black dark:border-transparent flex items-center justify-center shadow-[0_2px_0_0_#000] dark:shadow-none">
+                          <span className="material-symbols-outlined text-white">calendar_month</span>
+                        </div>
+                        <div>
+                          <h3 className="font-heading text-sm font-black text-black dark:text-on-surface uppercase tracking-widest">Google Calendar</h3>
+                          <p className="font-bold text-[10px] uppercase text-gray-500 dark:text-on-surface-variant">Schedule Sync</p>
+                        </div>
+                      </div>
+                      <div className={"flex items-center gap-1.5 px-2 py-1 rounded-md border-[2px] border-black dark:border-transparent shadow-[0_2px_0_0_#000] dark:shadow-none " + (settings.googleAccessToken ? "bg-[#06D6A0] dark:bg-primary" : "bg-white dark:bg-surface")}>
+                        <span className={"w-2 h-2 rounded-full border-[1px] border-black dark:border-transparent " + (settings.googleAccessToken ? "bg-white dark:bg-on-primary" : "bg-gray-300 dark:bg-surface-container-highest")}></span>
+                        <span className={"font-bold text-[10px] uppercase tracking-widest " + (settings.googleAccessToken ? "text-black dark:text-on-primary" : "text-gray-400 dark:text-on-surface-variant")}>
+                          {settings.googleAccessToken ? 'Syncing' : 'Offline'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-end mt-auto pt-4 border-t-[3px] border-black dark:border-outline-variant/20">
+                      {settings.googleAccessToken ? (
+                        <button onClick={handleDisconnectGoogle} className="font-black text-[10px] uppercase tracking-widest bg-[#EF476F] dark:bg-error text-white dark:text-on-error border-[2px] border-black dark:border-transparent shadow-[0_2px_0_0_#000] dark:shadow-sm hover:translate-y-[2px] hover:shadow-none transition-all px-4 py-2 rounded-xl">Disconnect</button>
+                      ) : (
+                        <a href="/api/auth/google" className="font-black text-[10px] uppercase tracking-widest bg-white dark:bg-primary text-black dark:text-on-primary border-[2px] border-black dark:border-transparent shadow-[0_2px_0_0_#000] dark:shadow-sm hover:translate-y-[2px] hover:shadow-none transition-all px-4 py-2 rounded-xl">Connect Google</a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Profile & System Keys */}
+              {/* Profile & System Keys */}
+              <div className="bg-white dark:bg-surface border-[3px] border-black dark:border-outline-variant/20 rounded-[32px] p-6 lg:p-8 shadow-[8px_8px_0_0_#000] dark:shadow-sm">
+                <h2 className="font-heading text-xl font-black text-black dark:text-on-surface uppercase tracking-widest mb-6 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-black dark:text-primary text-xl">vpn_key</span>
+                  System Credentials
+                </h2>
+                
+                <div className="space-y-6">
+                  {/* Username */}
+                  <div>
+                    <label className="mb-2 block font-heading text-[10px] uppercase font-black tracking-widest text-black dark:text-on-surface">Operating Alias (Username)</label>
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-on-surface-variant font-bold">@</span>
+                        <input
+                          value={usernameInput}
+                          onChange={e => setUsernameInput(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
+                          className="w-full bg-white dark:bg-surface-container border-[2px] border-black dark:border-outline-variant/30 rounded-xl pl-8 pr-4 h-[48px] font-bold text-[15px] text-black dark:text-on-surface focus:outline-none shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] dark:shadow-none focus:border-[#FFD166] dark:focus:border-primary focus:ring-2 focus:ring-[#FFD166]/20 transition-all"
+                        />
+                      </div>
+                      <button
+                        disabled={usernameStatus !== "available" || saving}
+                        onClick={async () => {
+                          setSaving(true);
+                          try {
+                            const res = await fetch("/api/settings", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ username: usernameInput }),
+                            });
+                            const data = await res.json();
+                            if (!res.ok) throw new Error(data.error);
+                            setSettings(prev => ({ ...prev, username: usernameInput }));
+                            setUsernameStatus("idle");
+                            toast.success(`Username set to @${usernameInput}!`);
+                          } catch(e: any) {
+                            toast.error(e.message);
+                          } finally { setSaving(false); }
+                        }}
+                        className="px-4 py-2 h-[48px] rounded-xl bg-[#06D6A0] dark:bg-primary border-[2px] border-black dark:border-transparent text-black dark:text-on-primary font-black uppercase tracking-widest hover:translate-y-1 transition-all disabled:opacity-50 disabled:hover:translate-y-0 shadow-[0_4px_0_0_#000] dark:shadow-sm hover:shadow-[0_2px_0_0_#000] dark:hover:shadow-md disabled:shadow-none"
+                      >
+                        Set
+                      </button>
+                    </div>
+                    {usernameStatus === "available" && <p className="mt-1 text-xs text-[#06D6A0] font-bold">Available</p>}
+                    {usernameStatus === "taken" && <p className="mt-1 text-xs text-[#EF476F] font-bold">Taken</p>}
+                  </div>
+
+                  {/* Gemini Key */}
+                  <div>
+                    <label className="mb-2 block font-heading text-[10px] uppercase font-black tracking-widest text-black dark:text-on-surface">Gemini API Key</label>
+                    <input
+                      type="password"
+                      value={settings.geminiApiKey}
+                      onChange={e => update("geminiApiKey", e.target.value)}
+                      placeholder="AIzaSy..."
+                      className="w-full bg-white dark:bg-surface-container border-[2px] border-black dark:border-outline-variant/30 rounded-xl px-4 h-[48px] font-bold text-[15px] text-black dark:text-on-surface focus:outline-none shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] dark:shadow-none focus:border-[#FFD166] dark:focus:border-primary focus:ring-2 focus:ring-[#FFD166]/20 transition-all"
+                    />
+                  </div>
+
+                  {/* OpenRouter Key */}
+                  <div>
+                    <label className="mb-2 block font-heading text-[10px] uppercase font-black tracking-widest text-black dark:text-on-surface">OpenRouter API Key</label>
+                    <input
+                      type="password"
+                      value={settings.openrouterApiKey}
+                      onChange={e => update("openrouterApiKey", e.target.value)}
+                      placeholder="sk-or-v1-..."
+                      className="w-full bg-white dark:bg-surface-container border-[2px] border-black dark:border-outline-variant/30 rounded-xl px-4 h-[48px] font-bold text-[15px] text-black dark:text-on-surface focus:outline-none shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] dark:shadow-none focus:border-[#FFD166] dark:focus:border-primary focus:ring-2 focus:ring-[#FFD166]/20 transition-all"
+                    />
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Right Column (4 cols) */}
+            <div className="lg:col-span-4 flex flex-col gap-8">
+              
+              {/* Alert Routing */}
+              <div className="bg-[#9D4EDD] dark:bg-surface border-[3px] border-black dark:border-outline-variant/20 rounded-[32px] p-6 shadow-[8px_8px_0_0_#000] dark:shadow-sm">
+                <h2 className="font-heading text-xl font-black text-white dark:text-[#9D4EDD] uppercase tracking-widest mb-6 flex items-center gap-2 drop-shadow-[0_2px_0_#000] dark:drop-shadow-none">
+                  <span className="material-symbols-outlined text-white dark:text-[#9D4EDD] text-xl">notifications_active</span>
+                  Alert Routing
+                </h2>
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between bg-white dark:bg-surface-container border-[2px] border-black dark:border-transparent p-4 rounded-xl shadow-[0_4px_0_0_#000] dark:shadow-none">
+                    <div>
+                      <p className="font-heading font-black text-[14px] uppercase text-black dark:text-on-surface tracking-widest">Focus Mode</p>
+                      <p className="font-bold text-[10px] uppercase text-gray-500 dark:text-on-surface-variant">Suppress non-critical pings</p>
+                    </div>
+                    <Toggle checked={settings.focusModeEnabled} onChange={v => update("focusModeEnabled", v)} />
+                  </div>
+                  <div className="flex items-center justify-between bg-white dark:bg-surface-container border-[2px] border-black dark:border-transparent p-4 rounded-xl shadow-[0_4px_0_0_#000] dark:shadow-none">
+                    <div>
+                      <p className="font-heading font-black text-[14px] uppercase text-black dark:text-on-surface tracking-widest">Hourly Updates</p>
+                      <p className="font-bold text-[10px] uppercase text-gray-500 dark:text-on-surface-variant">Schedule summaries</p>
+                    </div>
+                    <Toggle checked={settings.hourlyUpdatesEnabled} onChange={v => update("hourlyUpdatesEnabled", v)} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Daemon Polling */}
+              <div className="bg-[#3E85E4] dark:bg-surface border-[3px] border-black dark:border-outline-variant/20 rounded-[32px] p-6 shadow-[8px_8px_0_0_#000] dark:shadow-sm">
+                <h2 className="font-heading text-xl font-black text-white dark:text-[#3E85E4] uppercase tracking-widest mb-6 flex items-center gap-2 drop-shadow-[0_2px_0_#000] dark:drop-shadow-none">
+                  <span className="material-symbols-outlined text-white dark:text-[#3E85E4] text-xl">cloud_sync</span>
+                  Daemon Polling
+                </h2>
+                <div className="mb-6 bg-white dark:bg-surface-container border-[2px] border-black dark:border-transparent p-4 rounded-xl shadow-[0_4px_0_0_#000] dark:shadow-none">
+                  <div className="flex justify-between items-end mb-4">
+                    <label className="font-heading font-black text-[12px] uppercase text-black dark:text-on-surface tracking-widest">Interval Frequency</label>
+                    <span className="font-black text-[14px] text-[#EF476F] dark:text-primary">{settings.pingFrequency} min</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min="15" 
+                    max="240" 
+                    step="15"
+                    value={settings.pingFrequency}
+                    onChange={e => update("pingFrequency", parseInt(e.target.value))}
+                    className="w-full accent-[#EF476F] dark:accent-primary"
+                  />
+                  <div className="flex justify-between mt-2 px-1">
+                    <span className="font-bold text-[10px] uppercase text-gray-400 dark:text-on-surface-variant">15m</span>
+                    <span className="font-bold text-[10px] uppercase text-gray-400 dark:text-on-surface-variant">4h</span>
+                  </div>
+                </div>
+                <div className="p-3 bg-white dark:bg-surface-container border-[2px] border-black dark:border-transparent rounded-xl flex items-start gap-3 shadow-[0_2px_0_0_#000] dark:shadow-none">
+                  <span className="material-symbols-outlined text-[#3E85E4] dark:text-primary text-sm mt-0.5">info</span>
+                  <p className="font-bold text-[10px] uppercase text-black dark:text-on-surface leading-relaxed">Lower intervals increase API consumption. Current rate limits allow for a minimum of 15m safely.</p>
+                </div>
+              </div>
+
+              {/* Ambient Environment */}
+              <div className="bg-[#EF476F] dark:bg-surface border-[3px] border-black dark:border-outline-variant/20 rounded-[32px] p-6 shadow-[8px_8px_0_0_#000] dark:shadow-sm">
+                <h2 className="font-heading text-xl font-black text-white dark:text-[#EF476F] uppercase tracking-widest mb-6 flex items-center gap-2 drop-shadow-[0_2px_0_#000] dark:drop-shadow-none">
+                  <span className="material-symbols-outlined text-white dark:text-[#EF476F] text-xl">schedule</span>
+                  Ambient Environment
+                </h2>
+                <div className="space-y-4 bg-white dark:bg-surface-container border-[2px] border-black dark:border-transparent p-4 rounded-xl shadow-[0_4px_0_0_#000] dark:shadow-none">
+                  <div>
+                    <label className="mb-2 block font-heading text-[10px] uppercase font-black tracking-widest text-black dark:text-on-surface">Workday Window</label>
+                    <div className="flex gap-2">
+                      <input type="time" value={settings.workdayStart} onChange={e => update("workdayStart", e.target.value)} className="w-full bg-white dark:bg-surface-container-high border-[2px] border-black dark:border-outline-variant/30 rounded-xl px-4 h-[40px] font-bold text-[13px] text-black dark:text-on-surface focus:outline-none shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] dark:shadow-none focus:border-[#FFD166] dark:focus:border-primary transition-all" />
+                      <input type="time" value={settings.workdayEnd} onChange={e => update("workdayEnd", e.target.value)} className="w-full bg-white dark:bg-surface-container-high border-[2px] border-black dark:border-outline-variant/30 rounded-xl px-4 h-[40px] font-bold text-[13px] text-black dark:text-on-surface focus:outline-none shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] dark:shadow-none focus:border-[#FFD166] dark:focus:border-primary transition-all" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-2 block font-heading text-[10px] uppercase font-black tracking-widest text-black dark:text-on-surface">Quiet Hours</label>
+                    <div className="flex gap-2">
+                      <input type="time" value={settings.quietHoursStart} onChange={e => update("quietHoursStart", e.target.value)} className="w-full bg-white dark:bg-surface-container-high border-[2px] border-black dark:border-outline-variant/30 rounded-xl px-4 h-[40px] font-bold text-[13px] text-black dark:text-on-surface focus:outline-none shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] dark:shadow-none focus:border-[#FFD166] dark:focus:border-primary transition-all" />
+                      <input type="time" value={settings.quietHoursEnd} onChange={e => update("quietHoursEnd", e.target.value)} className="w-full bg-white dark:bg-surface-container-high border-[2px] border-black dark:border-outline-variant/30 rounded-xl px-4 h-[40px] font-bold text-[13px] text-black dark:text-on-surface focus:outline-none shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] dark:shadow-none focus:border-[#FFD166] dark:focus:border-primary transition-all" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="mb-2 block font-heading text-[10px] uppercase font-black tracking-widest text-black dark:text-on-surface">Timezone</label>
+                    <input type="text" value={settings.timezone} onChange={e => update("timezone", e.target.value)} className="w-full bg-white dark:bg-surface-container-high border-[2px] border-black dark:border-outline-variant/30 rounded-xl px-4 h-[40px] font-bold text-[13px] text-black dark:text-on-surface focus:outline-none shadow-[inset_0_2px_4px_rgba(0,0,0,0.05)] dark:shadow-none focus:border-[#FFD166] dark:focus:border-primary transition-all" />
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

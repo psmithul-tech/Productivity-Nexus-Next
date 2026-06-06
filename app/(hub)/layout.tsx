@@ -13,7 +13,7 @@ export default async function HubLayout({ children }: { children: React.ReactNod
   if (!settings) redirect("/onboarding");
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white selection:bg-primary/30">
+    <div className="min-h-screen bg-background text-on-surface selection:bg-primary/30">
       <div className="p-4 sm:p-6 lg:p-8 min-h-screen">
         {children}
       </div>

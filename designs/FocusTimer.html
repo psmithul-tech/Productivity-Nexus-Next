@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Focus Timer - Restia OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                            "tertiary": "#f8f5f6",
+                            "primary-fixed": "#7df4ff",
+                            "on-primary-fixed-variant": "#004f54",
+                            "tertiary-fixed": "#e5e2e3",
+                            "on-background": "#e4e2e4",
+                            "on-error": "#690005",
+                            "primary-fixed-dim": "#00dbe9",
+                            "on-primary": "#00363a",
+                            "on-surface-variant": "#b9cacb",
+                            "on-tertiary": "#313031",
+                            "on-secondary-fixed": "#320047",
+                            "on-tertiary-fixed": "#1c1b1c",
+                            "primary": "#dbfcff",
+                            "tertiary-fixed-dim": "#c8c6c7",
+                            "error-container": "#93000a",
+                            "inverse-on-surface": "#303032",
+                            "on-tertiary-fixed-variant": "#474647",
+                            "secondary-fixed": "#f8d8ff",
+                            "on-primary-fixed": "#002022",
+                            "surface-container": "#1f1f21",
+                            "on-surface": "#e4e2e4",
+                            "on-tertiary-container": "#5f5e5f",
+                            "surface-container-high": "#2a2a2c",
+                            "error": "#ffb4ab",
+                            "tertiary-container": "#dbd8d9",
+                            "on-secondary-container": "#fff6fc",
+                            "primary-container": "#00f0ff",
+                            "surface-variant": "#353437",
+                            "on-primary-container": "#006970",
+                            "on-secondary": "#520072",
+                            "secondary-fixed-dim": "#ebb2ff",
+                            "inverse-primary": "#006970",
+                            "surface": "#131315",
+                            "outline": "#849495",
+                            "on-error-container": "#ffdad6",
+                            "on-secondary-fixed-variant": "#74009f",
+                            "secondary-container": "#b600f8",
+                            "surface-container-low": "#1b1b1d",
+                            "surface-container-lowest": "#0e0e10",
+                            "surface-tint": "#00dbe9",
+                            "outline-variant": "#3b494b",
+                            "surface-container-highest": "#353437",
+                            "surface-dim": "#131315",
+                            "surface-bright": "#39393b",
+                            "inverse-surface": "#e4e2e4",
+                            "secondary": "#ebb2ff",
+                            "background": "#131315"
+                    },
+                    "borderRadius": {
+                            "DEFAULT": "0.125rem",
+                            "lg": "0.25rem",
+                            "xl": "0.5rem",
+                            "full": "0.75rem"
+                    },
+                    "spacing": {
+                            "sm": "8px",
+                            "gutter": "16px",
+                            "unit": "4px",
+                            "container-max": "1440px",
+                            "xs": "4px",
+                            "xl": "48px",
+                            "md": "16px",
+                            "lg": "24px"
+                    },
+                    "fontFamily": {
+                            "data-metric": [
+                                    "JetBrains Mono"
+                            ],
+                            "mono-label": [
+                                    "JetBrains Mono"
+                            ],
+                            "headline-md": [
+                                    "Inter"
+                            ],
+                            "headline-sm": [
+                                    "Inter"
+                            ],
+                            "display-lg": [
+                                    "Inter"
+                            ],
+                            "body-sm": [
+                                    "Inter"
+                            ],
+                            "body-lg": [
+                                    "Inter"
+                            ]
+                    },
+                    "fontSize": {
+                            "data-metric": [
+                                    "14px",
+                                    {
+                                            "lineHeight": "1",
+                                            "fontWeight": "600"
+                                    }
+                            ],
+                            "mono-label": [
+                                    "12px",
+                                    {
+                                            "lineHeight": "1.2",
+                                            "letterSpacing": "0.05em",
+                                            "fontWeight": "500"
+                                    }
+                            ],
+                            "headline-md": [
+                                    "24px",
+                                    {
+                                            "lineHeight": "1.2",
+                                            "fontWeight": "600"
+                                    }
+                            ],
+                            "headline-sm": [
+                                    "18px",
+                                    {
+                                            "lineHeight": "1.4",
+                                            "fontWeight": "600"
+                                    }
+                            ],
+                            "display-lg": [
+                                    "48px",
+                                    {
+                                            "lineHeight": "1.1",
+                                            "letterSpacing": "-0.02em",
+                                            "fontWeight": "700"
+                                    }
+                            ],
+                            "body-sm": [
+                                    "14px",
+                                    {
+                                            "lineHeight": "1.5",
+                                            "fontWeight": "400"
+                                    }
+                            ],
+                            "body-lg": [
+                                    "16px",
+                                    {
+                                            "lineHeight": "1.6",
+                                            "fontWeight": "400"
+                                    }
+                            ]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #0A0A0B; color: #e4e2e4; }
+        .glass-panel {
+            background: rgba(22, 22, 24, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid #252527;
+        }
+        .glow-text { text-shadow: 0 0 10px rgba(0, 240, 255, 0.4); }
+        .glow-border { box-shadow: 0 0 10px rgba(0, 240, 255, 0.4); }
+        
+        /* Custom Progress Ring */
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+    </style>
+</head>
+<body class="font-body-sm text-body-sm antialiased min-h-screen flex selection:bg-primary-fixed/30 selection:text-primary-fixed">
+<!-- TopAppBar -->
+<div class="fixed left-0 top-0 h-16 w-full flex justify-between items-center px-lg bg-surface/40 dark:bg-surface/40 border-b border-outline-variant/20 backdrop-blur-md z-40 hidden md:flex ml-20 w-[calc(100%-80px)]">
+<div class="flex items-center gap-sm">
+<span class="font-headline-md text-headline-md text-primary-fixed font-bold tracking-tight">Restia OS</span>
+</div>
+<div class="flex items-center gap-gutter">
+<button aria-label="Notifications" class="text-on-surface-variant hover:text-primary-fixed hover:bg-surface-container-high/50 p-sm rounded transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">notifications</span>
+</button>
+<button aria-label="Apps" class="text-on-surface-variant hover:text-primary-fixed hover:bg-surface-container-high/50 p-sm rounded transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">apps</span>
+</button>
+<button aria-label="Account" class="text-on-surface-variant hover:text-primary-fixed hover:bg-surface-container-high/50 p-sm rounded transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">account_circle</span>
+</button>
+</div>
+</div>
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-full flex flex-col z-50 bg-surface/70 dark:bg-surface/70 border-r border-outline-variant/30 backdrop-blur-xl h-full w-20 hover:w-64 transition-all duration-300 ease-in-out group hidden md:flex">
+<div class="flex flex-col items-center pt-xl pb-gutter w-full overflow-hidden">
+<div class="h-10 w-10 rounded-full bg-surface-container-high border border-outline-variant/50 flex items-center justify-center mb-sm shrink-0">
+<span class="font-headline-sm text-headline-sm text-primary-fixed-dim tracking-tight">RO</span>
+</div>
+<div class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-center whitespace-nowrap hidden group-hover:block">
+<div class="font-headline-sm text-headline-sm text-primary-fixed-dim tracking-tight">Restia OS</div>
+<div class="font-mono-label text-mono-label text-on-surface-variant">v2.4.0</div>
+</div>
+</div>
+<div class="flex-1 flex flex-col gap-sm py-gutter px-sm w-full">
+<a class="flex items-center gap-gutter p-sm rounded-DEFAULT text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors w-full overflow-hidden" href="#">
+<span class="material-symbols-outlined shrink-0" style="font-variation-settings: 'FILL' 0;">dashboard</span>
+<span class="font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Dashboard</span>
+</a>
+<a class="flex items-center gap-gutter p-sm rounded-DEFAULT text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors w-full overflow-hidden" href="#">
+<span class="material-symbols-outlined shrink-0" style="font-variation-settings: 'FILL' 0;">analytics</span>
+<span class="font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Analytics</span>
+</a>
+<a class="flex items-center gap-gutter p-sm rounded-DEFAULT border-l-2 border-primary-fixed shadow-[0_0_10px_rgba(0,240,255,0.4)] text-primary-fixed bg-primary-fixed/5 w-full overflow-hidden" href="#">
+<span class="material-symbols-outlined shrink-0" style="font-variation-settings: 'FILL' 1;">extension</span>
+<span class="font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Modules</span>
+</a>
+<a class="flex items-center gap-gutter p-sm rounded-DEFAULT text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors w-full overflow-hidden" href="#">
+<span class="material-symbols-outlined shrink-0" style="font-variation-settings: 'FILL' 0;">lan</span>
+<span class="font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Network</span>
+</a>
+<a class="flex items-center gap-gutter p-sm rounded-DEFAULT text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors w-full overflow-hidden" href="#">
+<span class="material-symbols-outlined shrink-0" style="font-variation-settings: 'FILL' 0;">security</span>
+<span class="font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Security</span>
+</a>
+<a class="flex items-center gap-gutter p-sm rounded-DEFAULT text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors w-full overflow-hidden" href="#">
+<span class="material-symbols-outlined shrink-0" style="font-variation-settings: 'FILL' 0;">settings</span>
+<span class="font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Settings</span>
+</a>
+</div>
+<div class="mt-auto flex flex-col gap-sm py-gutter px-sm w-full border-t border-outline-variant/20">
+<a class="flex items-center gap-gutter p-sm rounded-DEFAULT text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors w-full overflow-hidden" href="#">
+<span class="material-symbols-outlined shrink-0" style="font-variation-settings: 'FILL' 0;">help</span>
+<span class="font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Help</span>
+</a>
+<a class="flex items-center gap-gutter p-sm rounded-DEFAULT text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors w-full overflow-hidden" href="#">
+<span class="material-symbols-outlined shrink-0" style="font-variation-settings: 'FILL' 0;">power_settings_new</span>
+<span class="font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Power</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-1 w-full md:ml-20 pt-16 min-h-screen flex flex-col relative overflow-hidden bg-[#0A0A0B]">
+<!-- Ambient Background Glow -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary-fixed/5 rounded-full blur-[100px] pointer-events-none"></div>
+<div class="flex-1 flex flex-col items-center justify-center p-lg md:p-xl z-10 relative">
+<!-- Context: Task Selector -->
+<div class="mb-xl w-full max-w-md">
+<div class="font-mono-label text-mono-label text-outline mb-sm uppercase tracking-widest text-center">Current Objective</div>
+<div class="glass-panel p-md rounded-lg flex items-center justify-between cursor-pointer hover:border-primary-fixed/50 transition-colors border-t-primary-fixed">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary-fixed text-[20px]" style="font-variation-settings: 'FILL' 0;">target</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">Architect Data Pipeline v3</span>
+</div>
+<span class="material-symbols-outlined text-outline" style="font-variation-settings: 'FILL' 0;">expand_more</span>
+</div>
+</div>
+<!-- Core: Digital Timer & Progress Ring -->
+<div class="relative w-[320px] h-[320px] md:w-[400px] md:h-[400px] flex items-center justify-center mb-xl">
+<!-- SVG Ring -->
+<svg class="absolute inset-0 w-full h-full drop-shadow-[0_0_15px_rgba(0,240,255,0.3)]" height="400" viewbox="0 0 400 400" width="400">
+<!-- Background Track -->
+<circle cx="200" cy="200" fill="transparent" r="180" stroke="#1f1f21" stroke-width="4"></circle>
+<!-- Progress Track -->
+<circle class="progress-ring__circle" cx="200" cy="200" fill="transparent" r="180" stroke="#7df4ff" stroke-dasharray="1130.97" stroke-dashoffset="200" stroke-linecap="round" stroke-width="6"></circle>
+</svg>
+<div class="text-center z-10 flex flex-col items-center">
+<div class="font-display-lg text-[80px] md:text-[120px] font-bold text-on-surface tracking-tighter leading-none glow-text font-data-metric">25:00</div>
+<div class="font-mono-label text-mono-label text-primary-fixed mt-unit uppercase tracking-[0.2em]">Deep Work Session</div>
+</div>
+</div>
+<!-- Controls: Play/Pause/Stop & Presets -->
+<div class="flex flex-col items-center gap-lg">
+<!-- Primary Actions -->
+<div class="flex items-center gap-gutter bg-surface-container-low p-sm rounded-full border border-outline-variant/30">
+<button class="w-12 h-12 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">stop</span>
+</button>
+<button class="w-16 h-16 rounded-full bg-surface-container-high border border-primary-fixed flex items-center justify-center text-primary-fixed hover:shadow-[0_0_15px_rgba(0,240,255,0.3)] transition-shadow">
+<span class="material-symbols-outlined text-[32px]" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</button>
+<button class="w-12 h-12 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">restart_alt</span>
+</button>
+</div>
+<!-- Presets -->
+<div class="flex items-center gap-sm">
+<button class="px-md py-sm rounded border border-primary-fixed text-primary-fixed font-data-metric text-data-metric bg-primary-fixed/10 hover:bg-primary-fixed/20 transition-colors">25m</button>
+<button class="px-md py-sm rounded border border-outline-variant text-on-surface-variant font-data-metric text-data-metric hover:border-outline hover:text-on-surface transition-colors">50m</button>
+<button class="px-md py-sm rounded border border-outline-variant text-on-surface-variant font-data-metric text-data-metric hover:border-outline hover:text-on-surface transition-colors">90m</button>
+</div>
+</div>
+</div>
+<!-- Footer: Summary & XP -->
+<div class="w-full glass-panel border-t border-outline-variant/20 p-md flex items-center justify-between md:px-xl">
+<div class="flex gap-lg">
+<div class="flex flex-col">
+<span class="font-mono-label text-mono-label text-outline uppercase">Sessions Today</span>
+<span class="font-data-metric text-data-metric text-on-surface mt-unit flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-primary-fixed shadow-[0_0_5px_rgba(0,240,255,0.5)]"></span>
+<span class="w-2 h-2 rounded-full bg-primary-fixed shadow-[0_0_5px_rgba(0,240,255,0.5)]"></span>
+<span class="w-2 h-2 rounded-full border border-outline-variant"></span>
+<span class="ml-xs">2 / 4</span>
+</span>
+</div>
+<div class="flex flex-col hidden md:flex">
+<span class="font-mono-label text-mono-label text-outline uppercase">Total Focus Time</span>
+<span class="font-data-metric text-data-metric text-on-surface mt-unit">1h 50m</span>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-mono-label text-mono-label text-outline uppercase">Daily XP</span>
+<div class="font-data-metric text-data-metric text-primary-fixed mt-unit flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">bolt</span>
+                    +450 XP
+                </div>
+</div>
+</div>
+</main>
+</body></html>

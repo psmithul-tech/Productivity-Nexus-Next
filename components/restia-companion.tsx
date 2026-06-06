@@ -46,6 +46,12 @@ export function RestiaCompanion() {
     }
   }, [messages, isOpen]);
 
+  // Keep latest pos in a ref for distance calculation without triggering effect re-run
+  const posRef = useRef(pos);
+  useEffect(() => {
+    posRef.current = pos;
+  }, [pos]);
+
   // Autonomous Roaming Logic
   useEffect(() => {
     if (!mounted || !isRoaming || isOpen) return;
@@ -66,10 +72,10 @@ export function RestiaCompanion() {
         const newY = Math.max(0, Math.min(Math.random() * maxY, maxY));
 
         // Calculate distance to determine duration (e.g. 150 pixels per second)
-        const dist = Math.sqrt(Math.pow(newX - pos.x, 2) + Math.pow(newY - pos.y, 2));
+        const dist = Math.sqrt(Math.pow(newX - posRef.current.x, 2) + Math.pow(newY - posRef.current.y, 2));
         const duration = Math.max(2, dist / 150); 
         
-        setFlipX(newX > pos.x);
+        setFlipX(newX > posRef.current.x);
         setMoveDuration(duration);
         setIsMoving(true);
         setPos({ x: newX, y: newY });
@@ -101,7 +107,7 @@ export function RestiaCompanion() {
     timeoutId = setTimeout(roamingLoop, 5000);
 
     return () => clearTimeout(timeoutId);
-  }, [mounted, isRoaming, isOpen, pos.x, pos.y]);
+  }, [mounted, isRoaming, isOpen]);
 
   // Determine animation class based on context + internal state
   let animClass = "restia-idle";

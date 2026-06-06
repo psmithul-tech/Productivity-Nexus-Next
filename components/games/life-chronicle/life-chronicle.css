@@ -1,0 +1,224 @@
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Nunito:wght@600;700;800;900&display=swap');
+
+:root {
+  --ca-bg: #fdfbf7; /* Very light warm gray/white */
+  --ca-panel: #fcfcfc; /* White for inner elements */
+  --ca-panel-dark: #171717; /* Dark grayish-black for cards */
+  --ca-border: #000000; /* Thick black borders */
+  
+  --ca-yellow: #facc15; /* Global Yellow Accent */
+  --ca-yellow-hover: #eab308;
+  
+  --ca-blue: #3E85E4; /* Global Blue */
+  --ca-blue-hover: #2968B9;
+  
+  --ca-red: #EF476F; /* Global Red/Pink */
+  --ca-red-hover: #D83A5D;
+
+  --ca-green: #06D6A0; /* Global Green */
+  --ca-green-hover: #05B586;
+
+  --ca-pink: #9D4EDD; /* Global Purple */
+  --ca-pink-hover: #7E3EAD;
+
+  --font-sans: 'Nunito', sans-serif;
+  --font-heading: 'Fredoka', sans-serif;
+}
+
+/* Force light mode variables even if .dark is applied by next-themes */
+.dark {
+  --ca-bg: #fdfbf7; 
+  --ca-panel: #fcfcfc;
+  --ca-panel-dark: #171717;
+  --ca-border: #000000;
+  
+  --ca-yellow: #facc15;
+  --ca-yellow-hover: #eab308;
+  --ca-blue: #3E85E4;
+  --ca-blue-hover: #2968B9;
+  --ca-red: #EF476F;
+  --ca-red-hover: #D83A5D;
+  --ca-green: #06D6A0;
+  --ca-green-hover: #05B586;
+  --ca-pink: #9D4EDD;
+  --ca-pink-hover: #7E3EAD;
+}
+
+/* Override utility classes in dark mode for game-wrapper to avoid mass rewriting game.tsx */
+.dark .game-wrapper .bg-white {
+    background-color: var(--ca-panel) !important;
+}
+.dark .game-wrapper .text-black {
+    color: var(--ca-border) !important;
+}
+.dark .game-wrapper .text-white {
+    color: #ffffff !important;
+}
+.dark .game-wrapper .bg-gray-100 {
+    background-color: #f3f4f6 !important;
+}
+.dark .game-wrapper .bg-gray-50 {
+    background-color: #f9fafb !important;
+}
+.dark .game-wrapper .text-gray-500 {
+    color: #6b7280 !important;
+}
+.dark .game-wrapper .border-black {
+    border-color: var(--ca-border) !important;
+}
+.dark .game-wrapper .border-\[2px\] {
+    border-color: var(--ca-border) !important;
+}
+.dark .game-wrapper .border-\[3px\] {
+    border-color: var(--ca-border) !important;
+}
+.dark .game-wrapper .shadow-\[0_2px_0_0_\#000\],
+.dark .game-wrapper .shadow-\[0_3px_0_0_\#000\],
+.dark .game-wrapper .shadow-\[0_4px_0_0_rgba\(0\,0\,0\,0\.1\)\],
+.dark .game-wrapper .shadow-\[2px_2px_0_0_rgba\(0\,0\,0\,0\.2\)\] {
+    box-shadow: 0 2px 0 0 var(--ca-border) !important;
+}
+
+/* Base class for the game wrapper */
+.game-wrapper {
+  background-color: var(--ca-bg);
+  background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
+  background-size: 20px 20px;
+  color: var(--ca-border);
+  font-family: var(--font-sans);
+  font-weight: 700;
+  height: 100%;
+}
+
+.game-wrapper h1, 
+.game-wrapper h2, 
+.game-wrapper h3, 
+.game-wrapper h4, 
+.game-wrapper h5 {
+  font-family: var(--font-heading);
+}
+
+/* ── Blocky Vector Panels ───────────────────────────────────────── */
+.block-panel {
+  background: var(--ca-panel);
+  border: 3px solid var(--ca-border);
+  border-radius: 12px;
+  color: var(--ca-border);
+  position: relative;
+  overflow: hidden;
+}
+
+.block-panel-light {
+  background: var(--ca-panel);
+  border: 3px solid var(--ca-border);
+  border-radius: 8px;
+  color: var(--ca-border);
+}
+
+.block-panel-dark {
+  background: var(--ca-panel-dark);
+  border: 3px solid var(--ca-border);
+  border-radius: 12px;
+  color: white;
+}
+
+/* ── Blocky Buttons ─────────────────────────────────────────────── */
+.block-btn {
+  border: 3px solid var(--ca-border);
+  border-radius: 8px;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 0 0 var(--ca-border);
+  transition: transform 0.1s, box-shadow 0.1s;
+  text-align: center;
+  user-select: none;
+}
+
+.block-btn:active, .block-btn:disabled {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 0 var(--ca-border);
+}
+
+.block-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.block-btn-blue {
+  background: var(--ca-blue);
+  color: white;
+  text-shadow: 1px 1px 0px rgba(0,0,0,0.5);
+}
+
+.block-btn-red {
+  background: var(--ca-red);
+  color: white;
+  text-shadow: 1px 1px 0px rgba(0,0,0,0.5);
+}
+
+.block-btn-green {
+  background: var(--ca-green);
+  color: white;
+  text-shadow: 1px 1px 0px rgba(0,0,0,0.5);
+}
+
+.block-btn-pink {
+  background: var(--ca-pink);
+  color: white;
+  font-size: 1.25rem;
+  border-radius: 12px;
+  text-shadow: 2px 2px 0px rgba(0,0,0,0.5);
+  box-shadow: inset 0 -4px 0 0 rgba(0,0,0,0.2), 0 4px 0 0 var(--ca-border);
+}
+.block-btn-pink:active {
+  box-shadow: inset 0 -4px 0 0 rgba(0,0,0,0.2), 0 0 0 0 var(--ca-border);
+}
+
+/* Progress Bars */
+.stat-bar-container {
+  background: rgba(0,0,0,0.3);
+  border: 2px solid var(--ca-border);
+  border-radius: 4px;
+  height: 12px;
+  display: flex;
+  overflow: hidden;
+  gap: 1px;
+}
+.stat-bar-segment {
+  flex: 1;
+  background: rgba(255,255,255,0.1);
+}
+.stat-bar-segment.filled-green { background: #4ADE80; }
+.stat-bar-segment.filled-blue { background: #60A5FA; }
+.stat-bar-segment.filled-red { background: #F87171; }
+.stat-bar-segment.filled-yellow { background: #FACC15; }
+.stat-bar-segment.filled-orange { background: #FB923C; }
+
+/* Custom Scrollbar for game wrapper */
+.game-wrapper ::-webkit-scrollbar { width: 6px; height: 6px; }
+.game-wrapper ::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); }
+.game-wrapper ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 4px; }
+.game-wrapper ::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.3); }
+
+/* Bottom Nav */
+.bottom-nav {
+  background: var(--ca-panel);
+  border-top: 3px solid var(--ca-border);
+}
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid transparent;
+  border-radius: 8px;
+  padding: 4px 0;
+  transition: all 0.2s;
+}
+.nav-item.active {
+  background: var(--ca-panel-light);
+  border-color: var(--ca-border);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 0 0 var(--ca-border);
+}

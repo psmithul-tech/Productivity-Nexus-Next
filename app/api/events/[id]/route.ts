@@ -24,6 +24,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { id } = await params;
   const body = await req.json();
   const updates: Record<string, unknown> = { ...body };
+  delete updates.id;
   if (body.startTime) updates.startTime = new Date(body.startTime);
   if (body.endTime) updates.endTime = new Date(body.endTime);
   const [event] = await db.update(eventsTable).set(updates).where(and(eq(eventsTable.id, parseInt(id)), eq(eventsTable.userId, user.id))).returning();

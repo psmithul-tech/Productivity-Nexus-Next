@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Restia OS - Utilities</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "tertiary": "#f8f5f6",
+                    "primary-fixed": "#7df4ff",
+                    "on-primary-fixed-variant": "#004f54",
+                    "tertiary-fixed": "#e5e2e3",
+                    "on-background": "#e4e2e4",
+                    "on-error": "#690005",
+                    "primary-fixed-dim": "#00dbe9",
+                    "on-primary": "#00363a",
+                    "on-surface-variant": "#b9cacb",
+                    "on-tertiary": "#313031",
+                    "on-secondary-fixed": "#320047",
+                    "on-tertiary-fixed": "#1c1b1c",
+                    "primary": "#dbfcff",
+                    "tertiary-fixed-dim": "#c8c6c7",
+                    "error-container": "#93000a",
+                    "inverse-on-surface": "#303032",
+                    "on-tertiary-fixed-variant": "#474647",
+                    "secondary-fixed": "#f8d8ff",
+                    "on-primary-fixed": "#002022",
+                    "surface-container": "#1f1f21",
+                    "on-surface": "#e4e2e4",
+                    "on-tertiary-container": "#5f5e5f",
+                    "surface-container-high": "#2a2a2c",
+                    "error": "#ffb4ab",
+                    "tertiary-container": "#dbd8d9",
+                    "on-secondary-container": "#fff6fc",
+                    "primary-container": "#00f0ff",
+                    "surface-variant": "#353437",
+                    "on-primary-container": "#006970",
+                    "on-secondary": "#520072",
+                    "secondary-fixed-dim": "#ebb2ff",
+                    "inverse-primary": "#006970",
+                    "surface": "#131315",
+                    "outline": "#849495",
+                    "on-error-container": "#ffdad6",
+                    "on-secondary-fixed-variant": "#74009f",
+                    "secondary-container": "#b600f8",
+                    "surface-container-low": "#1b1b1d",
+                    "surface-container-lowest": "#0e0e10",
+                    "surface-tint": "#00dbe9",
+                    "outline-variant": "#3b494b",
+                    "surface-container-highest": "#353437",
+                    "surface-dim": "#131315",
+                    "surface-bright": "#39393b",
+                    "inverse-surface": "#e4e2e4",
+                    "secondary": "#ebb2ff",
+                    "background": "#131315"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "sm": "8px",
+                    "gutter": "16px",
+                    "unit": "4px",
+                    "container-max": "1440px",
+                    "xs": "4px",
+                    "xl": "48px",
+                    "md": "16px",
+                    "lg": "24px"
+            },
+            "fontFamily": {
+                    "data-metric": [
+                            "JetBrains Mono"
+                    ],
+                    "mono-label": [
+                            "JetBrains Mono"
+                    ],
+                    "headline-md": [
+                            "Inter"
+                    ],
+                    "headline-sm": [
+                            "Inter"
+                    ],
+                    "display-lg": [
+                            "Inter"
+                    ],
+                    "body-sm": [
+                            "Inter"
+                    ],
+                    "body-lg": [
+                            "Inter"
+                    ]
+            },
+            "fontSize": {
+                    "data-metric": [
+                            "14px",
+                            {
+                                    "lineHeight": "1",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "mono-label": [
+                            "12px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "headline-md": [
+                            "24px",
+                            {
+                                    "lineHeight": "1.2",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "headline-sm": [
+                            "18px",
+                            {
+                                    "lineHeight": "1.4",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "display-lg": [
+                            "48px",
+                            {
+                                    "lineHeight": "1.1",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "body-sm": [
+                            "14px",
+                            {
+                                    "lineHeight": "1.5",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "body-lg": [
+                            "16px",
+                            {
+                                    "lineHeight": "1.6",
+                                    "fontWeight": "400"
+                            }
+                    ]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(22, 22, 24, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-left: 1px solid #252527;
+        }
+        .glow-active {
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+        }
+        .cmd-bar {
+            background: rgba(22, 22, 24, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid #3b494b;
+        }
+        .cmd-bar:focus-within {
+            border-color: #00dbe9;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-lg min-h-screen overflow-hidden selection:bg-primary-fixed/30 selection:text-primary-fixed flex">
+<!-- TopAppBar -->
+<header class="fixed left-0 top-0 w-full h-16 bg-surface/40 dark:bg-surface/40 border-b border-outline-variant/20 backdrop-blur-md flex justify-between items-center px-lg z-40">
+<div class="flex items-center gap-md ml-20 w-[calc(100%-80px)]">
+<span class="font-headline-md text-headline-md text-primary-fixed font-bold tracking-tight">Restia OS</span>
+<div class="flex-1 flex justify-end gap-sm items-center">
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-high/50 text-primary-fixed border-b-2 border-primary-fixed transition-colors relative group">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full animate-pulse"></span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-container-high/50 text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined">apps</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant ml-sm">
+<img alt="Administrator" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1lY27gKRqjAY0EISFiHhzicRwcMFc2QvRirT8HAwWosZWvKUO7OP7Sl22eNd-z3_KyGQyrPOqKe-L_HlZFrkzjkBEiJqTzPrmih2EVmZO7Wb4pJHX2IiSo0VcGFxD-UxKP8x1kUIXxA48z04vrWlclsBqSCuThWORJ9OMqMiOAD77dFLUSCk47Rh07-Xdn-0X7fDj_pgyHT6BrlbsYBBqb198A-5np4VQ43wxljthaITNFfaPJAAByFMFQ1DbcOKIPOl18D3C1sA"/>
+</div>
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-full flex flex-col z-50 bg-surface/70 dark:bg-surface/70 border-r border-outline-variant/30 backdrop-blur-xl h-full w-20 hover:w-64 transition-all duration-300 ease-in-out group overflow-hidden">
+<div class="h-16 flex items-center justify-center border-b border-outline-variant/20 shrink-0">
+<div class="w-10 h-10 rounded-full border border-outline-variant overflow-hidden shrink-0">
+<img alt="User Profile Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBJSNJG9fTUwxlzXOyhMebVXutXdLJlKZIR7W8ZzCgdYozgZnbmJ-FuYTsuP_Ghe3z66ESThYqnDMjGAx-zVIzdEdw1E4R2C4N9JfJhd5D73_Ln5qpTH3eg8FWiDO-CRfv5K8dXhvo0lZ9adG4hztGxAbpfj7sVpdbxMohG0m9iUu0H0R00Xs6SMMZ5T-RRjq-gHqVB6XSkl-LUflEJV1oJIZbbFAxMu4x6nO2iUs0j_4cv3KeTQEuzk5YD1hIE40h_NCIK_zuBlvE"/>
+</div>
+<div class="ml-sm opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap overflow-hidden">
+<div class="font-headline-sm text-headline-sm text-primary-fixed-dim tracking-tight">Restia OS</div>
+<div class="font-mono-label text-mono-label text-on-surface-variant">v2.4.0</div>
+</div>
+</div>
+<div class="flex-1 py-lg flex flex-col gap-sm overflow-y-auto overflow-x-hidden no-scrollbar">
+<a class="flex items-center px-lg py-md text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors shrink-0" href="#">
+<span class="material-symbols-outlined shrink-0">dashboard</span>
+<span class="ml-md font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Dashboard</span>
+</a>
+<a class="flex items-center px-lg py-md text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors shrink-0" href="#">
+<span class="material-symbols-outlined shrink-0">analytics</span>
+<span class="ml-md font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Analytics</span>
+</a>
+<a class="flex items-center px-lg py-md text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors shrink-0" href="#">
+<span class="material-symbols-outlined shrink-0">extension</span>
+<span class="ml-md font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Modules</span>
+</a>
+<a class="flex items-center px-lg py-md text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors shrink-0" href="#">
+<span class="material-symbols-outlined shrink-0">lan</span>
+<span class="ml-md font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Network</span>
+</a>
+<a class="flex items-center px-lg py-md text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors shrink-0" href="#">
+<span class="material-symbols-outlined shrink-0">security</span>
+<span class="ml-md font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Security</span>
+</a>
+<a class="flex items-center px-lg py-md border-l-2 border-primary-fixed shadow-[0_0_10px_rgba(0,240,255,0.4)] text-primary-fixed bg-primary-fixed/5 transition-colors shrink-0 scale-95 duration-150" href="#">
+<span class="material-symbols-outlined shrink-0" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="ml-md font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Settings</span>
+</a>
+</div>
+<div class="mt-auto border-t border-outline-variant/20 py-sm shrink-0">
+<a class="flex items-center px-lg py-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors shrink-0" href="#">
+<span class="material-symbols-outlined shrink-0">help</span>
+<span class="ml-md font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Help</span>
+</a>
+<a class="flex items-center px-lg py-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors shrink-0" href="#">
+<span class="material-symbols-outlined shrink-0">power_settings_new</span>
+<span class="ml-md font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Power</span>
+</a>
+</div>
+</nav>
+<!-- Main Canvas (Background) -->
+<main class="flex-1 ml-20 mt-16 p-lg relative h-[calc(100vh-4rem)] bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-surface-container-high/20 via-background to-background">
+<!-- Background Grid Pattern for Command Center Feel -->
+<div class="absolute inset-0 pointer-events-none opacity-[0.03]" style="background-image: linear-gradient(#7df4ff 1px, transparent 1px), linear-gradient(90deg, #7df4ff 1px, transparent 1px); background-size: 24px 24px;"></div>
+<!-- Center NLQuickAdd Overlay -->
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
+<div class="w-full max-w-2xl pointer-events-auto flex flex-col items-center">
+<div class="w-full relative cmd-bar rounded-full px-lg py-md flex items-center gap-md transition-all duration-300">
+<span class="material-symbols-outlined text-primary-fixed-dim">terminal</span>
+<input class="flex-1 bg-transparent border-none text-on-surface font-body-lg focus:ring-0 placeholder:text-on-surface-variant/50" placeholder="Type a command or natural language intent..." type="text" value="Add Task: Finish Design"/>
+<span class="font-mono-label text-mono-label text-on-surface-variant border border-outline-variant/30 px-xs py-unit rounded bg-surface-container-low">CTRL+K</span>
+</div>
+<!-- Suggestions Dropdown Panel -->
+<div class="w-[95%] mt-sm rounded-lg border border-outline-variant/30 bg-surface-container/90 backdrop-blur-md overflow-hidden shadow-2xl">
+<div class="px-md py-sm border-b border-outline-variant/20 flex justify-between items-center bg-surface-container-lowest">
+<span class="font-mono-label text-mono-label text-on-surface-variant">PARSED INTENT</span>
+<span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-primary-fixed animate-pulse"></span> <span class="font-mono-label text-mono-label text-primary-fixed">Ready</span></span>
+</div>
+<div class="p-xs">
+<div class="flex items-center justify-between p-md rounded hover:bg-surface-variant/50 cursor-pointer group bg-surface-variant/30 border-l-2 border-primary-fixed">
+<div class="flex items-center gap-md">
+<div class="w-8 h-8 rounded bg-primary-fixed/10 flex items-center justify-center text-primary-fixed group-hover:glow-active transition-all">
+<span class="material-symbols-outlined text-[20px]">add_task</span>
+</div>
+<div>
+<div class="font-body-lg text-on-surface"><span class="text-on-surface-variant">Create new task:</span> Finish Design</div>
+<div class="font-mono-label text-mono-label text-on-surface-variant flex gap-sm mt-1">
+<span class="px-2 py-0.5 rounded-sm border border-outline-variant/30 bg-surface-container-low">Project: UI Refresh</span>
+<span class="px-2 py-0.5 rounded-sm border border-outline-variant/30 bg-surface-container-low">Due: Today</span>
+</div>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary-fixed transition-colors">keyboard_return</span>
+</div>
+<div class="flex items-center justify-between p-md rounded hover:bg-surface-variant/50 cursor-pointer group mt-xs">
+<div class="flex items-center gap-md">
+<div class="w-8 h-8 rounded bg-surface-container-high flex items-center justify-center text-on-surface-variant group-hover:text-primary-fixed transition-all">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</div>
+<div>
+<div class="font-body-lg text-on-surface">Search knowledge base for "Finish Design"</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Notification Center Slide-Over -->
+<aside class="fixed right-0 top-16 bottom-0 w-96 glass-panel z-40 flex flex-col shadow-[-10px_0_30px_rgba(0,0,0,0.5)] transform translate-x-0 transition-transform duration-300">
+<!-- Header -->
+<div class="px-lg py-md flex items-center justify-between border-b border-outline-variant/30 shrink-0">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary-fixed" style="font-variation-settings: 'FILL' 1;">notifications</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Notifications</h2>
+<span class="ml-xs px-2 py-0.5 rounded-full bg-primary-fixed/20 text-primary-fixed font-mono-label text-mono-label border border-primary-fixed/30">3</span>
+</div>
+<button class="text-on-surface-variant hover:text-primary-fixed transition-colors">
+<span class="material-symbols-outlined">clear_all</span>
+</button>
+</div>
+<!-- Scrollable Content -->
+<div class="flex-1 overflow-y-auto no-scrollbar p-md flex flex-col gap-lg">
+<!-- Group: Today -->
+<div>
+<div class="flex items-center gap-sm mb-sm px-sm">
+<span class="font-mono-label text-mono-label text-on-surface-variant uppercase tracking-wider">Today</span>
+<div class="flex-1 h-px bg-outline-variant/20"></div>
+</div>
+<div class="flex flex-col gap-xs">
+<!-- High Priority Item -->
+<div class="p-md rounded-lg border border-primary-fixed/30 bg-surface-container/50 hover:bg-surface-container-high/50 transition-colors relative overflow-hidden group">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary-fixed glow-active"></div>
+<div class="flex gap-md">
+<div class="w-8 h-8 rounded-full bg-primary-fixed/10 flex items-center justify-center text-primary-fixed shrink-0">
+<span class="material-symbols-outlined text-[18px]">warning</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start">
+<span class="font-body-sm text-on-surface font-semibold truncate">Security Audit Required</span>
+<span class="font-mono-label text-mono-label text-on-surface-variant shrink-0">10m ago</span>
+</div>
+<p class="font-body-sm text-on-surface-variant mt-xs text-sm leading-tight">Unusual login pattern detected from new IP address.</p>
+<div class="mt-sm flex gap-sm">
+<button class="px-sm py-xs rounded bg-surface-container-high border border-outline-variant hover:border-primary-fixed text-on-surface font-mono-label text-mono-label transition-colors">Review Log</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Standard Item -->
+<div class="p-md rounded-lg border border-transparent hover:border-outline-variant/30 hover:bg-surface-container/30 transition-colors group">
+<div class="flex gap-md">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant shrink-0">
+<span class="material-symbols-outlined text-[18px]">task_alt</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start">
+<span class="font-body-sm text-on-surface truncate">Data Pipeline Synced</span>
+<span class="font-mono-label text-mono-label text-on-surface-variant shrink-0">1h ago</span>
+</div>
+<p class="font-body-sm text-on-surface-variant mt-xs text-sm leading-tight">ETL process completed successfully with 0 errors.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Group: Task Updates -->
+<div>
+<div class="flex items-center gap-sm mb-sm px-sm">
+<span class="font-mono-label text-mono-label text-on-surface-variant uppercase tracking-wider">Task Updates</span>
+<div class="flex-1 h-px bg-outline-variant/20"></div>
+</div>
+<div class="flex flex-col gap-xs">
+<!-- Mention Item -->
+<div class="p-md rounded-lg border border-transparent hover:border-outline-variant/30 hover:bg-surface-container/30 transition-colors group">
+<div class="flex gap-md">
+<div class="w-8 h-8 rounded-full border border-outline-variant overflow-hidden shrink-0">
+<img alt="Developer Avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA5YtNHv-Iq0TcvTDeKvCyPBlBoULcVOSLHnmp1KYms1LOS0db0lJK1Zx2LDmIsvwYt-xF2GDRuTXoA9GM9J8ILVjjsjHl2ok5EOG0Qlw2XlnBAidM0g6lIwBFmA_8se3_wmnr1bmqCe3kWY_mbGoXcKmxwQUdCmjd0IPyrqeVzeqkHUevAVMjkvvP6fe4463xUkNP6PRAwQsX21cUCYPqawu6SoC9pH68cN98kvHOTi1TdxZuuPvKyLX1nGC3-xL_zTKaf5_0sC30"/>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex justify-between items-start">
+<span class="font-body-sm text-on-surface truncate"><span class="text-primary-fixed">@alex_dev</span> mentioned you</span>
+<span class="font-mono-label text-mono-label text-on-surface-variant shrink-0">3h ago</span>
+</div>
+<p class="font-body-sm text-on-surface-variant mt-xs text-sm leading-tight bg-surface-container-low p-sm rounded border border-outline-variant/20">"Can you review the new grid layout implementation?"</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer -->
+<div class="px-lg py-md border-t border-outline-variant/30 shrink-0 flex justify-center bg-surface-container-lowest/50">
+<button class="font-mono-label text-mono-label text-primary-fixed hover:text-primary-fixed-dim transition-colors flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">settings</span>
+                Manage Notification Preferences
+            </button>
+</div>
+</aside>
+</body></html>

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, tasksTable, focusSessionsTable, settingsTable } from "@/lib/db";
+import { db, tasksTable, focusSessionsTable, settingsTable, habitLogsTable, habitsTable } from "@/lib/db";
 import { eq, and, gte, sql } from "drizzle-orm";
 import { createClient } from "@/utils/supabase/server";
 
@@ -47,8 +47,20 @@ export async function GET(req: NextRequest) {
         )
       );
 
+    // 3. Get habits logs from the last 7 days
+    const habitLogs = await db
+      .select({
+        date: habitLogsTable.date,
+        completed: habitLogsTable.completed,
+      })
+      .from(habitLogsTable)
+      .leftJoin(habitsTable, eq(habitLogsTable.habitId, habitsTable.id))
+      // It is easier to fetch all habit logs for this user
+      // But habitLogs doesn't have userId directly, it's tied to habits.userId
+      .where(sql`habits.user_id = ${user.id} AND habit_logs.date >= ${new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(sevenDaysAgo)} AND habit_logs.completed = true`);
+
     // Initialize the last 7 days with zero using local timezone date strings
-    const days: Record<string, { date: string; tasks: number; focus: number }> = {};
+    const days: Record<string, { date: string; tasks: number; focus: number; habits: number }> = {};
     const result = [];
     
     for (let i = 0; i < 7; i++) {
@@ -57,7 +69,7 @@ export async function GET(req: NextRequest) {
       const localDateKey = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
       const displayDate = d.toLocaleDateString("en-US", { timeZone: tz, weekday: "short" });
       
-      const dayObj = { date: displayDate, tasks: 0, focus: 0 };
+      const dayObj = { date: displayDate, tasks: 0, focus: 0, habits: 0 };
       days[localDateKey] = dayObj;
       result.push(dayObj); // store by reference, so updating `days` updates `result`
     }
@@ -79,6 +91,13 @@ export async function GET(req: NextRequest) {
       const localDateKey = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(tDate);
       if (days[localDateKey]) {
         days[localDateKey].focus += session.completedMinutes;
+      }
+    }
+
+    // Assign habits to days
+    for (const log of habitLogs) {
+      if (days[log.date]) {
+        days[log.date].habits += 1;
       }
     }
 

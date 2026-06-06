@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Restia OS - Chief Planner</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary": "#f8f5f6",
+                        "primary-fixed": "#7df4ff",
+                        "on-primary-fixed-variant": "#004f54",
+                        "tertiary-fixed": "#e5e2e3",
+                        "on-background": "#e4e2e4",
+                        "on-error": "#690005",
+                        "primary-fixed-dim": "#00dbe9",
+                        "on-primary": "#00363a",
+                        "on-surface-variant": "#b9cacb",
+                        "on-tertiary": "#313031",
+                        "on-secondary-fixed": "#320047",
+                        "on-tertiary-fixed": "#1c1b1c",
+                        "primary": "#dbfcff",
+                        "tertiary-fixed-dim": "#c8c6c7",
+                        "error-container": "#93000a",
+                        "inverse-on-surface": "#303032",
+                        "on-tertiary-fixed-variant": "#474647",
+                        "secondary-fixed": "#f8d8ff",
+                        "on-primary-fixed": "#002022",
+                        "surface-container": "#1f1f21",
+                        "on-surface": "#e4e2e4",
+                        "on-tertiary-container": "#5f5e5f",
+                        "surface-container-high": "#2a2a2c",
+                        "error": "#ffb4ab",
+                        "tertiary-container": "#dbd8d9",
+                        "on-secondary-container": "#fff6fc",
+                        "primary-container": "#00f0ff",
+                        "surface-variant": "#353437",
+                        "on-primary-container": "#006970",
+                        "on-secondary": "#520072",
+                        "secondary-fixed-dim": "#ebb2ff",
+                        "inverse-primary": "#006970",
+                        "surface": "#131315",
+                        "outline": "#849495",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-fixed-variant": "#74009f",
+                        "secondary-container": "#b600f8",
+                        "surface-container-low": "#1b1b1d",
+                        "surface-container-lowest": "#0e0e10",
+                        "surface-tint": "#00dbe9",
+                        "outline-variant": "#3b494b",
+                        "surface-container-highest": "#353437",
+                        "surface-dim": "#131315",
+                        "surface-bright": "#39393b",
+                        "inverse-surface": "#e4e2e4",
+                        "secondary": "#ebb2ff",
+                        "background": "#131315"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "sm": "8px",
+                        "gutter": "16px",
+                        "unit": "4px",
+                        "container-max": "1440px",
+                        "xs": "4px",
+                        "xl": "48px",
+                        "md": "16px",
+                        "lg": "24px"
+                    },
+                    "fontFamily": {
+                        "data-metric": ["JetBrains Mono"],
+                        "mono-label": ["JetBrains Mono"],
+                        "headline-md": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "data-metric": ["14px", { "lineHeight": "1", "fontWeight": "600" }],
+                        "mono-label": ["12px", { "lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "headline-sm": ["18px", { "lineHeight": "1.4", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-sm": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #131315;
+            color: #e4e2e4;
+        }
+        /* Custom scrollbar for dark mode */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #131315;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3b494b;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #849495;
+        }
+        
+        .dependency-line {
+            position: absolute;
+            left: 50%;
+            width: 2px;
+            background: linear-gradient(180deg, #7df4ff 0%, transparent 100%);
+            z-index: 0;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-lg min-h-screen flex overflow-x-hidden">
+<!-- SideNavBar (Shared Component) -->
+<!-- Matches exact JSON structure, Semantic mapping: "Modules" active (Planner intent fallback) -->
+<nav class="bg-surface/70 border-r border-outline-variant/30 backdrop-blur-xl h-full w-20 hover:w-64 transition-all duration-300 ease-in-out fixed left-0 top-0 flex flex-col z-50 group md:flex hidden">
+<!-- Header -->
+<div class="h-16 flex items-center justify-center group-hover:justify-start group-hover:px-4 border-b border-outline-variant/20 overflow-hidden w-full shrink-0">
+<div class="w-8 h-8 rounded bg-primary-fixed/20 border border-primary-fixed flex items-center justify-center shrink-0">
+<span class="font-headline-sm text-headline-sm text-primary-fixed-dim tracking-tight">R</span>
+</div>
+<div class="ml-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col whitespace-nowrap">
+<span class="font-headline-sm text-headline-sm text-primary-fixed-dim tracking-tight">Restia OS</span>
+<span class="font-mono-label text-mono-label text-on-surface-variant">v2.4.0</span>
+</div>
+</div>
+<!-- Main Nav Items -->
+<div class="flex-1 py-4 flex flex-col gap-2 overflow-y-auto w-full">
+<!-- Dashboard -->
+<a class="flex items-center px-0 justify-center group-hover:px-4 group-hover:justify-start h-12 w-full text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="ml-4 font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">Dashboard</span>
+</a>
+<!-- Analytics -->
+<a class="flex items-center px-0 justify-center group-hover:px-4 group-hover:justify-start h-12 w-full text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="ml-4 font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">Analytics</span>
+</a>
+<!-- Modules (Active due to planner context) -->
+<a class="flex items-center px-0 justify-center group-hover:px-4 group-hover:justify-start h-12 w-full border-l-2 border-primary-fixed shadow-[0_0_10px_rgba(0,240,255,0.4)] text-primary-fixed bg-primary-fixed/5 scale-95 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="extension">extension</span>
+<span class="ml-4 font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">Modules</span>
+</a>
+<!-- Network -->
+<a class="flex items-center px-0 justify-center group-hover:px-4 group-hover:justify-start h-12 w-full text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="lan">lan</span>
+<span class="ml-4 font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">Network</span>
+</a>
+<!-- Security -->
+<a class="flex items-center px-0 justify-center group-hover:px-4 group-hover:justify-start h-12 w-full text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="security">security</span>
+<span class="ml-4 font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">Security</span>
+</a>
+<!-- Settings -->
+<a class="flex items-center px-0 justify-center group-hover:px-4 group-hover:justify-start h-12 w-full text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="ml-4 font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">Settings</span>
+</a>
+</div>
+<!-- Footer Nav Items -->
+<div class="mt-auto border-t border-outline-variant/20 py-4 flex flex-col gap-2 w-full shrink-0">
+<!-- Help -->
+<a class="flex items-center px-0 justify-center group-hover:px-4 group-hover:justify-start h-10 w-full text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span class="ml-4 font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">Help</span>
+</a>
+<!-- Power -->
+<a class="flex items-center px-0 justify-center group-hover:px-4 group-hover:justify-start h-10 w-full text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="power_settings_new">power_settings_new</span>
+<span class="ml-4 font-mono-label text-mono-label opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">Power</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area Wrapper -->
+<div class="flex-1 flex flex-col min-h-screen ml-0 md:ml-20 w-full">
+<!-- TopAppBar (Shared Component) -->
+<!-- Responsive Pivot: Hidden on mobile (use BottomNavBar instead), but since BottomNavBar isn't requested, we just rely on responsive behavior -->
+<header class="bg-surface/40 dark:bg-surface/40 border-b border-outline-variant/20 backdrop-blur-md fixed top-0 flex justify-between items-center px-lg h-16 md:w-[calc(100%-80px)] w-full z-40 right-0">
+<!-- Brand / Search -->
+<div class="flex items-center gap-4 flex-1">
+<span class="font-headline-md text-headline-md text-primary-fixed font-bold tracking-tight">Restia OS</span>
+<div class="hidden sm:flex items-center bg-surface-container border border-outline-variant/30 rounded px-3 py-1.5 ml-4 max-w-md w-full">
+<span class="material-symbols-outlined text-on-surface-variant text-sm mr-2">search</span>
+<input class="bg-transparent border-none outline-none text-body-sm font-body-sm text-on-surface placeholder:text-on-surface-variant/50 w-full p-0 focus:ring-0" placeholder="Search parameters..." type="text"/>
+</div>
+</div>
+<!-- Trailing Actions -->
+<div class="flex items-center gap-3">
+<button aria-label="Notifications" class="text-on-surface-variant hover:bg-surface-container-high/50 p-2 rounded transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button aria-label="Apps" class="text-on-surface-variant hover:bg-surface-container-high/50 p-2 rounded transition-colors">
+<span class="material-symbols-outlined" data-icon="apps">apps</span>
+</button>
+<button aria-label="Account" class="text-on-surface-variant hover:bg-surface-container-high/50 p-2 rounded transition-colors">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Canvas -->
+<main class="flex-1 mt-16 p-lg bg-background relative overflow-y-auto">
+<!-- Page Header -->
+<div class="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h1 class="font-display-lg text-display-lg text-on-surface mb-1">Chief Planner</h1>
+<p class="font-mono-label text-mono-label text-on-surface-variant uppercase tracking-widest">Strategic Command &amp; Execution Map</p>
+</div>
+<div class="flex gap-3">
+<button class="bg-surface-container border border-outline-variant/50 text-on-surface px-4 py-2 rounded font-mono-label text-mono-label hover:bg-surface-container-high transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">filter_list</span> FILTER
+                    </button>
+<button class="bg-surface-container border border-primary-fixed text-primary-fixed px-4 py-2 rounded font-mono-label text-mono-label hover:bg-primary-fixed/10 transition-colors flex items-center gap-2 relative shadow-[inset_0_0_10px_rgba(0,240,255,0.1)]">
+<span class="material-symbols-outlined text-sm">add</span> NEW DIRECTIVE
+                    </button>
+</div>
+</div>
+<!-- Content Grid Container -->
+<div class="max-w-container-max mx-auto space-y-8 relative">
+<!-- Hero Big Goal Card -->
+<section class="bg-[#161618] border border-[#252527] border-t-2 border-t-primary-fixed rounded-lg p-8 relative overflow-hidden">
+<!-- Glassmorphism overlay / glow -->
+<div class="absolute -right-32 -top-32 w-96 h-96 bg-primary-fixed/5 rounded-full blur-[100px] pointer-events-none"></div>
+<div class="relative z-10 flex flex-col lg:flex-row justify-between gap-8">
+<div class="flex-1">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-2 h-2 rounded-full bg-primary-fixed animate-pulse shadow-[0_0_8px_rgba(0,240,255,0.8)]"></div>
+<span class="font-mono-label text-mono-label text-primary-fixed tracking-widest uppercase">Apex Objective</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface mb-4 max-w-2xl">Project Genesis: Unified System Integration across all global clusters.</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant max-w-3xl mb-6">
+                                The immediate synchronization of data flows across Tier 1, 2, and 3 networks. Achieving this objective establishes the foundational architecture for predictive AI models.
+                            </p>
+<!-- Status Chips -->
+<div class="flex flex-wrap gap-3">
+<span class="border border-outline-variant/50 text-on-surface-variant font-mono-label text-mono-label px-3 py-1 rounded bg-surface/50">Priority: CRITICAL</span>
+<span class="border border-outline-variant/50 text-on-surface-variant font-mono-label text-mono-label px-3 py-1 rounded bg-surface/50">ETA: Q4 2024</span>
+<span class="border border-primary-fixed/30 text-primary-fixed font-mono-label text-mono-label px-3 py-1 rounded bg-primary-fixed/5 flex items-center gap-2">
+<span class="material-symbols-outlined text-[14px]">sync</span> SYNCHRONIZING
+                                </span>
+</div>
+</div>
+<!-- Mini Data Visualization / Progress -->
+<div class="lg:w-72 bg-surface-container-low border border-outline-variant/20 rounded p-4 flex flex-col justify-center">
+<div class="flex justify-between items-end mb-2">
+<span class="font-mono-label text-mono-label text-on-surface-variant">Global Progress</span>
+<span class="font-data-metric text-data-metric text-primary-fixed">64.2%</span>
+</div>
+<div class="w-full bg-surface-dim h-2 rounded overflow-hidden mb-4 border border-outline-variant/10">
+<div class="bg-primary-fixed h-full w-[64.2%] shadow-[0_0_8px_rgba(0,240,255,0.5)]"></div>
+</div>
+<div class="grid grid-cols-2 gap-2 mt-2">
+<div class="bg-surface border border-outline-variant/10 p-2 rounded">
+<div class="font-mono-label text-mono-label text-on-surface-variant/70 mb-1 text-[10px]">RESOURCES</div>
+<div class="font-data-metric text-data-metric text-on-surface">Optimal</div>
+</div>
+<div class="bg-surface border border-outline-variant/10 p-2 rounded">
+<div class="font-mono-label text-mono-label text-on-surface-variant/70 mb-1 text-[10px]">RISK VECTOR</div>
+<div class="font-data-metric text-data-metric text-error">Elevated</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Roadmap / Timeline Section -->
+<div class="mt-12 relative pt-6">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-8 border-b border-outline-variant/20 pb-2 inline-block">Execution Pathway</h3>
+<div class="relative space-y-6">
+<!-- Dependency Line Background -->
+<div class="absolute left-[24px] top-[24px] bottom-0 w-[2px] bg-outline-variant/20 z-0"></div>
+<!-- Milestone 1 -->
+<div class="relative z-10 flex gap-6">
+<!-- Timeline Node -->
+<div class="w-12 flex-shrink-0 flex justify-center relative pt-2">
+<div class="w-4 h-4 rounded-full border-2 border-primary-fixed bg-surface-container z-10 flex items-center justify-center">
+<div class="w-1.5 h-1.5 rounded-full bg-primary-fixed"></div>
+</div>
+<!-- Connecting line logic handled by background line -->
+</div>
+<!-- Milestone Card -->
+<div class="flex-1 bg-[#161618] border border-[#252527] rounded-lg p-5 hover:bg-surface-container-high/40 transition-colors group">
+<div class="flex justify-between items-start mb-3">
+<div>
+<div class="font-mono-label text-mono-label text-on-surface-variant mb-1">M-01 // COMPLETED</div>
+<h4 class="font-headline-sm text-headline-sm text-on-surface">Data Ingestion Framework</h4>
+</div>
+<span class="material-symbols-outlined text-primary-fixed" data-icon="check_circle">check_circle</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-4">Established secure pipelines from Tier 3 nodes to central processing. Latency reduced to target threshold.</p>
+<div class="flex gap-2">
+<span class="border border-outline-variant/30 text-on-surface-variant font-mono-label text-mono-label px-2 py-0.5 rounded text-[10px]">NODE.JS</span>
+<span class="border border-outline-variant/30 text-on-surface-variant font-mono-label text-mono-label px-2 py-0.5 rounded text-[10px]">KAFKA</span>
+</div>
+</div>
+</div>
+<!-- Milestone 2 (Active) -->
+<div class="relative z-10 flex gap-6">
+<!-- Timeline Node -->
+<div class="w-12 flex-shrink-0 flex justify-center relative pt-2">
+<div class="w-6 h-6 rounded-full border border-primary-fixed bg-primary-fixed/10 z-10 flex items-center justify-center shadow-[0_0_10px_rgba(0,240,255,0.3)]">
+<div class="w-2 h-2 rounded-full bg-primary-fixed animate-pulse"></div>
+</div>
+<!-- Active glow line connecting down -->
+<div class="absolute top-8 bottom-[-24px] left-[23px] w-[2px] bg-gradient-to-b from-primary-fixed/50 to-transparent z-0"></div>
+</div>
+<!-- Milestone Card -->
+<div class="flex-1 bg-[#161618] border border-primary-fixed/30 border-l-2 border-l-primary-fixed rounded-lg p-5 shadow-[0_4px_24px_rgba(0,240,255,0.05)] relative overflow-hidden">
+<!-- Glassmorphism bg effect -->
+<div class="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-primary-fixed/5 to-transparent pointer-events-none"></div>
+<div class="flex justify-between items-start mb-3">
+<div>
+<div class="font-mono-label text-mono-label text-primary-fixed mb-1 flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-fixed block"></span> M-02 // IN PROGRESS
+                                        </div>
+<h4 class="font-headline-sm text-headline-sm text-on-surface">Core Aggregation Engine</h4>
+</div>
+<div class="font-data-metric text-data-metric text-on-surface">45%</div>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-4">Normalizing diverse data sets into unified schema. High compute load detected on Cluster Alpha.</p>
+<!-- Subtasks -->
+<div class="bg-surface-container-low border border-outline-variant/10 rounded p-3 space-y-2 mt-4">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[16px] text-primary-fixed" data-icon="check_box">check_box</span>
+<span class="font-body-sm text-body-sm text-on-surface">Schema validation protocol</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant" data-icon="check_box_outline_blank">check_box_outline_blank</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Real-time indexing matrix</span>
+<span class="ml-auto font-mono-label text-[10px] text-on-tertiary-container bg-tertiary-container px-1.5 rounded">BLOCKED</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Milestone 3 -->
+<div class="relative z-10 flex gap-6 opacity-70 hover:opacity-100 transition-opacity">
+<!-- Timeline Node -->
+<div class="w-12 flex-shrink-0 flex justify-center relative pt-2">
+<div class="w-4 h-4 rounded-full border-2 border-outline-variant bg-surface-container z-10"></div>
+</div>
+<!-- Milestone Card -->
+<div class="flex-1 bg-[#161618] border border-[#252527] border-t-2 border-t-secondary-container rounded-lg p-5">
+<div class="flex justify-between items-start mb-3">
+<div>
+<div class="font-mono-label text-mono-label text-on-surface-variant mb-1">M-03 // PENDING</div>
+<h4 class="font-headline-sm text-headline-sm text-on-surface">Neural Output Synchronization</h4>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="schedule">schedule</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-4">Deploying trained models to edge nodes for localized predictive analytics.</p>
+<div class="w-full bg-surface-dim h-1 rounded overflow-hidden">
+<div class="bg-outline-variant h-full w-[0%]"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

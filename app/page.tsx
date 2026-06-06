@@ -1,10 +1,5 @@
 import Link from "next/link";
-import {
-  Zap, Shield, Brain, Globe, Wallet, HeartPulse, GraduationCap,
-  Home, Briefcase, ChevronRight, Sparkles, Lock, ArrowRight,
-  CheckSquare, Calendar, Bell, Timer, BarChart3, Users,
-  Star, TrendingUp, Cpu
-} from "lucide-react";
+
 
 export const metadata = {
   title: "Restia | Your Personal AI Operating System",
@@ -17,9 +12,7 @@ const MODULES = [
     name: "Chief of Staff",
     tagline: "Productivity & Task Intelligence",
     description: "AI-powered task management, calendar sync, smart reminders, focus sessions, habit tracking, family board, and weekly reviews.",
-    icon: Briefcase,
-    gradient: "from-violet-500 to-purple-600",
-    glow: "violet",
+    icon: "work",
     status: "live" as const,
     features: ["Tasks & Priorities", "Calendar Sync", "AI Assistant", "Focus Timer", "Habits", "Family Board", "Analytics"],
     href: "/login",
@@ -29,9 +22,7 @@ const MODULES = [
     name: "Vault",
     tagline: "Personal Finance & Budgeting",
     description: "Track expenses, manage budgets, visualize spending patterns, and get AI-driven financial insights.",
-    icon: Wallet,
-    gradient: "from-emerald-500 to-green-600",
-    glow: "emerald",
+    icon: "account_balance_wallet",
     status: "coming" as const,
     features: ["Expense Tracking", "Budget Goals", "Investment View", "AI Insights"],
     href: "#",
@@ -41,9 +32,7 @@ const MODULES = [
     name: "Pulse",
     tagline: "Health & Wellness Tracker",
     description: "Monitor sleep, nutrition, workouts, and mental wellness with intelligent health correlations.",
-    icon: HeartPulse,
-    gradient: "from-rose-500 to-pink-600",
-    glow: "rose",
+    icon: "monitor_heart",
     status: "coming" as const,
     features: ["Sleep Tracking", "Workout Log", "Nutrition", "Mood Journal"],
     href: "#",
@@ -53,9 +42,7 @@ const MODULES = [
     name: "Atlas",
     tagline: "Learning & Knowledge Base",
     description: "Capture notes, build a personal wiki, track courses, and let AI connect your knowledge dots.",
-    icon: GraduationCap,
-    gradient: "from-blue-500 to-cyan-600",
-    glow: "blue",
+    icon: "school",
     status: "coming" as const,
     features: ["Smart Notes", "Course Tracker", "Knowledge Graph", "Flashcards"],
     href: "#",
@@ -65,9 +52,7 @@ const MODULES = [
     name: "Nest",
     tagline: "Home & Life Management",
     description: "Grocery lists, meal planning, home maintenance schedules, and household coordination.",
-    icon: Home,
-    gradient: "from-amber-500 to-orange-600",
-    glow: "amber",
+    icon: "home",
     status: "coming" as const,
     features: ["Grocery Lists", "Meal Planner", "Home Tasks", "Shared Lists"],
     href: "#",
@@ -77,27 +62,35 @@ const MODULES = [
     name: "Sentinel",
     tagline: "Digital Security & Passwords",
     description: "Password vault, breach monitoring, 2FA management, and security health scoring.",
-    icon: Shield,
-    gradient: "from-slate-400 to-zinc-500",
-    glow: "slate",
+    icon: "shield",
     status: "coming" as const,
     features: ["Password Vault", "Breach Alerts", "2FA Manager", "Security Score"],
     href: "#",
+  },
+  {
+    id: "streaming-god",
+    name: "Streaming God",
+    tagline: "The Ultimate Media Agent",
+    description: "Search, discover, and stream anime using JARVIS. Deeply integrated with Restia NLP and progress tracking.",
+    icon: "play_circle",
+    status: "live" as const,
+    features: ["Anime Search", "HLS Player", "Progress Tracking", "JARVIS Voice Control"],
+    href: "/streaming-god",
   },
 ];
 
 function StatusBadge({ status }: { status: "live" | "coming" }) {
   if (status === "live") {
     return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[11px] font-bold uppercase tracking-wider">
-        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary font-mono-label text-[11px] uppercase tracking-wider shadow-sm">
+        <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
         Live
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-white/40 text-[11px] font-bold uppercase tracking-wider">
-      <Lock className="h-2.5 w-2.5" />
+    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#F0F4F8] text-on-surface-variant font-mono-label text-[11px] uppercase tracking-wider">
+      <span className="material-symbols-outlined text-[14px]">lock</span>
       Coming Soon
     </span>
   );
@@ -105,33 +98,31 @@ function StatusBadge({ status }: { status: "live" | "coming" }) {
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-[#06060e] text-white overflow-x-hidden">
-      {/* ── Ambient glow blobs ── */}
-      <div className="fixed top-[-20%] left-[-10%] h-[800px] w-[800px] rounded-full bg-violet-600/8 blur-[180px] pointer-events-none" />
-      <div className="fixed bottom-[-20%] right-[-10%] h-[800px] w-[800px] rounded-full bg-blue-600/8 blur-[180px] pointer-events-none" />
-      <div className="fixed top-[40%] right-[20%] h-[400px] w-[400px] rounded-full bg-rose-600/5 blur-[150px] pointer-events-none" />
+    <div className="min-h-screen bg-background text-on-surface overflow-x-hidden selection:bg-primary/30">
+      {/* Background */}
+      <div className="fixed inset-0 bg-[#FAFAFA] -z-10" />
 
       {/* ── Header ── */}
-      <header className="relative z-20 py-5 px-4 sm:px-8 max-w-7xl mx-auto w-full flex justify-between items-center">
+      <header className="relative z-20 py-4 px-4 sm:px-8 max-w-7xl mx-auto w-full flex justify-between items-center mt-4">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center shadow-lg shadow-violet-500/20">
-            <Cpu className="h-5 w-5 text-white" />
+          <div className="h-10 w-10 rounded-full bg-[#FAF5F0] border border-[#E8DCC8] flex items-center justify-center shadow-sm">
+            <span className="material-symbols-outlined text-primary text-[20px]">memory</span>
           </div>
           <div>
-            <span className="text-xl font-extrabold tracking-tight">Restia</span>
-            <span className="hidden sm:inline text-[10px] font-bold text-white/30 uppercase tracking-widest ml-2">OS</span>
+            <span className="text-xl font-bold tracking-tight text-on-surface">Restia</span>
+            <span className="hidden sm:inline font-mono-label text-[10px] text-primary uppercase tracking-widest ml-2">OS</span>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <Link
             href="/login"
-            className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/70 text-sm font-semibold hover:bg-white/10 hover:text-white transition-all"
+            className="font-mono-label text-[13px] text-on-surface-variant hover:text-primary transition-colors uppercase tracking-wider"
           >
-            Sign In
+            Log In
           </Link>
           <Link
             href="/login"
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white text-sm font-bold hover:shadow-lg hover:shadow-violet-500/25 hover:scale-[1.02] transition-all"
+            className="px-6 py-2.5 rounded-full bg-primary text-white font-mono-label text-[13px] font-bold hover:bg-primary/90 hover:shadow-sm transition-all uppercase tracking-wider"
           >
             Get Started
           </Link>
@@ -139,64 +130,63 @@ export default function HomePage() {
       </header>
 
       {/* ── Hero ── */}
-      <section className="relative z-10 text-center px-4 sm:px-8 pt-16 sm:pt-24 pb-20 max-w-5xl mx-auto">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-xs font-bold text-white/50 uppercase tracking-wider mb-8">
-          <Sparkles className="h-3.5 w-3.5 text-violet-400" />
-          Personal AI Operating System
+      <section className="relative z-10 text-center px-4 sm:px-8 pt-20 sm:pt-32 pb-20 max-w-5xl mx-auto">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#F0F4F8] font-mono-label text-[12px] text-primary uppercase tracking-widest mb-8 border border-outline-variant/10">
+          <span className="material-symbols-outlined text-[14px]">auto_awesome</span>
+          System Active
         </div>
 
-        <h1 className="text-5xl sm:text-7xl lg:text-8xl font-black tracking-tight leading-[0.95] mb-8">
-          <span className="block">Your life,</span>
-          <span className="block text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-purple-400 to-pink-400">orchestrated.</span>
+        <h1 className="text-5xl sm:text-7xl lg:text-8xl font-black tracking-tight leading-[0.95] mb-8 font-data-metric uppercase">
+          <span className="block text-outline">Connect with</span>
+          <span className="block text-primary text-shadow-sm">Your People.</span>
         </h1>
 
-        <p className="text-lg sm:text-xl text-white/40 max-w-2xl mx-auto leading-relaxed mb-12">
-          Restia is a modular AI operating system designed to manage every dimension of your life.
-          Each module is an intelligent agent — think Jarvis, but built for the real world.
+        <p className="text-lg sm:text-xl text-on-surface-variant max-w-2xl mx-auto leading-relaxed mb-12 font-body-lg">
+          Restia is an intelligent operating system meant for families and friends.
+          Stay coordinated, manage tasks together, and stay deeply connected in the real world.
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-24">
           <Link
             href="/login"
-            className="group flex items-center gap-2 px-8 py-4 rounded-2xl bg-white text-black font-bold text-base hover:scale-[1.03] transition-all shadow-xl shadow-white/10"
+            className="group flex items-center gap-2 px-8 py-4 rounded-full bg-primary text-white font-mono-label text-[14px] font-bold hover:bg-primary/90 hover:shadow-sm transition-all uppercase tracking-widest"
           >
-            Launch Restia
-            <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+            Access Terminal
+            <span className="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
           </Link>
           <a
             href="#modules"
-            className="flex items-center gap-2 px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-white/60 font-semibold text-base hover:text-white hover:bg-white/10 transition-all"
+            className="flex items-center gap-2 px-8 py-4 rounded-full bg-[#F0F4F8] hover:bg-[#E2E8F0] text-on-surface-variant font-mono-label text-[14px] font-bold transition-all uppercase tracking-widest"
           >
-            Explore Modules
-            <ChevronRight className="h-4 w-4" />
+            List Modules
+            <span className="material-symbols-outlined text-[18px]">expand_more</span>
           </a>
         </div>
 
         {/* Stats row */}
-        <div className="flex flex-wrap justify-center gap-8 sm:gap-16 text-center">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
           {[
-            { value: "6", label: "Modules", sub: "1 Live" },
-            { value: "∞", label: "Automations", sub: "AI-Powered" },
-            { value: "24/7", label: "Always On", sub: "Background Agents" },
-          ].map((stat) => (
-            <div key={stat.label}>
-              <p className="text-3xl sm:text-4xl font-black text-white">{stat.value}</p>
-              <p className="text-xs font-bold text-white/30 uppercase tracking-wider mt-1">{stat.label}</p>
-              <p className="text-[10px] text-violet-400/60 font-medium mt-0.5">{stat.sub}</p>
+            { value: "06", label: "Modules", sub: "AVAILABLE" },
+            { value: "∞", label: "Automations", sub: "NEURAL-NET" },
+            { value: "24/7", label: "Uptime", sub: "BACKGROUND" },
+          ].map((stat, idx) => (
+            <div key={stat.label} className="bg-surface border border-outline-variant/20 rounded-[2rem] p-8 flex flex-col items-center justify-center shadow-sm">
+              <p className="text-4xl sm:text-5xl font-headline-lg font-black text-primary mb-2">{stat.value}</p>
+              <p className="font-mono-label text-[12px] font-bold text-on-surface uppercase tracking-wider">{stat.label}</p>
+              <p className="text-[10px] text-on-surface-variant font-mono-label mt-1">[{stat.sub}]</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* ── Modules Grid ── */}
-      <section id="modules" className="relative z-10 px-4 sm:px-8 pb-24 max-w-7xl mx-auto">
+      <section id="modules" className="relative z-10 px-4 sm:px-8 pb-32 max-w-7xl mx-auto">
         <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-5xl font-black tracking-tight mb-4">
-            Modular by <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-purple-400">Design</span>
+          <h2 className="text-3xl sm:text-4xl font-headline-sm tracking-tight mb-4 text-on-surface uppercase">
+            Modular <span className="text-primary ">Architecture</span>
           </h2>
-          <p className="text-white/40 max-w-2xl mx-auto">
-            Each module is a self-contained AI agent that manages one domain of your life.
-            Activate what you need, when you need it.
+          <p className="text-on-surface-variant max-w-2xl mx-auto">
+            Each module is a self-contained AI agent that manages one domain of your life. Activate what you need, when you need it.
           </p>
         </div>
 
@@ -207,42 +197,37 @@ export default function HomePage() {
             return (
               <div
                 key={mod.id}
-                className={`group relative rounded-3xl border p-6 transition-all duration-300 ${
+                className={`group relative rounded-[2rem] p-8 transition-all duration-300 shadow-sm border ${
                   isLive
-                    ? "border-violet-500/30 bg-violet-500/[0.04] hover:border-violet-500/50 hover:bg-violet-500/[0.08] hover:shadow-2xl hover:shadow-violet-500/10"
-                    : "border-white/[0.06] bg-white/[0.02] hover:border-white/10 hover:bg-white/[0.04]"
+                    ? "bg-surface border-outline-variant/20 hover:border-primary/50 hover:shadow-md"
+                    : "bg-[#F0F4F8] border-transparent"
                 }`}
               >
-                {/* Glow for live module */}
-                {isLive && (
-                  <div className="absolute -inset-px rounded-3xl bg-gradient-to-b from-violet-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                )}
-
                 <div className="relative z-10">
-                  <div className="flex items-start justify-between mb-5">
-                    <div className={`h-12 w-12 rounded-2xl bg-gradient-to-br ${mod.gradient} flex items-center justify-center shadow-lg ${isLive ? `shadow-${mod.glow}-500/20` : ""}`}>
-                      <Icon className="h-6 w-6 text-white" />
+                  <div className="flex items-start justify-between mb-6">
+                    <div className={`h-12 w-12 rounded-2xl flex items-center justify-center ${isLive ? 'bg-primary/10 text-primary' : 'bg-surface text-on-surface-variant shadow-sm'}`}>
+                      <span className="material-symbols-outlined text-[24px]">{Icon}</span>
                     </div>
                     <StatusBadge status={mod.status} />
                   </div>
 
-                  <h3 className="text-lg font-black text-white mb-1">{mod.name}</h3>
-                  <p className={`text-xs font-bold uppercase tracking-wider mb-3 ${isLive ? "text-violet-400" : "text-white/30"}`}>
-                    {mod.tagline}
+                  <h3 className={`font-headline-sm text-xl font-bold mb-2 ${isLive ? 'text-on-surface' : 'text-on-surface-variant'}`}>{mod.name}</h3>
+                  <p className={`font-mono-label text-[10px] uppercase tracking-wider mb-4 ${isLive ? "text-primary" : "text-on-surface-variant"}`}>
+                    // {mod.tagline}
                   </p>
-                  <p className="text-sm text-white/40 leading-relaxed mb-5">
+                  <p className="text-[14px] text-on-surface-variant leading-relaxed mb-6 font-body-sm h-16">
                     {mod.description}
                   </p>
 
                   {/* Feature pills */}
-                  <div className="flex flex-wrap gap-1.5 mb-5">
-                    {mod.features.map((f) => (
+                  <div className="flex flex-wrap gap-2 mb-8">
+                    {mod.features.slice(0, 4).map((f) => (
                       <span
                         key={f}
-                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold ${
+                        className={`px-3 py-1.5 rounded-full font-mono-label text-[9px] uppercase tracking-wider ${
                           isLive
-                            ? "bg-violet-500/10 text-violet-300/80 border border-violet-500/15"
-                            : "bg-white/5 text-white/25 border border-white/5"
+                            ? "bg-primary/5 text-primary"
+                            : "bg-surface text-on-surface-variant shadow-sm"
                         }`}
                       >
                         {f}
@@ -253,14 +238,14 @@ export default function HomePage() {
                   {isLive ? (
                     <Link
                       href={mod.href}
-                      className="flex items-center gap-2 text-sm font-bold text-violet-400 hover:text-violet-300 transition-colors"
+                      className="flex items-center gap-2 font-mono-label text-sm text-white bg-primary px-4 py-3 rounded-xl justify-center hover:bg-primary/90 hover:shadow-sm transition-all uppercase tracking-wider"
                     >
-                      Open Module <ArrowRight className="h-3.5 w-3.5" />
+                      Initialize <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
                     </Link>
                   ) : (
-                    <p className="text-xs text-white/20 font-medium">
-                      Notify me when available →
-                    </p>
+                    <div className="flex items-center justify-center py-3 rounded-xl bg-surface/50 font-mono-label text-xs text-on-surface-variant uppercase tracking-wider cursor-not-allowed">
+                      Offline
+                    </div>
                   )}
                 </div>
               </div>
@@ -270,45 +255,45 @@ export default function HomePage() {
       </section>
 
       {/* ── Architecture Section ── */}
-      <section className="relative z-10 px-4 sm:px-8 pb-24 max-w-5xl mx-auto">
-        <div className="rounded-3xl border border-white/[0.06] bg-white/[0.02] p-8 sm:p-12">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center border border-violet-500/20">
-              <Brain className="h-5 w-5 text-violet-400" />
+      <section className="relative z-10 px-4 sm:px-8 pb-32 max-w-5xl mx-auto">
+        <div className="bg-surface border border-outline-variant/20 rounded-[2rem] p-8 sm:p-12 shadow-sm">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <span className="material-symbols-outlined text-primary text-[24px]">psychology</span>
             </div>
-            <h2 className="text-2xl font-black text-white">How Restia Works</h2>
+            <h2 className="text-2xl font-headline-sm uppercase text-on-surface font-bold">System <span className="text-primary ">Internals</span></h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
             {[
               {
                 step: "01",
-                title: "Modular Agents",
+                title: "Agent Nodes",
                 desc: "Each module runs as an independent AI agent with its own data, logic, and intelligence layer.",
-                icon: Cpu,
+                icon: "memory",
               },
               {
                 step: "02",
-                title: "Unified Core",
+                title: "Core Bus",
                 desc: "All modules share a common identity, notification system, and AI backbone — seamlessly connected.",
-                icon: Globe,
+                icon: "language",
               },
               {
                 step: "03",
-                title: "Always Learning",
+                title: "Neural Sync",
                 desc: "Restia learns your patterns, preferences, and rhythms to proactively help before you ask.",
-                icon: TrendingUp,
+                icon: "trending_up",
               },
             ].map((item) => {
               const StepIcon = item.icon;
               return (
-                <div key={item.step} className="text-center sm:text-left">
-                  <div className="inline-flex items-center justify-center h-10 w-10 rounded-xl bg-white/5 border border-white/10 mb-4">
-                    <StepIcon className="h-5 w-5 text-violet-400" />
+                <div key={item.step} className="text-left border-l-2 border-outline-variant/20 pl-6 hover:border-primary/50 transition-colors">
+                  <div className="mb-4">
+                    <span className="material-symbols-outlined text-[28px] text-primary">{StepIcon}</span>
                   </div>
-                  <p className="text-[10px] font-black text-violet-400/50 uppercase tracking-widest mb-1">Step {item.step}</p>
-                  <h3 className="text-base font-bold text-white mb-2">{item.title}</h3>
-                  <p className="text-sm text-white/35 leading-relaxed">{item.desc}</p>
+                  <p className="font-mono-label text-[10px] text-primary uppercase tracking-widest mb-2">SEQ_{item.step}</p>
+                  <h3 className="font-headline-sm font-bold text-lg text-on-surface mb-2 uppercase">{item.title}</h3>
+                  <p className="text-sm text-on-surface-variant leading-relaxed font-body-sm">{item.desc}</p>
                 </div>
               );
             })}
@@ -316,69 +301,43 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Privacy & Data Transparency ── */}
-      <section className="relative z-10 px-4 sm:px-8 pb-24 max-w-5xl mx-auto">
-        <div className="rounded-3xl border border-indigo-500/20 bg-indigo-500/[0.03] p-8 sm:p-12">
-          <h2 className="text-2xl font-black text-white mb-2 flex items-center gap-3">
-            <Shield className="h-6 w-6 text-indigo-400" />
-            Data Transparency & Privacy
-          </h2>
-          <p className="text-white/40 mb-6">
-            Restia prioritizes your privacy. We explicitly request access to your Google Calendar to provide core functionality:
-          </p>
-          <ul className="space-y-3 text-sm text-white/40 mb-6">
-            {[
-              "Syncing your upcoming events directly into your Restia dashboard.",
-              "Allowing the AI Assistant to view your schedule and help you plan your week.",
-              "Triggering smart reminders based on your calendar events.",
-            ].map((item, i) => (
-              <li key={i} className="flex items-start gap-3">
-                <CheckSquare className="h-4 w-4 text-indigo-400 shrink-0 mt-0.5" />
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="text-xs text-white/25">
-            We only request the minimum permissions required. Your data is securely stored, never sold, and only used to enhance your experience.
-          </p>
-        </div>
-      </section>
-
       {/* ── CTA ── */}
-      <section className="relative z-10 text-center px-4 sm:px-8 pb-24 max-w-3xl mx-auto">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-500/10 border border-violet-500/20 text-xs font-bold text-violet-400 uppercase tracking-wider mb-6">
-          <Star className="h-3 w-3" /> Free to use during beta
+      <section className="relative z-10 text-center px-4 sm:px-8 pb-32 max-w-3xl mx-auto pt-16">
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 font-mono-label text-[12px] text-primary uppercase tracking-wider mb-8 shadow-sm">
+          <span className="material-symbols-outlined text-[14px]">star</span> Beta Access Open
         </div>
-        <h2 className="text-3xl sm:text-5xl font-black tracking-tight mb-4">
-          Ready to meet your <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-pink-400">personal AI?</span>
+        <h2 className="text-4xl sm:text-5xl font-headline-lg font-black tracking-tight mb-6 uppercase">
+          <span className="block text-on-surface">Boot Sequence</span>
+          <span className="block text-primary mt-2">Initiated.</span>
         </h2>
-        <p className="text-white/40 mb-8 max-w-xl mx-auto">
-          Start with Chief of Staff today. More modules shipping soon.
+        <p className="text-on-surface-variant mb-10 max-w-xl mx-auto font-body-lg">
+          Start with Chief of Staff today. Your digital brain awaits.
         </p>
         <Link
           href="/login"
-          className="inline-flex items-center gap-2 px-10 py-5 rounded-2xl bg-white text-black font-bold text-lg hover:scale-[1.03] transition-all shadow-2xl shadow-white/10"
+          className="inline-flex items-center gap-3 px-10 py-5 rounded-full bg-primary text-white font-mono-label text-lg font-bold hover:bg-primary/90 hover:shadow-sm transition-all uppercase tracking-widest"
         >
-          Launch Restia <Zap className="h-5 w-5" />
+          <span className="material-symbols-outlined text-[20px]">bolt</span> Run Restia.exe
         </Link>
       </section>
 
       {/* ── Footer ── */}
-      <footer className="relative z-10 border-t border-white/[0.06] py-10 px-4 sm:px-8">
+      <footer className="relative z-10 py-12 px-4 sm:px-8 bg-surface border-t border-outline-variant/20">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center">
-              <Cpu className="h-4 w-4 text-white" />
+            <div className="h-8 w-8 rounded-full bg-[#FAF5F0] border border-[#E8DCC8] flex items-center justify-center">
+              <span className="material-symbols-outlined text-primary text-[14px]">memory</span>
             </div>
-            <span className="font-bold text-white/50">Restia OS</span>
+            <span className="font-mono-label text-[12px] font-bold text-on-surface uppercase tracking-widest">Restia OS</span>
           </div>
-          <div className="flex gap-6 text-sm text-white/30">
-            <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
-            <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
+          <div className="flex gap-6 font-mono-label text-[12px] text-on-surface-variant uppercase tracking-wider">
+            <Link href="/privacy" className="hover:text-primary transition-colors">[ PRIVACY ]</Link>
+            <Link href="/terms" className="hover:text-primary transition-colors">[ TERMS ]</Link>
           </div>
-          <p className="text-xs text-white/20">© 2026 Restia. All rights reserved.</p>
+          <p className="font-mono-label text-[10px] text-on-surface-variant uppercase tracking-widest">v1.0.0 © 2026</p>
         </div>
       </footer>
     </div>
   );
 }
+

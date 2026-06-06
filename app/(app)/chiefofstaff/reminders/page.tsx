@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -25,28 +25,16 @@ interface NewReminder {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const CHANNEL_BADGES: Record<ReminderChannel, string> = {
-  email: "bg-blue-500/15 text-blue-400 border-blue-500/25",
-  push: "bg-purple-500/15 text-purple-400 border-purple-500/25",
-  telegram: "bg-cyan-500/15 text-cyan-400 border-cyan-500/25",
-};
-
 const CHANNEL_ICONS: Record<ReminderChannel, string> = {
-  email: "✉️",
-  push: "🔔",
-  telegram: "💬",
+  email: "mail",
+  push: "notifications",
+  telegram: "send",
 };
 
-const STATUS_BADGES: Record<ReminderStatus, string> = {
-  pending: "bg-blue-500/15 text-blue-400 border-blue-500/25",
-  snoozed: "bg-amber-500/15 text-amber-400 border-amber-500/25",
-  sent: "bg-emerald-500/15 text-emerald-400 border-emerald-500/25",
-};
-
-const STATUS_DOTS: Record<ReminderStatus, string> = {
-  pending: "bg-blue-400",
-  snoozed: "bg-amber-400",
-  sent: "bg-emerald-400",
+const STATUS_COLORS: Record<ReminderStatus, string> = {
+  pending: "text-primary border-primary",
+  snoozed: "text-amber-400 border-amber-400",
+  sent: "text-emerald-400 border-emerald-400",
 };
 
 function formatDateTime(iso: string) {
@@ -67,12 +55,11 @@ function AddReminderForm({
 }) {
   const [form, setForm] = useState<NewReminder>({
     taskId: "",
-    channel: "push",
+    channel: "telegram",
     scheduledAt: "",
   });
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -91,9 +78,7 @@ function AddReminderForm({
         ...form,
         scheduledAt: new Date(form.scheduledAt).toISOString(),
       });
-      setForm({ taskId: "", channel: "push", scheduledAt: "" });
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
+      setForm({ taskId: "", channel: "telegram", scheduledAt: "" });
     } catch (e) {
       setErr((e as Error).message);
     } finally {
@@ -102,64 +87,69 @@ function AddReminderForm({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-card/50 p-5 backdrop-blur-xl sm:p-6">
-      <h2 className="mb-4 text-base font-semibold text-foreground">Add Reminder</h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <div className="bg-white dark:bg-surface border-[3px] border-black dark:border-outline-variant/20 p-6 lg:p-8 rounded-[32px] flex flex-col gap-6 shadow-[0_4px_0_0_#000] dark:shadow-sm relative overflow-hidden mb-8">
+      <div className="flex items-center gap-2 border-b-[3px] border-black dark:border-outline-variant/10 pb-4">
+        <span className="material-symbols-outlined text-[#EF476F] dark:text-primary text-xl">rocket_launch</span>
+        <h2 className="font-headline-sm text-xl font-bold text-on-surface">Execute Reminder Protocol</h2>
+      </div>
+      
+      <form onSubmit={handleSubmit} className="flex flex-col md:flex-row gap-4 items-start md:items-center w-full">
+        <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Task ID */}
-          <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">Task ID</label>
+          <div className="relative">
+            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">tag</span>
             <input
               type="number"
               value={form.taskId}
               onChange={(e) => setForm({ ...form, taskId: e.target.value })}
-              placeholder="42"
+              className="w-full bg-[#F0F4F8] dark:bg-surface-container border-[2px] border-black dark:border-transparent shadow-[0_2px_0_0_#000] dark:shadow-none text-on-surface pl-12 pr-4 h-[48px] rounded-xl focus:outline-none transition-all placeholder-on-surface-variant/40 font-body-lg text-[15px]"
+              placeholder="Task ID"
               min={1}
-              className="w-full rounded-xl border border-border bg-background/50 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
             />
           </div>
 
           {/* Channel */}
-          <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">Channel</label>
+          <div className="relative">
+            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">hub</span>
             <select
               value={form.channel}
               onChange={(e) => setForm({ ...form, channel: e.target.value as ReminderChannel })}
-              className="w-full rounded-xl border border-border bg-background/50 px-3 py-2.5 text-sm text-foreground focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
+              className="w-full bg-[#F0F4F8] dark:bg-surface-container border-[2px] border-black dark:border-transparent shadow-[0_2px_0_0_#000] dark:shadow-none text-on-surface pl-12 pr-4 h-[48px] rounded-xl focus:outline-none transition-all font-body-lg text-[15px] appearance-none"
             >
-              <option value="push">🔔 Push</option>
-              <option value="email">✉️ Email</option>
-              <option value="telegram">💬 Telegram</option>
+              <option value="telegram">Telegram</option>
+              <option value="push">Push</option>
+              <option value="email">Email</option>
             </select>
           </div>
 
           {/* Scheduled At */}
-          <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">Scheduled At</label>
+          <div className="relative">
+            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">schedule</span>
             <input
               type="datetime-local"
               value={form.scheduledAt}
               onChange={(e) => setForm({ ...form, scheduledAt: e.target.value })}
-              className="w-full rounded-xl border border-border bg-background/50 px-3 py-2.5 text-sm text-foreground focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30"
+              className="w-full bg-[#F0F4F8] dark:bg-surface-container border-[2px] border-black dark:border-transparent shadow-[0_2px_0_0_#000] dark:shadow-none text-on-surface pl-12 pr-4 h-[48px] rounded-xl focus:outline-none transition-all font-body-lg text-[15px]"
             />
           </div>
         </div>
-
-        {err && <p className="text-xs text-red-400">{err}</p>}
-        {success && (
-          <p className="text-xs text-emerald-400">✓ Reminder added successfully</p>
-        )}
-
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            disabled={saving}
-            className="rounded-xl border border-primary/30 bg-primary/10 px-5 py-2.5 text-sm font-medium text-primary hover:bg-primary/20 transition-colors disabled:opacity-50"
-          >
-            {saving ? "Saving…" : "Add Reminder"}
-          </button>
-        </div>
+        
+        <button
+          type="submit"
+          disabled={saving}
+          className="h-[48px] border-[2px] border-black dark:border-outline-variant/30 text-black dark:text-on-surface px-6 rounded-xl font-bold text-[13px] bg-white dark:bg-transparent shadow-[0_3px_0_0_#000] dark:shadow-none hover:translate-y-[2px] hover:shadow-[0_1px_0_0_#000] dark:hover:shadow-none hover:border-black dark:hover:border-primary transition-all flex items-center justify-center gap-2 disabled:opacity-50 min-w-[120px]"
+        >
+          {saving ? (
+            <span className="material-symbols-outlined animate-spin text-[16px]">sync</span>
+          ) : (
+            <>
+              <span className="material-symbols-outlined text-[16px]">add</span>
+              Deploy
+            </>
+          )}
+        </button>
       </form>
+      {err && <p className="text-xs text-error mt-2 font-mono-label">{err}</p>}
     </div>
   );
 }
@@ -179,55 +169,37 @@ function ReminderCard({
   const [deleting, setDeleting] = useState(false);
 
   return (
-    <li className="group flex items-start gap-4 rounded-xl border border-border/50 bg-background/30 px-4 py-4 transition-all hover:bg-background/50">
-      {/* Status indicator */}
-      <div className="mt-0.5 flex flex-col items-center gap-1.5">
-        <div className={`h-2.5 w-2.5 rounded-full ${STATUS_DOTS[reminder.status]}`} />
-        <span className="text-base">{CHANNEL_ICONS[reminder.channel]}</span>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 min-w-0">
-        <div className="flex flex-wrap items-start gap-2">
-          <p className="text-sm font-medium text-foreground">
-            {reminder.taskTitle ? (
-              <span className="truncate">{reminder.taskTitle}</span>
-            ) : (
-              <span className="text-muted-foreground">Task #{reminder.taskId}</span>
-            )}
-          </p>
-
-          {/* Channel badge */}
-          <span
-            className={`rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider ${
-              CHANNEL_BADGES[reminder.channel]
-            }`}
-          >
-            {reminder.channel}
-          </span>
-
-          {/* Status badge */}
-          <span
-            className={`rounded-full border px-2 py-0.5 text-[10px] font-medium capitalize ${
-              STATUS_BADGES[reminder.status]
-            }`}
-          >
-            {reminder.status}
-          </span>
+    <div className="bg-white dark:bg-surface-container rounded-2xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between hover:translate-y-[2px] hover:shadow-[0_1px_0_0_#000] dark:hover:shadow-sm transition-all group gap-4 border-[2px] border-black dark:border-transparent shadow-[0_3px_0_0_#000] dark:shadow-none">
+      <div className="flex items-start gap-4">
+        <div className="w-10 h-10 mt-1 md:mt-0 rounded-full bg-white dark:bg-surface border-[2px] border-black dark:border-outline-variant/30 flex items-center justify-center text-primary shrink-0 shadow-[0_2px_0_0_#000] dark:shadow-none">
+          <span className="material-symbols-outlined text-[20px]">{CHANNEL_ICONS[reminder.channel]}</span>
         </div>
-
-        <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-          <span>🕐 {formatDateTime(reminder.scheduledAt)}</span>
-          {reminder.status === "snoozed" && reminder.snoozeUntil && (
-            <span className="text-amber-400/80">
-              Snoozed until {formatDateTime(reminder.snoozeUntil)}
+        <div className="flex flex-col">
+          <span className="font-body-lg text-[15px] text-on-surface font-semibold tracking-wide">
+            {reminder.taskTitle ? reminder.taskTitle : `Task #${reminder.taskId}`}
+          </span>
+          <div className="flex flex-wrap items-center gap-3 mt-2">
+            <span className="font-mono-label text-xs text-on-surface-variant flex items-center gap-1 bg-white dark:bg-surface border-[1px] border-black dark:border-transparent shadow-[0_1px_0_0_#000] dark:shadow-none px-2 py-1 rounded">
+              <span className="material-symbols-outlined text-[14px]">schedule</span>
+              {formatDateTime(reminder.scheduledAt)}
             </span>
-          )}
+            <span className="font-mono-label text-xs text-on-surface-variant flex items-center gap-1">
+              <span className="material-symbols-outlined text-primary text-[14px]">label</span>
+              {reminder.channel.toUpperCase()}
+            </span>
+            <span className={`font-mono-label text-xs flex items-center gap-1 border-[1px] border-black dark:border-transparent shadow-[0_1px_0_0_#000] dark:shadow-none px-2 py-1 rounded bg-white dark:bg-surface ${STATUS_COLORS[reminder.status]}`}>
+              {reminder.status.toUpperCase()}
+            </span>
+            {reminder.status === "snoozed" && reminder.snoozeUntil && (
+              <span className="font-mono-label text-xs text-amber-500 flex items-center gap-1">
+                <span className="material-symbols-outlined text-[14px]">snooze</span>
+                Snoozed to {formatDateTime(reminder.snoozeUntil)}
+              </span>
+            )}
+          </div>
         </div>
       </div>
-
-      {/* Actions */}
-      <div className="flex flex-shrink-0 items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+      <div className="flex items-center gap-2 self-end md:self-center opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
         {reminder.status !== "sent" && (
           <button
             onClick={async () => {
@@ -236,14 +208,13 @@ function ReminderCard({
             }}
             disabled={snoozing}
             title="Snooze 30 min"
-            className="flex h-8 items-center gap-1.5 rounded-lg border border-amber-500/20 bg-amber-500/10 px-2.5 text-xs text-amber-400 hover:bg-amber-500/20 transition-colors disabled:opacity-50"
+            className="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:text-amber-500 hover:bg-surface transition-colors disabled:opacity-50 border border-transparent hover:border-amber-500/30"
           >
             {snoozing ? (
-              <span className="h-3 w-3 animate-spin rounded-full border border-amber-400 border-t-transparent" />
+              <span className="material-symbols-outlined animate-spin text-[20px]">sync</span>
             ) : (
-              "⏰"
+              <span className="material-symbols-outlined text-[20px]">snooze</span>
             )}
-            <span className="hidden sm:inline">Snooze</span>
           </button>
         )}
         <button
@@ -253,16 +224,16 @@ function ReminderCard({
           }}
           disabled={deleting}
           title="Delete"
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+          className="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:text-error hover:bg-surface transition-colors disabled:opacity-50 border border-transparent hover:border-error/30"
         >
           {deleting ? (
-            <span className="h-3 w-3 animate-spin rounded-full border border-red-400 border-t-transparent" />
+            <span className="material-symbols-outlined animate-spin text-[20px]">sync</span>
           ) : (
-            "✕"
+            <span className="material-symbols-outlined text-[20px]">delete</span>
           )}
         </button>
       </div>
-    </li>
+    </div>
   );
 }
 
@@ -272,7 +243,6 @@ export default function RemindersPage() {
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<ReminderStatus | "all">("all");
 
   async function fetchReminders() {
     setLoading(true);
@@ -327,100 +297,71 @@ export default function RemindersPage() {
     setReminders(prev => prev.filter(r => r.id !== id));
   }
 
-  const filtered =
-    statusFilter === "all"
-      ? reminders
-      : reminders.filter(r => r.status === statusFilter);
-
-  const counts = {
-    all: reminders.length,
-    pending: reminders.filter(r => r.status === "pending").length,
-    snoozed: reminders.filter(r => r.status === "snoozed").length,
-    sent: reminders.filter(r => r.status === "sent").length,
-  };
+  const pendingCount = reminders.filter(r => r.status === "pending").length;
 
   return (
-    <div className="relative min-h-screen pb-12 w-full font-sans">
-      {/* Ambient Glows */}
-      <div className="fixed top-[0%] right-[0%] h-[500px] w-[500px] rounded-full bg-cyan-500/10 blur-[150px] mix-blend-screen pointer-events-none" />
-      
-      <div className="relative z-10 max-w-4xl mx-auto px-4 py-8 sm:px-8">
-        {/* ── Header ── */}
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-white">Reminders</h1>
-            <p className="mt-1 text-sm text-white/50">
-              {counts.pending} pending · {counts.snoozed} snoozed
+    <div className="flex-1 overflow-y-auto page-enter px-4 md:px-8 py-8 custom-scrollbar">
+      <div className="max-w-container-max mx-auto flex flex-col gap-8 md:gap-12">
+        
+        {/* Header Area */}
+        <div className="flex flex-row justify-between items-end gap-6 mb-2">
+          <header className="flex flex-col gap-3">
+            <h1 className="text-[28px] font-headline-md font-bold text-on-surface flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[#FAF5F0] dark:bg-surface-container flex items-center justify-center border-[2px] border-black dark:border-[#E8DCC8] shrink-0 shadow-[0_2px_0_0_#000] dark:shadow-none">
+                <span className="material-symbols-outlined text-[#118AB2] dark:text-primary text-[20px]">notifications</span>
+              </div>
+              Reminder Protocol
+            </h1>
+            <p className="text-on-surface-variant font-body-lg">
+              Manage proactive task notification channels.
             </p>
+          </header>
+        </div>
+
+        {/* List Header */}
+        <div className="flex justify-between items-end border-b border-outline-variant/30 pb-4">
+          <h2 className="font-headline-sm text-xl font-bold text-on-surface">
+            Active Registry
+          </h2>
+          <div className="font-mono-label text-xs tracking-wider uppercase text-on-surface-variant flex items-center gap-2">
+            {loading ? (
+              <span className="material-symbols-outlined animate-spin text-[14px]">sync</span>
+            ) : (
+              <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+            )}
+            {reminders.length} Entries Online
           </div>
-          <button
-            onClick={fetchReminders}
-            className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/50 backdrop-blur hover:text-white transition-colors"
-          >
-            ↻ Refresh
-          </button>
         </div>
 
-        {/* ── Add Form ── */}
-        <div className="mb-6">
-          <AddReminderForm onSave={handleCreate} />
-        </div>
+        {/* Quick Add Module */}
+        <AddReminderForm onSave={handleCreate} />
 
-        {/* ── Error ── */}
         {error && (
-          <div className="mb-4 flex items-center justify-between rounded-2xl border border-red-500/30 bg-red-500/10 px-5 py-4 text-sm text-red-400">
+          <div className="bg-error-container/20 border border-error/50 rounded-2xl p-4 flex items-center justify-between text-error font-mono-label text-sm">
             <span>{error}</span>
             <button
               onClick={fetchReminders}
-              className="rounded-lg border border-red-500/30 px-3 py-1 text-xs hover:bg-red-500/20"
+              className="border border-error/50 px-3 py-1 rounded hover:bg-error/10 transition-colors"
             >
               Retry
             </button>
           </div>
         )}
 
-        {/* ── Filter Tabs ── */}
-        <div className="mb-4 flex rounded-xl border border-white/10 bg-white/5 p-1 backdrop-blur-sm w-fit">
-          {(["all", "pending", "snoozed", "sent"] as const).map(s => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm capitalize font-medium transition-all ${
-                statusFilter === s
-                  ? "bg-primary/20 text-primary"
-                  : "text-white/50 hover:text-white"
-              }`}
-            >
-              {s}
-              <span
-                className={`rounded-full px-1.5 py-0.5 text-[10px] ${
-                  statusFilter === s ? "bg-primary/20 text-primary" : "bg-white/5 text-white/50"
-                }`}
-              >
-                {counts[s]}
-              </span>
-            </button>
-          ))}
-        </div>
-
-        {/* ── List ── */}
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 backdrop-blur-xl sm:p-6">
+        {/* Reminder List */}
+        <div className="flex flex-col gap-4">
           {loading ? (
-            <div className="flex items-center justify-center py-16">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <div className="p-12 flex justify-center text-primary">
+              <span className="material-symbols-outlined animate-spin text-[32px]">sync</span>
             </div>
-          ) : filtered.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 py-16 text-center">
-              <span className="text-4xl">🔕</span>
-              <p className="text-sm text-white/50">
-                {statusFilter === "all"
-                  ? "No reminders yet — add one above."
-                  : `No ${statusFilter} reminders.`}
-              </p>
+          ) : reminders.length === 0 ? (
+            <div className="p-12 flex flex-col items-center justify-center text-on-surface-variant gap-4 border border-dashed border-outline-variant/30 rounded-[2rem]">
+              <span className="material-symbols-outlined text-[48px] opacity-50">notifications_off</span>
+              <span className="font-mono-label text-xs tracking-widest uppercase">No Active Reminders</span>
             </div>
           ) : (
-            <ul className="space-y-2">
-              {filtered.map(r => (
+            <div className="bg-white dark:bg-surface border-[3px] border-black dark:border-outline-variant/20 rounded-[32px] p-6 lg:p-8 shadow-[0_4px_0_0_#000] dark:shadow-sm flex flex-col gap-4">
+              {reminders.map(r => (
                 <ReminderCard
                   key={r.id}
                   reminder={r}
@@ -428,15 +369,10 @@ export default function RemindersPage() {
                   onDelete={handleDelete}
                 />
               ))}
-            </ul>
-          )}
-
-          {!loading && filtered.length > 0 && (
-            <p className="mt-4 text-center text-xs text-white/30">
-              {filtered.length} reminder{filtered.length !== 1 ? "s" : ""}
-            </p>
+            </div>
           )}
         </div>
+
       </div>
     </div>
   );

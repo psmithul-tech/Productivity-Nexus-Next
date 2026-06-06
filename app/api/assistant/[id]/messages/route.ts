@@ -1,10 +1,11 @@
+import { AGENTS } from "@/lib/agents";
 import { NextRequest } from "next/server";
-import { db, conversations, messages, tasksTable, eventsTable, remindersTable, settingsTable } from "@/lib/db";
-import { eq, and } from "drizzle-orm";
+import { db, conversations, messages, tasksTable, eventsTable, remindersTable, settingsTable, subjectsTable, attendanceLogsTable } from "@/lib/db";
+import { eq, and, or, arrayContains, gte } from "drizzle-orm";
 import { createClient } from "@/utils/supabase/server";
-import { getAIClient, buildSystemPrompt, tools } from "@/lib/gemini";
+import { buildSystemPrompt } from "@/lib/openrouter";
 import { pushTaskToGoogleCalendar } from "@/lib/google-calendar";
-import { normalizeTimeZone, parseDateTimeInTimeZone, timeOnDateInTimeZone } from "@/lib/timezone";
+import { normalizeTimeZone, parseDateTimeInTimeZone, timeOnDateInTimeZone, formatTimeInTimeZone, formatDateInTimeZone } from "@/lib/timezone";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const supabase = await createClient();
@@ -24,8 +25,46 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   
   const [settings] = await db.select().from(settingsTable).where(eq(settingsTable.userId, user.id));
   const userTz = normalizeTimeZone(settings?.timezone);
-  
-  const systemPrompt = buildSystemPrompt(userTz);
+  const now = new Date();
+
+  const allTasks = await db.select().from(tasksTable).where(
+    or(
+      eq(tasksTable.userId, user.id),
+      (settings?.username ? eq(tasksTable.assignedTo, settings.username) : undefined)
+    )
+  );
+  const activeTasks = allTasks.filter((t) => t.status === "active");
+  const taskList = activeTasks.length === 0 ? "" : activeTasks.map((t) => 
+    `• ${t.title} [${t.priority} priority, ${t.bucket}${t.dueDate ? `, due ${formatTimeInTimeZone(new Date(t.dueDate), userTz)}` : ""}]`
+  ).join("\n");
+
+  const allEvents = await db.select().from(eventsTable).where(and(
+    eq(eventsTable.userId, user.id),
+    gte(eventsTable.endTime, new Date(now.getTime() - 24 * 60 * 60 * 1000))
+  ));
+  const eventList = allEvents.length === 0 ? "" : allEvents.map((e) => 
+    `• [ID:${e.id}] ${e.title} (${formatTimeInTimeZone(new Date(e.startTime), userTz)} - ${formatTimeInTimeZone(new Date(e.endTime), userTz)} on ${formatDateInTimeZone(new Date(e.startTime), userTz)})`
+  ).join("\n");
+
+  const allSubjects = await db.select().from(subjectsTable).where(eq(subjectsTable.userId, user.id));
+  const subjectList = allSubjects.length === 0 ? "" : allSubjects.map((s) => 
+    `• [ID:${s.id}] ${s.name} (Target: ${s.targetPercentage}%)`
+  ).join("\n");
+
+  let extraContext = "";
+  if (content.toLowerCase().includes("news") || content.toLowerCase().includes("headlines")) {
+    try {
+      const { generateDailyNewsSummary } = await import("@/lib/news");
+      const summary = await generateDailyNewsSummary();
+      extraContext = `\n\nUSER REQUESTED NEWS UPDATE:\nHere is the latest news summary to provide to the user (do not generate it from scratch, just deliver this or a slightly shorter version of this to the user):\n${summary}`;
+    } catch (e) {
+      console.error("Failed to generate news summary for assistant:", e);
+    }
+  }
+
+  const systemPrompt = buildSystemPrompt(userTz, taskList, eventList) + 
+    `\n\n## SUBJECTS FOR ATTENDANCE\n${subjectList || "No subjects found."}` + 
+    extraContext;
 
   const contents = history.map((m) => ({
     role: m.role === "assistant" ? "model" as const : "user" as const,
@@ -37,28 +76,37 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const stream = new ReadableStream({
     async start(controller) {
       try {
-        const ai = getAIClient(settings?.geminiApiKey || null);
-        const responseStream = await ai.models.generateContentStream({
-          model: "gemini-3.1-flash-lite",
-          contents: contents,
-          config: {
-            systemInstruction: systemPrompt,
-            tools: tools,
-            maxOutputTokens: 8192,
-          }
-        });
-
         let fullText = "";
         let functionCalls: any[] = [];
+        try {
+          const { callOpenRouterStream, openaiTools } = await import("@/lib/openrouter");
+          const orStream = callOpenRouterStream(
+            [
+              { role: "system", content: systemPrompt },
+              ...history.map(m => ({
+                role: m.role,
+                content: m.content
+              }))
+            ],
+            { 
+              model: AGENTS.CHIEF_OF_STAFF,
+              temperature: 0.7,
+              tools: openaiTools 
+            }
+          );
 
-        for await (const chunk of responseStream) {
-          if (chunk.text) {
-            fullText += chunk.text;
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: chunk.text })}\n\n`));
+          for await (const chunk of orStream) {
+            if (chunk.text) {
+              fullText += chunk.text;
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: chunk.text })}\\n\\n`));
+            }
+            if (chunk.functionCalls && chunk.functionCalls.length > 0) {
+              functionCalls.push(...chunk.functionCalls);
+            }
           }
-          if (chunk.functionCalls && chunk.functionCalls.length > 0) {
-            functionCalls.push(...chunk.functionCalls);
-          }
+        } catch (orError) {
+          console.error("OpenRouter Stream Error:", orError);
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: "Stream error" })}\\n\\n`));
         }
 
         if (fullText.trim()) {
@@ -137,12 +185,27 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
               scheduledAt: parseDateTimeInTimeZone(args.scheduledAt, userTz)
             });
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ reminder: args })}\n\n`));
+          } else if (call.name === "setAttendance") {
+            // First, delete all existing logs
+            await db.delete(attendanceLogsTable).where(eq(attendanceLogsTable.subjectId, args.subjectId));
+            
+            // Insert present and absent logs directly
+            const total = args.presents + args.absents;
+            const newLogs = [];
+            for (let i = 0; i < args.presents; i++) newLogs.push({ subjectId: args.subjectId, status: "present" as const });
+            for (let i = 0; i < args.absents; i++) newLogs.push({ subjectId: args.subjectId, status: "absent" as const });
+            
+            if (newLogs.length > 0) {
+              await db.insert(attendanceLogsTable).values(newLogs);
+            }
+            
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ attendanceUpdated: args })}\n\n`));
           }
         }
 
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true })}\n\n`));
       } catch (err: any) {
-        console.error("Gemini Error:", err);
+        console.error("AI Assistant Error:", err);
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: err.message || "Stream error" })}\n\n`));
       } finally {
         controller.close();

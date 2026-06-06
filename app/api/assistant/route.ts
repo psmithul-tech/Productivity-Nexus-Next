@@ -1,8 +1,9 @@
+import { AGENTS } from "@/lib/agents";
 import { NextRequest, NextResponse } from "next/server";
 import { db, conversations, messages, tasksTable } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { createClient } from "@/utils/supabase/server";
-import { getAIClient, buildSystemPrompt } from "@/lib/gemini";
+
 import { settingsTable } from "@/lib/db";
 
 export async function GET() {
@@ -22,17 +23,18 @@ export async function POST(req: NextRequest) {
   // Generate summary
   let title = "New Conversation";
   try {
-    const [settings] = await db.select().from(settingsTable).where(eq(settingsTable.userId, user.id));
-    if (settings?.geminiApiKey) {
-      const ai = getAIClient(settings.geminiApiKey);
-      const res = await ai.models.generateContent({
-        model: "gemini-3.1-flash-lite",
-        contents: `Summarize the following chat message into a 2-4 word conversation title. Message: "${content}"`
+    let responseText = "";
+    try {
+      const { callOpenRouter } = await import("@/lib/openrouter");
+      responseText = await callOpenRouter(`Summarize the following chat message into a 2-4 word conversation title. Message: "${content}"`, undefined, {
+        model: AGENTS.CHIEF_OF_STAFF,
+        temperature: 0.7,
       });
-      if (res.text) {
-        title = res.text.replace(/["']/g, "").trim();
+      if (responseText) {
+        title = responseText.replace(/["']/g, "").trim();
       }
-    } else {
+    } catch (err) {
+      console.error("OpenRouter Title Generation Error:", err);
       title = content.substring(0, 20) + "...";
     }
   } catch (err) {

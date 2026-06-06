@@ -27,6 +27,33 @@ module.exports = {
         CRON_BASE_URL: "http://localhost:3000",
         CRON_SECRET: "dev-cron-secret"
       }
+    },
+    {
+      name: "nexus-reco",
+      script: "./venv311/bin/python",
+      args: "tts_server.py",
+      cwd: "./",
+      instances: 1,
+      autorestart: true,
+      watch: false
+    },
+    {
+      name: "nexus-monitor",
+      script: "npm",
+      args: "run monitor",
+      cwd: "./",
+      instances: 1,
+      autorestart: true,
+      watch: false
+    },
+    {
+      name: "nexus-ngrok",
+      script: "/tmp/ngrok",
+      args: "http 3000",
+      cwd: "./",
+      instances: 1,
+      autorestart: true,
+      watch: false
     }
   ]
 };

@@ -14,7 +14,7 @@ const REFRESH_MS = 4000;
 let CRON_SECRET = "";
 try {
   CRON_SECRET = fs.readFileSync("/Users/mika/Documents/Calendar/nexus-next/.env.local", "utf8")
-    .split("\n").find(l => l.startsWith("CRON_SECRET="))?.split("=")[1]?.trim() || "";
+    .split("\n").find(l => l.startsWith("CRON_SECRET="))?.split("=")[1]?.trim().replace(/^"|"$/g, "") || "";
 } catch {}
 
 // ── ANSI helpers ────────────────────────────────────────────────────────────
@@ -71,9 +71,9 @@ function fetchJson(url, options = {}) {
 // ── Read tunnel URL ─────────────────────────────────────────────────────────
 function getTunnelUrl() {
   try {
-    const log = fs.readFileSync(TUNNEL_LOG, "utf8");
-    const match = log.match(/https:\/\/[a-z0-9-]+\.trycloudflare\.com/);
-    return match ? match[0] : null;
+    const res = execSync("curl -s http://127.0.0.1:4040/api/tunnels", { timeout: 1000 }).toString();
+    const json = JSON.parse(res);
+    return json.tunnels[0]?.public_url || null;
   } catch { return null; }
 }
 
@@ -150,7 +150,7 @@ function draw() {
   if (state.tunnelUrl) {
     console.log(`  ${c.gray("Public ")}  ${c.purple(state.tunnelUrl)}  ${c.dim("(share with wife)")}`);
   } else {
-    console.log(`  ${c.gray("Public ")}  ${c.yellow("⚠  Tunnel not running — start with: /tmp/cloudflared tunnel --url http://localhost:3000")}`);
+    console.log(`  ${c.gray("Public ")}  ${c.yellow("⚠  Tunnel not running — start with: /tmp/ngrok http 3000")}`);
   }
   console.log();
 
@@ -233,13 +233,14 @@ console.log(c.purple("\n  Starting Restia Monitor...\n"));
 tick();
 setInterval(tick, REFRESH_MS);
 
-// Local Cron Trigger (Bypasses Vercel Hobby daily limit)
-setInterval(async () => {
-  try {
-    const opts = CRON_SECRET ? { headers: { Authorization: `Bearer ${CRON_SECRET}` } } : {};
-    await fetchJson(`${LOCAL_URL}/api/cron/ping`, opts);
-    console.log(c.green("  [Cron] Sent periodic reminder update"));
-  } catch (e) {
-    // Ignore cron errors
-  }
-}, 60 * 1000); // Every minute
+// Local Cron Trigger disabled to prevent duplicate pings.
+// Use ecosystem.config.js to manage the dedicated cron process.
+// setInterval(async () => {
+//   try {
+//     const opts = CRON_SECRET ? { headers: { Authorization: `Bearer ${CRON_SECRET}` } } : {};
+//     await fetchJson(`${LOCAL_URL}/api/cron/ping`, opts);
+//     console.log(c.green("  [Cron] Sent periodic reminder update"));
+//   } catch (e) {
+//     // Ignore cron errors
+//   }
+// }, 60 * 1000);

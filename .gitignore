@@ -7,3 +7,9 @@ dist/
 *.log
 .DS_Store
 .vercel
+venv/
+__pycache__/
+.env
+test-openrouter-2.js
+test-openrouter.js
+download_stitch.js

@@ -40,6 +40,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       .set({ completed: !existing.completed })
       .where(eq(habitLogsTable.id, existing.id))
       .returning();
+      
+    if (updated.completed) {
+      const { awardXP, XP_AWARDS } = await import("@/lib/gamification");
+      await awardXP(user.id, XP_AWARDS.HABIT_COMPLETED);
+    }
+    
     return NextResponse.json(updated);
   } else {
     // Create
@@ -48,6 +54,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       date: body.date,
       completed: true
     }).returning();
+    
+    const { awardXP, XP_AWARDS } = await import("@/lib/gamification");
+    await awardXP(user.id, XP_AWARDS.HABIT_COMPLETED);
+
     return NextResponse.json(created);
   }
 }

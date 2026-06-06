@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, tasksTable } from "@/lib/db";
+import { db, tasksTable, settingsTable } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { createClient } from "@/utils/supabase/server";
 
@@ -33,14 +33,33 @@ export async function PATCH(_req: NextRequest, { params }: { params: Promise<{ i
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  
+  const [settings] = await db.select().from(settingsTable).where(eq(settingsTable.userId, user.id));
+  const username = settings?.username;
+
   const { id } = await params;
+  
+  const [taskToUpdate] = await db.select().from(tasksTable).where(eq(tasksTable.id, parseInt(id)));
+  if (!taskToUpdate) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const isOwner = taskToUpdate.userId === user.id;
+  const isShared = taskToUpdate.sharedWith?.includes("*");
+  const isAssigned = username && taskToUpdate.assignedTo === username;
+
+  if (!isOwner && !isShared && !isAssigned) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const [task] = await db.update(tasksTable)
     .set({ status: "completed", completedAt: new Date(), updatedAt: new Date() })
-    .where(and(eq(tasksTable.id, parseInt(id)), eq(tasksTable.userId, user.id)))
+    .where(eq(tasksTable.id, parseInt(id)))
     .returning();
 
   if (!task) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  // Gamification: Award XP
+  const { awardXP, XP_AWARDS } = await import("@/lib/gamification");
+  await awardXP(user.id, XP_AWARDS.TASK_COMPLETED);
 
   // If recurring, auto-create next occurrence
   if (task.recurrence) {

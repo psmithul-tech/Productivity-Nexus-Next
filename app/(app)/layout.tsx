@@ -8,10 +8,9 @@ import { headers } from "next/headers";
 import { db, settingsTable } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { CommandPalette } from "@/components/command-palette";
-import { NotificationCenter } from "@/components/notification-center";
 
 import { SidebarProvider } from "@/components/sidebar-context";
-import { MobileToggle } from "@/components/mobile-toggle";
+import { Topbar } from "@/components/topbar";
 import { RestiaProvider } from "@/components/restia-context";
 import { RestiaCompanion } from "@/components/restia-companion";
 
@@ -33,36 +32,27 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <SidebarProvider>
       <RestiaProvider>
-        <div className="flex h-screen overflow-hidden bg-[#0a0a0f] text-white selection:bg-primary/30">
+        <div className="flex h-[100dvh] overflow-hidden bg-[#E5E5E5] dark:bg-background text-black dark:text-on-surface antialiased font-body">
           <AutoReloader />
           <ClientProviders />
           <CommandPalette />
           <Sidebar />
-          <RestiaCompanion />
 
-        {/* Main content area — sidebar is 260px wide */}
-        <main className="flex-1 ml-0 md:ml-[260px] flex flex-col overflow-hidden">
-          {/* Sticky top bar */}
-          {!isOnboarding && (
-            <div className="sticky top-0 z-30 flex items-center gap-3 px-4 sm:px-6 py-3 bg-[#0a0a0f]/80 backdrop-blur-xl border-b border-white/5">
-              <MobileToggle />
-              <div className="flex-1 min-w-0">
-                <NLQuickAdd />
+          {/* Main Content Wrapper */}
+          <div className="flex-1 flex flex-col md:ml-80 w-full md:w-[calc(100%-320px)] h-[100dvh] overflow-hidden relative">
+            {/* TopAppBar */}
+            {!isOnboarding && (
+              <div className="absolute top-0 left-0 w-full z-40">
+                <Topbar userAvatar={user.user_metadata?.avatar_url} />
               </div>
-              <div className="shrink-0">
-                <NotificationCenter />
-              </div>
-            </div>
-          )}
+            )}
 
-        {/* Scrollable page content */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="p-4 sm:p-6 min-h-full">
-            {children}
+            {/* Scrollable Canvas */}
+            <main className={`flex-1 overflow-y-auto px-4 pb-4 sm:px-8 sm:pb-8 lg:px-12 lg:pb-12 space-y-8 relative custom-scrollbar ${!isOnboarding ? 'pt-28 sm:pt-32' : 'pt-4 sm:pt-8'}`}>
+              {children}
+            </main>
           </div>
         </div>
-        </main>
-      </div>
       </RestiaProvider>
     </SidebarProvider>
   );

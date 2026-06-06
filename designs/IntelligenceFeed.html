@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>News Guru - Restia OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600&amp;family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary": "#f8f5f6",
+                        "primary-fixed": "#7df4ff",
+                        "on-primary-fixed-variant": "#004f54",
+                        "tertiary-fixed": "#e5e2e3",
+                        "on-background": "#e4e2e4",
+                        "on-error": "#690005",
+                        "primary-fixed-dim": "#00dbe9",
+                        "on-primary": "#00363a",
+                        "on-surface-variant": "#b9cacb",
+                        "on-tertiary": "#313031",
+                        "on-secondary-fixed": "#320047",
+                        "on-tertiary-fixed": "#1c1b1c",
+                        "primary": "#dbfcff",
+                        "tertiary-fixed-dim": "#c8c6c7",
+                        "error-container": "#93000a",
+                        "inverse-on-surface": "#303032",
+                        "on-tertiary-fixed-variant": "#474647",
+                        "secondary-fixed": "#f8d8ff",
+                        "on-primary-fixed": "#002022",
+                        "surface-container": "#1f1f21",
+                        "on-surface": "#e4e2e4",
+                        "on-tertiary-container": "#5f5e5f",
+                        "surface-container-high": "#2a2a2c",
+                        "error": "#ffb4ab",
+                        "tertiary-container": "#dbd8d9",
+                        "on-secondary-container": "#fff6fc",
+                        "primary-container": "#00f0ff",
+                        "surface-variant": "#353437",
+                        "on-primary-container": "#006970",
+                        "on-secondary": "#520072",
+                        "secondary-fixed-dim": "#ebb2ff",
+                        "inverse-primary": "#006970",
+                        "surface": "#131315",
+                        "outline": "#849495",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-fixed-variant": "#74009f",
+                        "secondary-container": "#b600f8",
+                        "surface-container-low": "#1b1b1d",
+                        "surface-container-lowest": "#0e0e10",
+                        "surface-tint": "#00dbe9",
+                        "outline-variant": "#3b494b",
+                        "surface-container-highest": "#353437",
+                        "surface-dim": "#131315",
+                        "surface-bright": "#39393b",
+                        "inverse-surface": "#e4e2e4",
+                        "secondary": "#ebb2ff",
+                        "background": "#131315"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "sm": "8px",
+                        "gutter": "16px",
+                        "unit": "4px",
+                        "container-max": "1440px",
+                        "xs": "4px",
+                        "xl": "48px",
+                        "md": "16px",
+                        "lg": "24px"
+                    },
+                    "fontFamily": {
+                        "data-metric": ["JetBrains Mono"],
+                        "mono-label": ["JetBrains Mono"],
+                        "headline-md": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "data-metric": ["14px", { "lineHeight": "1", "fontWeight": "600" }],
+                        "mono-label": ["12px", { "lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "headline-sm": ["18px", { "lineHeight": "1.4", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-sm": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #131315; color: #e4e2e4; }
+        .glass-panel { background: rgba(22, 22, 24, 0.7); backdrop-filter: blur(20px); border: 1px solid #252527; }
+        .glow-active { box-shadow: 0 0 10px rgba(0, 240, 255, 0.4); }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .material-symbols-outlined.fill-1 { font-variation-settings: 'FILL' 1; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #3b494b; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #849495; }
+    </style>
+</head>
+<body class="font-body-lg overflow-x-hidden min-h-screen flex">
+<!-- SideNavBar (Suppressed due to intent matching, assuming "News Guru" isn't a top-level nav item in the JSON, but we'll include it for structural completeness of the OS if it maps to Dashboard, but instruction says active logic. Let's map to 'Dashboard' as fallback or just render it inactive. Wait, the JSON says: Dashboard, Analytics, Modules, Network, Security, Settings. 'News Guru' is a sub-module. We'll highlight 'Modules'.) -->
+<nav class="hidden md:flex flex-col fixed left-0 top-0 h-full w-20 hover:w-64 transition-all duration-300 ease-in-out bg-surface/70 dark:bg-surface/70 border-r border-outline-variant/30 backdrop-blur-xl z-50 group">
+<div class="flex flex-col items-center group-hover:items-start w-full py-lg px-md gap-lg border-b border-outline-variant/30">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center overflow-hidden border border-outline-variant/50 shrink-0">
+<img alt="User Profile Avatar" class="w-full h-full object-cover" data-alt="A futuristic command center avatar portrait. A highly detailed, realistic photograph of an administrator. The lighting is dramatic, high-contrast chiaroscuro, fitting a dark mode aesthetic with deep shadows and subtle cyan highlights. The mood is serious and professional. The background is pure obsidian black." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCMNAIL9Y0LkPq5fT5rtYXOCV5-3AfsNBQHwOxj7RHk_OYZ4yIN_8ZPi-jqXEsKNMTWbCSCez4TKJ_p6xl3XS2SXggzcKvRelvUi-I5JqIVYT3W83w_-jvK5EvcrGkWCJKC9ST3TOHmH3wizzHEj8MUZs93KcJgMWqC_LM6SEdnRr3lEfMbK5olWWXdjRA5yrUxJzEsx8K3VhVkY99R90__5BCk2k5b7eEpiVcM_biNdl98OWP8fixpQCgIY9UTISlCN5BVoW9PVkk"/>
+</div>
+<div class="hidden group-hover:flex flex-col whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity delay-100">
+<span class="font-headline-sm text-headline-sm text-primary-fixed-dim tracking-tight">Restia OS</span>
+<span class="font-mono-label text-mono-label text-on-surface-variant">v2.4.0</span>
+</div>
+</div>
+<div class="flex-1 w-full py-md flex flex-col gap-sm overflow-y-auto overflow-x-hidden">
+<a class="flex items-center gap-md px-md py-sm w-full text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="dashboard">dashboard</span>
+<span class="font-mono-label text-mono-label whitespace-nowrap hidden group-hover:block opacity-0 group-hover:opacity-100 transition-opacity">Dashboard</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm w-full text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="analytics">analytics</span>
+<span class="font-mono-label text-mono-label whitespace-nowrap hidden group-hover:block opacity-0 group-hover:opacity-100 transition-opacity">Analytics</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm w-full border-l-2 border-primary-fixed shadow-[0_0_10px_rgba(0,240,255,0.4)] text-primary-fixed bg-primary-fixed/5 scale-95 duration-150" href="#">
+<span class="material-symbols-outlined fill-1 shrink-0" data-icon="extension" data-weight="fill">extension</span>
+<span class="font-mono-label text-mono-label whitespace-nowrap hidden group-hover:block opacity-0 group-hover:opacity-100 transition-opacity">Modules</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm w-full text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="lan">lan</span>
+<span class="font-mono-label text-mono-label whitespace-nowrap hidden group-hover:block opacity-0 group-hover:opacity-100 transition-opacity">Network</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm w-full text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="security">security</span>
+<span class="font-mono-label text-mono-label whitespace-nowrap hidden group-hover:block opacity-0 group-hover:opacity-100 transition-opacity">Security</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm w-full text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="settings">settings</span>
+<span class="font-mono-label text-mono-label whitespace-nowrap hidden group-hover:block opacity-0 group-hover:opacity-100 transition-opacity">Settings</span>
+</a>
+</div>
+<div class="w-full py-md flex flex-col gap-sm border-t border-outline-variant/30 mt-auto">
+<a class="flex items-center gap-md px-md py-sm w-full text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="help">help</span>
+<span class="font-mono-label text-mono-label whitespace-nowrap hidden group-hover:block opacity-0 group-hover:opacity-100 transition-opacity">Help</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm w-full text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 transition-colors" href="#">
+<span class="material-symbols-outlined shrink-0" data-icon="power_settings_new">power_settings_new</span>
+<span class="font-mono-label text-mono-label whitespace-nowrap hidden group-hover:block opacity-0 group-hover:opacity-100 transition-opacity">Power</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Wrapper -->
+<div class="flex-1 flex flex-col min-h-screen md:ml-20 w-full transition-all duration-300">
+<!-- TopAppBar -->
+<header class="flex justify-between items-center w-full px-lg h-16 bg-surface/40 dark:bg-surface/40 border-b border-outline-variant/20 backdrop-blur-md sticky top-0 z-40">
+<div class="flex items-center gap-lg">
+<span class="font-headline-md text-headline-md text-primary-fixed font-bold tracking-tight">Restia OS</span>
+<span class="font-mono-label text-mono-label text-on-surface-variant px-sm py-xs border border-outline-variant/30 rounded-DEFAULT bg-surface-container-low hidden sm:inline-block">/modules/news-guru</span>
+</div>
+<div class="flex items-center gap-md">
+<div class="hidden md:flex items-center relative">
+<span class="material-symbols-outlined absolute left-sm text-on-surface-variant text-sm pointer-events-none">search</span>
+<input class="bg-surface-container-low border border-outline-variant/50 text-on-surface font-body-sm text-body-sm rounded-DEFAULT py-[6px] pl-8 pr-sm w-64 focus:outline-none focus:border-primary-fixed focus:ring-1 focus:ring-primary-fixed/50 transition-all placeholder:text-on-surface-variant/50" placeholder="Search knowledge base..." type="text"/>
+</div>
+<button class="w-8 h-8 flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high/50 rounded-DEFAULT transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high/50 rounded-DEFAULT transition-colors">
+<span class="material-symbols-outlined" data-icon="apps">apps</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high/50 rounded-DEFAULT transition-colors">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-1 p-md md:p-lg overflow-y-auto">
+<div class="max-w-[container-max] mx-auto flex flex-col gap-lg">
+<!-- Section Header & Filters -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-md border-b border-outline-variant/30 pb-md">
+<div>
+<h1 class="font-display-lg text-display-lg text-on-surface mb-xs">News.Guru</h1>
+<p class="font-mono-label text-mono-label text-primary-fixed uppercase tracking-widest">Global Intelligence Feed</p>
+</div>
+<div class="flex flex-wrap items-center gap-sm">
+<button class="px-sm py-[4px] font-mono-label text-mono-label rounded-DEFAULT border border-primary-fixed bg-primary-fixed/10 text-primary-fixed shadow-[0_0_8px_rgba(0,240,255,0.2)] transition-all">ALL</button>
+<button class="px-sm py-[4px] font-mono-label text-mono-label rounded-DEFAULT border border-outline-variant text-on-surface-variant hover:border-outline hover:text-on-surface transition-all bg-surface-container">INDIA</button>
+<button class="px-sm py-[4px] font-mono-label text-mono-label rounded-DEFAULT border border-outline-variant text-on-surface-variant hover:border-outline hover:text-on-surface transition-all bg-surface-container">BUSINESS</button>
+<button class="px-sm py-[4px] font-mono-label text-mono-label rounded-DEFAULT border border-outline-variant text-on-surface-variant hover:border-outline hover:text-on-surface transition-all bg-surface-container">SPORTS</button>
+<button class="px-sm py-[4px] font-mono-label text-mono-label rounded-DEFAULT border border-outline-variant text-on-surface-variant hover:border-outline hover:text-on-surface transition-all bg-surface-container">SPACE</button>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-md md:gap-lg">
+<!-- Featured Story (Spans 8 cols on desktop) -->
+<article class="md:col-span-8 glass-panel rounded-lg overflow-hidden group cursor-pointer relative flex flex-col border-t-2 border-t-secondary-fixed">
+<div class="relative h-64 md:h-96 w-full overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-lowest to-transparent z-10"></div>
+<img alt="Space Feature Image" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700" data-alt="A hyper-realistic view of a futuristic space station orbiting Earth. The lighting is cinematic, high-contrast dark mode aesthetics, with the stark black of deep space contrasting against the vibrant blue and white glow of the planet. Electric cyan lights detail the station's geometric structure. The mood is awe-inspiring and technologically advanced." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCS6LmNTfI3bqlWY9V4ZRMagh-lPar-7impeK_yHp7KDsbXr1o6cI4AnI5owkx3wglvvIRJCp4i7bMq1EGaBsiGKRvMtFJvjpmiOopeoKVlePLOO4TofhpyT7jCr4Mx4QuIKVVYX_8nIrlWJAW3RTMzdaUpd1cO_vUh8lUWsay14t9DrOX8saNw1J4RAKjMkJrPhVBIe7onHDUds0BYJ3zlTW--OUzjgv9WoSGNiGztabxqUYwThbJYSCvJV0jXJ9vwyGhxywQFRZ8"/>
+<div class="absolute top-md left-md z-20 flex gap-sm">
+<span class="bg-surface-container-highest/80 backdrop-blur-md px-xs py-[2px] border border-outline-variant/50 font-mono-label text-mono-label text-secondary-fixed rounded-DEFAULT flex items-center gap-xs">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary-fixed animate-pulse"></span>
+                                    BREAKING
+                                </span>
+<span class="bg-surface-container-highest/80 backdrop-blur-md px-xs py-[2px] border border-outline-variant/50 font-mono-label text-mono-label text-on-surface rounded-DEFAULT">SPACE</span>
+</div>
+</div>
+<div class="p-lg flex flex-col gap-md z-20 -mt-16 md:-mt-24 relative">
+<h2 class="font-headline-md text-headline-md text-on-surface group-hover:text-primary-fixed transition-colors">Artemis Base Camp Deploys Initial Autonomous Structuring Units on Lunar South Pole</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant line-clamp-3">NASA and international partners have successfully initiated the deployment of the first wave of autonomous robotic units designed to construct the foundation of the Artemis Base Camp. Telemetry data confirms optimal functioning of the solar arrays and initial regolith processing modules.</p>
+<div class="flex items-center justify-between mt-auto pt-sm border-t border-outline-variant/20">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-outline text-sm" data-icon="satellite_alt">satellite_alt</span>
+<span class="font-mono-label text-mono-label text-on-surface-variant">Global Aerospace Network</span>
+</div>
+<span class="font-data-metric text-data-metric text-outline">14:02 UTC</span>
+</div>
+</div>
+</article>
+<!-- Side Column (Spans 4 cols on desktop) -->
+<div class="md:col-span-4 flex flex-col gap-md">
+<!-- Market Data Snapshot Module -->
+<div class="glass-panel rounded-lg p-md border-t-2 border-t-primary-fixed flex flex-col gap-sm">
+<div class="flex items-center justify-between mb-xs">
+<h3 class="font-mono-label text-mono-label text-on-surface uppercase">Market Pulse</h3>
+<span class="material-symbols-outlined text-primary-fixed text-sm" data-icon="show_chart">show_chart</span>
+</div>
+<div class="flex justify-between items-end border-b border-outline-variant/20 pb-sm">
+<div>
+<span class="font-mono-label text-mono-label text-on-surface-variant block mb-1">NASDAQ AI INDX</span>
+<span class="font-data-metric text-data-metric text-primary-fixed block">14,285.42</span>
+</div>
+<span class="font-mono-label text-mono-label text-primary-fixed flex items-center">+1.24% <span class="material-symbols-outlined text-[16px]" data-icon="arrow_upward">arrow_upward</span></span>
+</div>
+<div class="flex justify-between items-end border-b border-outline-variant/20 pb-sm">
+<div>
+<span class="font-mono-label text-mono-label text-on-surface-variant block mb-1">NIFTY 50</span>
+<span class="font-data-metric text-data-metric text-error block">22,143.90</span>
+</div>
+<span class="font-mono-label text-mono-label text-error flex items-center">-0.45% <span class="material-symbols-outlined text-[16px]" data-icon="arrow_downward">arrow_downward</span></span>
+</div>
+</div>
+<!-- Secondary Story 1 -->
+<article class="glass-panel rounded-lg p-md flex flex-col gap-sm group cursor-pointer hover:bg-surface-container-high transition-colors">
+<div class="flex justify-between items-start mb-xs">
+<span class="font-mono-label text-mono-label text-primary-fixed border border-primary-fixed/30 px-xs py-[2px] rounded-DEFAULT">BUSINESS</span>
+<span class="font-data-metric text-data-metric text-outline">2h ago</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface group-hover:text-primary-fixed transition-colors">Quantum Computing Consortium Announces Qubit Stability Breakthrough</h3>
+<div class="flex items-center gap-xs mt-auto pt-sm border-t border-outline-variant/20">
+<span class="material-symbols-outlined text-outline text-[16px]" data-icon="terminal">terminal</span>
+<span class="font-mono-label text-mono-label text-on-surface-variant">TechWire Global</span>
+</div>
+</article>
+<!-- Secondary Story 2 -->
+<article class="glass-panel rounded-lg p-md flex flex-col gap-sm group cursor-pointer hover:bg-surface-container-high transition-colors">
+<div class="flex justify-between items-start mb-xs">
+<span class="font-mono-label text-mono-label text-secondary-fixed border border-secondary-fixed/30 px-xs py-[2px] rounded-DEFAULT">INDIA</span>
+<span class="font-data-metric text-data-metric text-outline">4h ago</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface group-hover:text-primary-fixed transition-colors">New Semiconductor Fabrication Plant Breaks Ground in Gujarat</h3>
+<div class="flex items-center gap-xs mt-auto pt-sm border-t border-outline-variant/20">
+<span class="material-symbols-outlined text-outline text-[16px]" data-icon="precision_manufacturing">precision_manufacturing</span>
+<span class="font-mono-label text-mono-label text-on-surface-variant">Industrial Daily</span>
+</div>
+</article>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>
